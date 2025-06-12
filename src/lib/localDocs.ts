@@ -351,146 +351,202 @@ async function loadIndex() {
   return INDEX;
 }
 
-export async function searchLibraries(query: string): Promise<SearchResponse> {
-  const index = await loadIndex();
+// Utility: Expand query with synonyms and related terms
+function expandQuery(query: string): string[] {
+  const synonyms: Record<string, string[]> = {
+    wizard: ["wizard", "sap.m.Wizard", "WizardStep", "wizard control", "wizard fragment"],
+    button: ["button", "sap.m.Button", "button control", "button press"],
+    table: ["table", "sap.m.Table", "table control", "table row"],
+    // Add more as needed
+  };
   const q = query.toLowerCase();
+  for (const key in synonyms) {
+    if (q.includes(key)) return synonyms[key];
+  }
+  // Default: try original, lower, and capitalized
+  return [query, query.toLowerCase(), query.charAt(0).toUpperCase() + query.slice(1)];
+}
 
-  // Search across all documents in all libraries
-  const allMatches: Array<{
-    score: number;
-    libraryId: string;
-    libraryName: string;
-    docId: string;
-    docTitle: string;
-    docDescription: string;
-    matchType: string;
-    snippetCount: number;
-    source?: string;
-    url?: string;
-    postTime?: string;
-  }> = [];
+// Utility: Extract control names/properties from file content (XML/JS)
+function extractControlsFromContent(content: string): string[] {
+  const controls = new Set<string>();
+  // XML: <sap.m.Wizard ...> or <Wizard ...>
+  const xmlMatches = content.matchAll(/<([a-zA-Z0-9_.:]+)[\s>]/g);
+  for (const m of xmlMatches) {
+    let tag = m[1];
+    if (tag.includes(":")) tag = tag.split(":").pop()!;
+    controls.add(tag);
+  }
+  // JS: sap.m.Wizard, new sap.m.Wizard, etc.
+  const jsMatches = content.matchAll(/sap\.m\.([A-Za-z0-9_]+)/g);
+  for (const m of jsMatches) controls.add("sap.m." + m[1]);
+  return Array.from(controls);
+}
 
-  for (const lib of Object.values(index)) {
-    // Check if library name/description matches
-    const libNameMatch = lib.name.toLowerCase().includes(q);
-    const libDescMatch = lib.description.toLowerCase().includes(q);
+export async function searchLibraries(query: string, fileContent?: string): Promise<SearchResponse> {
+  const index = await loadIndex();
+  let queries = expandQuery(query);
 
-    if (libNameMatch || libDescMatch) {
-      allMatches.push({
-        score: libNameMatch ? 100 : 80,
-        libraryId: lib.id,
-        libraryName: lib.name,
-        docId: lib.id,
-        docTitle: `${lib.name} (Full Library)`,
-        docDescription: lib.description,
-        matchType: libNameMatch ? 'Library Name' : 'Library Description',
-        snippetCount: lib.docs.reduce((s, d) => s + d.snippetCount, 0),
-        source: 'docs'
-      });
-    }
+  // If file content is provided, extract controls/properties and add to queries
+  if (fileContent) {
+    const extracted = extractControlsFromContent(fileContent);
+    queries = [...new Set([...queries, ...extracted])];
+  }
 
-    // Search within individual documents
-    for (const doc of lib.docs) {
-      let score = 0;
-      let matchType = '';
+  let allMatches: Array<any> = [];
+  let triedQueries: string[] = [];
+  let found = false;
 
-      // Check title match (highest priority)
-      if (doc.title.toLowerCase().includes(q)) {
-        score = 90;
-        matchType = 'Document Title';
-      }
-      // Check description match
-      else if (doc.description.toLowerCase().includes(q)) {
-        score = 70;
-        matchType = 'Document Description';
-      }
-      // For UI5 controls, also check if it's a control name pattern
-      else if (lib.id === '/openui5-api' && isControlMatch(doc.title, q)) {
-        score = 85;
-        matchType = 'UI5 Control';
-      }
-      // Partial matches in title get lower score
-      else if (doc.title.toLowerCase().split(/[.\s_-]/).some(part => part.includes(q))) {
-        score = 60;
-        matchType = 'Partial Title Match';
-      }
-
-      if (score > 0) {
+  for (const q of queries) {
+    triedQueries.push(q);
+    // Search across all documents in all libraries
+    for (const lib of Object.values(index)) {
+      // Check if library name/description matches
+      const libNameMatch = lib.name.toLowerCase().includes(q.toLowerCase());
+      const libDescMatch = lib.description.toLowerCase().includes(q.toLowerCase());
+      if (libNameMatch || libDescMatch) {
         allMatches.push({
-          score,
+          score: libNameMatch ? 100 : 80,
           libraryId: lib.id,
           libraryName: lib.name,
-          docId: doc.id,
-          docTitle: doc.title,
-          docDescription: doc.description,
-          matchType,
-          snippetCount: doc.snippetCount,
+          docId: lib.id,
+          docTitle: `${lib.name} (Full Library)`,
+          docDescription: lib.description,
+          matchType: libNameMatch ? 'Library Name' : 'Library Description',
+          snippetCount: lib.docs.reduce((s, d) => s + d.snippetCount, 0),
           source: 'docs'
         });
       }
+      // Search within individual documents
+      for (const doc of lib.docs) {
+        let score = 0;
+        let matchType = '';
+        // Check title match (highest priority)
+        if (doc.title.toLowerCase().includes(q.toLowerCase())) {
+          score = 90;
+          matchType = 'Document Title';
+        } else if (doc.description.toLowerCase().includes(q.toLowerCase())) {
+          score = 70;
+          matchType = 'Document Description';
+        } else if (lib.id === '/openui5-api' && isControlMatch(doc.title, q)) {
+          score = 85;
+          matchType = 'UI5 Control';
+        } else if (doc.title.toLowerCase().split(/[.\s_-]/).some(part => part.includes(q.toLowerCase()))) {
+          score = 60;
+          matchType = 'Partial Title Match';
+        }
+        if (score > 0) {
+          allMatches.push({
+            score,
+            libraryId: lib.id,
+            libraryName: lib.name,
+            docId: doc.id,
+            docTitle: doc.title,
+            docDescription: doc.description,
+            matchType,
+            snippetCount: doc.snippetCount,
+            source: 'docs'
+          });
+        }
+      }
+    }
+    if (allMatches.length > 0) {
+      found = true;
+      break;
     }
   }
+
+  // If still no results, try a last fuzzy search (split words, lower, etc.)
+  if (!found && query.includes(" ")) {
+    const parts = query.split(/\s+/).filter(Boolean);
+    for (const part of parts) {
+      if (part.length > 2) {
+        for (const lib of Object.values(index)) {
+          for (const doc of lib.docs) {
+            if (doc.title.toLowerCase().includes(part.toLowerCase()) || doc.description.toLowerCase().includes(part.toLowerCase())) {
+              allMatches.push({
+                score: 50,
+                libraryId: lib.id,
+                libraryName: lib.name,
+                docId: doc.id,
+                docTitle: doc.title,
+                docDescription: doc.description,
+                matchType: 'Fuzzy',
+                snippetCount: doc.snippetCount,
+                source: 'docs'
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Group and rank results: API > Sample > Guide > Other
+  const apiDocs = allMatches.filter(r => r.libraryId === '/openui5-api');
+  const samples = allMatches.filter(r => r.libraryId === '/openui5-samples');
+  const guides = allMatches.filter(r => r.libraryId === '/sapui5' || r.libraryId === '/cap' || r.libraryId === '/wdi5');
+  const others = allMatches.filter(r => !['/openui5-api', '/openui5-samples', '/sapui5', '/cap', '/wdi5'].includes(r.libraryId));
 
   // Sort by score (highest first), then by title
-  allMatches.sort((a, b) => {
+  function sortByScore(a: any, b: any) {
     if (b.score !== a.score) return b.score - a.score;
     return a.docTitle.localeCompare(b.docTitle);
-  });
+  }
+  apiDocs.sort(sortByScore);
+  samples.sort(sortByScore);
+  guides.sort(sortByScore);
+  others.sort(sortByScore);
 
-  // Take top results
-  const topResults = allMatches.slice(0, 10);
-  
+  const topResults = [
+    ...apiDocs.slice(0, 3),
+    ...samples.slice(0, 3),
+    ...guides.slice(0, 3),
+    ...others.slice(0, 1)
+  ];
+
   if (!topResults.length) {
-    return { results: [], error: `No documentation found for "${query}". Try searching for terms like "button", "table", "annotation", "wizard", "routing", or specific control names.` };
+    // User feedback loop: suggest alternatives
+    let suggestion = "No documentation found for '" + query + "'. ";
+    if (fileContent) {
+      suggestion += "Try searching for: " + extractControlsFromContent(fileContent).join(", ") + ". ";
+    }
+    suggestion += "Try terms like 'button', 'table', 'wizard', 'routing', 'annotation', or check for typos.";
+    return { results: [], error: suggestion };
   }
 
-  // Group results by type for better presentation
-  const libraries = new Set<string>();
-  const controls = topResults.filter(r => r.matchType === 'UI5 Control');
-  const docs = topResults.filter(r => r.matchType !== 'UI5 Control' && r.matchType !== 'Library Name');
-  const libs = topResults.filter(r => r.matchType === 'Library Name');
-
-  let response = `Found ${topResults.length} results for "${query}":\n\n`;
-
-  // Show libraries first if any
-  if (libs.length > 0) {
-    response += `📚 **Libraries:**\n`;
-    for (const lib of libs) {
-      response += `⭐️ **${lib.docTitle}** - \`${lib.libraryId}\`\n`;
-      response += `   ${lib.docDescription}\n`;
-      response += `   Total docs: ${Math.floor(lib.snippetCount / 10)}, Use in sap_docs_get\n\n`;
-      libraries.add(lib.libraryId);
+  // Group results for presentation
+  let response = `Found ${topResults.length} results for '${query}':\n\n`;
+  if (apiDocs.length > 0) {
+    response += `🔹 **API Docs:**\n`;
+    for (const r of apiDocs.slice(0, 3)) {
+      response += `⭐️ **${r.docTitle}** - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
     }
   }
-
-  // Show UI5 controls
-  if (controls.length > 0) {
-    response += `🎛️ **UI5 Controls:**\n`;
-    for (const ctrl of controls.slice(0, 5)) {
-      response += `⭐️ **${ctrl.docTitle}** - \`${ctrl.docId}\`\n`;
-      response += `   ${ctrl.docDescription.substring(0, 100)}${ctrl.docDescription.length > 100 ? '...' : ''}\n`;
-      response += `   API docs with ${ctrl.snippetCount} code examples\n\n`;
-      libraries.add(ctrl.libraryId);
+  if (samples.length > 0) {
+    response += `🔸 **Samples:**\n`;
+    for (const r of samples.slice(0, 3)) {
+      response += `⭐️ **${r.docTitle}** - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
     }
   }
-
-  // Show documentation pages
-  if (docs.length > 0) {
-    response += `📖 **Documentation:**\n`;
-    for (const doc of docs.slice(0, 5)) {
-      response += `• **${doc.docTitle}** (${doc.libraryName})\n`;
-      response += `  ${doc.docDescription.substring(0, 120)}${doc.docDescription.length > 120 ? '...' : ''}\n`;
-      response += `  Use \`${doc.docId}\` in sap_docs_get\n\n`;
-      libraries.add(doc.libraryId);
+  if (guides.length > 0) {
+    response += `📖 **Guides/Docs:**\n`;
+    for (const r of guides.slice(0, 3)) {
+      response += `• **${r.docTitle}** (${r.libraryName})\n   ${r.docDescription.substring(0, 120)}\n   Use \`${r.docId}\` in sap_docs_get\n\n`;
     }
   }
+  if (others.length > 0) {
+    response += `📚 **Other:**\n`;
+    for (const r of others.slice(0, 1)) {
+      response += `• **${r.docTitle}** (${r.libraryName})\n   ${r.docDescription.substring(0, 120)}\n   Use \`${r.docId}\` in sap_docs_get\n\n`;
+    }
+  }
+  response += `💡 **Usage:** Use these IDs with sap_docs_get. Tried queries: ${triedQueries.join(", ")}`;
 
-  response += `💡 **Usage:** Use these library IDs with sap_docs_get: ${Array.from(libraries).join(', ')}`;
-
-  return { 
+  return {
     results: [{
       id: 'search-results',
-      title: `Search Results for "${query}"`,
+      title: `Search Results for '${query}'`,
       description: response,
       totalSnippets: topResults.reduce((sum, r) => sum + r.snippetCount, 0)
     }]
