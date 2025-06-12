@@ -2,6 +2,10 @@
 
 A comprehensive Model Context Protocol (MCP) server providing **offline access to SAP documentation AND real-time SAP Community content**. This server integrates official documentation with community-driven solutions, giving developers access to both authoritative documentation and practical, real-world insights from the SAP Community.
 
+<a href="https://glama.ai/mcp/servers/@marianfoo/mcp-sap-docs">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@marianfoo/mcp-sap-docs/badge" alt="SAP Documentation Server MCP server" />
+</a>
+
 ## Features
 
 - **🔍 Dual Search System**: 
@@ -200,4 +204,4 @@ The build process creates optimized search indices for fast offline access while
 
 ---
 
-*This MCP server bridges the gap between official SAP documentation, wdi5 E2E test framework docs, and real-world developer knowledge, providing comprehensive support for SAP development with both authoritative sources and community wisdom.* 
+*This MCP server bridges the gap between official SAP documentation, wdi5 E2E test framework docs, and real-world developer knowledge, providing comprehensive support for SAP development with both authoritative sources and community wisdom.*
