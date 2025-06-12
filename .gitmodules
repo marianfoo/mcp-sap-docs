@@ -1,0 +1,12 @@
+[submodule "sources/sapui5-docs"]
+	path = sources/sapui5-docs
+	url = https://github.com/SAP-docs/sapui5.git
+[submodule "sources/cap-docs"]
+	path = sources/cap-docs
+	url = https://github.com/cap-js/docs.git
+[submodule "sources/openui5"]
+	path = sources/openui5
+	url = https://github.com/SAP/openui5.git
+[submodule "sources/wdi5"]
+	path = sources/wdi5
+	url = https://github.com/ui5-community/wdi5.git
