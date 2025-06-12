@@ -5,9 +5,9 @@ A comprehensive Model Context Protocol (MCP) server providing **offline access t
 ## Features
 
 - **🔍 Dual Search System**: 
-  - `sap_docs_search`: Search official SAP documentation, APIs, and sample code
+  - `sap_docs_search`: Search official SAP documentation, APIs, sample code, and wdi5 docs
   - `sap_community_search`: Search real-time SAP Community content
-- **📚 Comprehensive Coverage**: 1,485+ SAPUI5 files, 195+ CAP files, 500+ OpenUI5 APIs, 2,000+ sample files, PLUS real-time community content
+- **📚 Comprehensive Coverage**: 1,485+ SAPUI5 files, 195+ CAP files, 500+ OpenUI5 APIs, 2,000+ sample files, **wdi5 E2E test framework docs**, PLUS real-time community content
 - **🌐 SAP Community Integration**: Dedicated tool for searching high-quality community blog posts, solutions, and discussions
 - **💡 Smart Formatting**: Automatic code highlighting, sample categorization, and content formatting
 - **🔄 Live Content**: Community posts are fetched in real-time with engagement filtering (kudos > 5)
@@ -20,6 +20,7 @@ A comprehensive Model Context Protocol (MCP) server providing **offline access t
 - **CAP Documentation**: Cloud Application Programming model with 195+ files  
 - **OpenUI5 API Documentation**: 500+ control APIs with detailed JSDoc
 - **OpenUI5 Sample Code**: 2,000+ working examples from `demokit/sample` directories
+- **wdi5 Documentation**: End-to-end test framework docs from [wdi5](https://github.com/ui5-community/wdi5) (`/wdi5`)
 
 ### Community Content
 - **Blog Posts**: Technical tutorials and deep-dives from SAP Community
@@ -74,21 +75,34 @@ Add to your Cursor `settings.json`:
 2. **`/cap`** - CAP Documentation (195 files)  
 3. **`/openui5-api`** - OpenUI5 Control APIs (500+ controls)
 4. **`/openui5-samples`** - OpenUI5 Sample Code (2,000+ examples)
-5. **`/community`** - SAP Community Posts (real-time)
+5. **`/wdi5`** - wdi5 End-to-End Test Framework Documentation
+6. **`/community`** - SAP Community Posts (real-time)
 
 ## Usage Examples
 
 ### Search Official Documentation
 ```
-Use sap_docs_search with: "wizard implementation"
+Use sap_docs_search with: "wdi5 configuration"
 ```
-**Returns**: Official wizard documentation, API references, and sample code implementations.
+**Returns**: wdi5 documentation about configuration, setup, and usage.
+
+### Get wdi5 Documentation
+```
+Use sap_docs_get with: /wdi5
+```
+**Returns**: wdi5 documentation overview
+
+### Search for wdi5 Topics
+```
+Use sap_docs_search with: "wdi5 cli"
+```
+**Returns**: wdi5 CLI documentation and related guides
 
 ### Search SAP Community
 ```
-Use sap_community_search with: "wizard implementation"
+Use sap_community_search with: "wdi5 best practices"
 ```
-**Returns**: Recent community posts, blog articles, and discussions about wizard implementations.
+**Returns**: Recent community posts, blog articles, and discussions about wdi5 best practices.
 
 ### Get Specific Documentation
 ```
@@ -115,19 +129,19 @@ Use sap_docs_search with: "button click handler"
 
 ### 1. Official Documentation Search
 **Tool**: `sap_docs_search`
-**Query**: "wizard"
+**Query**: "wdi5"
 **Expected Results**:
-- SAPUI5 wizard documentation
-- OpenUI5 Wizard control API
-- Sample wizard implementations (controllers, views, manifests)
+- wdi5 documentation overview
+- wdi5 guides and API references
+- wdi5 usage and configuration examples
 
 ### 2. Community Content Search
 **Tool**: `sap_community_search`
-**Query**: "wizard implementation"
+**Query**: "wdi5"
 **Expected Results**:
-- Community blog posts about wizard implementation
+- Community blog posts about wdi5
 - Real developer solutions and code examples
-- Discussion threads about wizard best practices
+- Discussion threads about wdi5 best practices
 
 ### 3. Sample Code Discovery
 **Tool**: `sap_docs_search`
@@ -186,4 +200,4 @@ The build process creates optimized search indices for fast offline access while
 
 ---
 
-*This MCP server bridges the gap between official SAP documentation and real-world developer knowledge, providing comprehensive support for SAP development with both authoritative sources and community wisdom.* 
+*This MCP server bridges the gap between official SAP documentation, wdi5 E2E test framework docs, and real-world developer knowledge, providing comprehensive support for SAP development with both authoritative sources and community wisdom.* 

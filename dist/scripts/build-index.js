@@ -38,6 +38,15 @@ const SOURCES = [
         description: "OpenUI5 sample code and demo implementations",
         filePattern: "**/demokit/sample/**/*.{js,xml,json,html}",
         type: "sample"
+    },
+    {
+        repoName: "wdi5",
+        absDir: join("sources", "wdi5", "docs"),
+        id: "/wdi5",
+        name: "wdi5",
+        description: "wdi5 end-to-end test framework documentation",
+        filePattern: "**/*.md",
+        type: "markdown"
     }
 ];
 // Extract information from sample files (JS, XML, JSON, HTML)

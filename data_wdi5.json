@@ -1,0 +1,151 @@
+{
+  "id": "/wdi5",
+  "name": "wdi5",
+  "description": "wdi5 end-to-end test framework documentation",
+  "docs": [
+    {
+      "id": "/wdi5/README",
+      "title": "Welcome 👋 to `wdi5`!",
+      "description": "`wdi5` (/vdif5/) is a [`Webdriver.IO`](https://webdriver.io) service (think: extension), utilizing [`UI5`’s test API](https://ui5.sap.com/#/api/sap.ui.test).",
+      "snippetCount": 0,
+      "relFile": "README.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/_sidebar",
+      "title": "_sidebar",
+      "description": "- [Home](/)",
+      "snippetCount": 0,
+      "relFile": "_sidebar.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/authentication",
+      "title": "Authentication",
+      "description": "`wdi5` currently support these authentication mechanisms and/or providers:",
+      "snippetCount": 17,
+      "relFile": "authentication.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/configuration",
+      "title": "Configuring `wdi5`",
+      "description": "?> Please note that as a prerequisite, some webserver-capable tooling (such as the [ui5-tooling](https://sap.github.io/ui5-tooling/)) is needed to run both the UI5 app and the `wdi5/wdio` tests.",
+      "snippetCount": 7,
+      "relFile": "configuration.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/contributing",
+      "title": "get aboard ⛵️",
+      "description": "\"the more, the merrier\" also holds true for contributions to `wdi5` 🤗",
+      "snippetCount": 11,
+      "relFile": "contributing.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/debugging",
+      "title": "Debugging `wdi5` tests",
+      "description": "Add breakpoints in the test source:",
+      "snippetCount": 0,
+      "relFile": "debugging.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/docker",
+      "title": "docker",
+      "description": "Prerequisite for all this is a working/running docker environment.",
+      "snippetCount": 1,
+      "relFile": "docker.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/fe-testlib",
+      "title": "📚 Test Library Integration",
+      "description": "A test library provides test functions that can be used to safeguard your Fiori / UI5 app in combination with your own test functions.",
+      "snippetCount": 7,
+      "relFile": "fe-testlib.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/installation",
+      "title": "Installation",
+      "description": "With `wdi5` [being a service to WebdriverIO](https://webdriver.io/docs/wdio-ui5-service), installation of both is required.",
+      "snippetCount": 8,
+      "relFile": "installation.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/locators",
+      "title": "Locators",
+      "description": "\"Locators\" in `wdi5` are referred to [as \"Matchers\" in OPA5](https://ui5.sap.com/#/api/sap.ui.test.matchers): they identify a UI5 control to retrieve and use for further (test-)work.",
+      "snippetCount": 12,
+      "relFile": "locators.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/migration",
+      "title": "Migrate from a previous version",
+      "description": "Version >= 2 of `wdi5` is WebdriverIO v8 compatible. This means that the primary module has moved to ESM, but CJS compatibility is still ensured.",
+      "snippetCount": 8,
+      "relFile": "migration.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/pageObjects",
+      "title": "pageObjects",
+      "description": "- \"recommended\" wdio vs \"gewohnt\" UIVeri5 -> beispiele",
+      "snippetCount": 0,
+      "relFile": "pageObjects.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/recipes",
+      "title": "🧑‍🍳 Recipes",
+      "description": "Here's a collection of \"How-To\"s for typical use cases in tests and how to do that with `wdi5`.",
+      "snippetCount": 23,
+      "relFile": "recipes.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/resources",
+      "title": "Resources",
+      "description": "In addition to this documentation, there are also external resources regarding `wdi5` available:",
+      "snippetCount": 0,
+      "relFile": "resources.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/running",
+      "title": "Running `wdi5`",
+      "description": "Two components are involved for executing `wdi5`-tests:",
+      "snippetCount": 1,
+      "relFile": "running.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/ui5",
+      "title": "Functions",
+      "description": "```Json",
+      "snippetCount": 1,
+      "relFile": "ui5.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/usage",
+      "title": "Using `wdi5`",
+      "description": "With `wdi5` being a service to WebdriverIO, it provides a superset of `wdio`'s functionality.",
+      "snippetCount": 39,
+      "relFile": "usage.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/wdi5/wdio",
+      "title": "Element",
+      "description": "```Json",
+      "snippetCount": 1,
+      "relFile": "wdio.md",
+      "type": "markdown"
+    }
+  ]
+}
