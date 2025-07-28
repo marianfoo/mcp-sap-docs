@@ -46,7 +46,7 @@ A comprehensive Model Context Protocol (MCP) server providing **offline access t
 
 3. **Build the search index:**
    ```bash
-   npm run build-index
+   npm run build:index
    ```
 
 4. **Build the server:**
@@ -193,7 +193,7 @@ The server intelligently combines offline documentation with live community cont
 ## Development
 
 - **Build**: `npm run build`
-- **Build Index**: `npm run build-index`  
+- **Build Index**: `npm run build:index`  
 - **Type Check**: `npm run type-check`
 
 The build process creates optimized search indices for fast offline access while maintaining real-time connectivity to the SAP Community API for the latest community content.
