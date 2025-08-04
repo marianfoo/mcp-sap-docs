@@ -277,10 +277,13 @@ The build process creates optimized search indices for fast offline access while
 This project includes automatic deployment to a Hetzner server via GitHub Actions. On every push to the `main` branch, the workflow will:
 
 1. SSH into your Hetzner server
-2. Pull/clone the latest code
-3. Install dependencies and build the project
-4. Restart the Docker Compose stack
-5. Verify deployment with health checks
+2. Pull/clone the latest code **including all git submodules**
+3. Update documentation sources (SAPUI5, CAP, OpenUI5, wdi5) from submodules
+4. Install dependencies and build the search index
+5. Restart the Docker Compose stack
+6. Verify deployment with health checks
+
+**Important**: The documentation content comes from git submodules. The workflow automatically updates these submodules to ensure you always have the latest SAP documentation.
 
 ### Prerequisites
 
@@ -290,6 +293,16 @@ This project includes automatic deployment to a Hetzner server via GitHub Action
    - `SERVER_IP`: Your Hetzner server's public IP address
    - `SERVER_USERNAME`: SSH username (e.g., `root` or a user with Docker permissions)
    - `SSH_PRIVATE_KEY`: Private SSH key for server access
+
+### Documentation Sources
+
+The MCP server uses git submodules to include official SAP documentation:
+- **`sources/sapui5-docs`**: Official SAPUI5 documentation from SAP
+- **`sources/cap-docs`**: CAP framework documentation
+- **`sources/openui5`**: OpenUI5 source code and samples
+- **`sources/wdi5`**: wdi5 testing framework documentation
+
+The deployment workflow automatically updates these submodules to ensure the latest documentation is always available.
 
 ### Health Check & Version Monitoring
 

@@ -45,11 +45,20 @@ jobs:
               if ! git remote -v | grep -q 'marianfoo/mcp-sap-docs'; then
                 git remote set-url origin https://github.com/marianfoo/mcp-sap-docs.git
               fi
+              echo "  -> Fetching latest changes"
               git fetch --prune
               git reset --hard origin/main
+              
+              echo "  -> Updating git submodules (documentation sources)"
+              git submodule update --init --recursive --remote
               cd ..
             else
-              git clone --depth=1 https://github.com/marianfoo/mcp-sap-docs.git
+              echo "  -> Cloning repository with submodules"
+              git clone --recursive https://github.com/marianfoo/mcp-sap-docs.git
+              cd mcp-sap-docs
+              echo "  -> Ensuring submodules are up to date"
+              git submodule update --remote
+              cd ..
             fi
 
             echo "==> Installing dependencies and building"
