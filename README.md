@@ -274,8 +274,10 @@ The build process creates optimized search indices for fast offline access while
 
 ## Deployment
 
-This project includes automatic deployment to a Hetzner server via GitHub Actions. On every push to the `main` branch, the workflow will:
+This project includes **dual automated workflows** for keeping documentation up-to-date:
 
+### 1. Main Deployment Workflow
+Triggers on every push to `main` branch:
 1. SSH into your Hetzner server
 2. Pull/clone the latest code **including all git submodules**
 3. Update documentation sources (SAPUI5, CAP, OpenUI5, wdi5) from submodules
@@ -283,7 +285,20 @@ This project includes automatic deployment to a Hetzner server via GitHub Action
 5. Restart the Docker Compose stack
 6. Verify deployment with health checks
 
-**Important**: The documentation content comes from git submodules. The workflow automatically updates these submodules to ensure you always have the latest SAP documentation.
+### 2. Documentation Update Workflow  
+Runs **daily at 4 AM UTC** and can be **manually triggered**:
+1. SSHs directly into the server
+2. Updates all submodules to latest remote commits
+3. Rebuilds the search index with updated documentation
+4. Restarts services to pick up new content
+
+**Benefits:**
+- 🕐 **Always fresh**: Documentation automatically updates daily
+- 🔧 **Manual control**: Trigger updates anytime via GitHub Actions
+- 🚀 **Zero maintenance**: Updates and deploys without intervention
+- 📊 **Transparent**: Clear logging of what was updated and when
+
+**Important**: The documentation content comes from git submodules. Both workflows ensure you always have the latest SAP documentation from official sources.
 
 ### Prerequisites
 
@@ -294,6 +309,21 @@ This project includes automatic deployment to a Hetzner server via GitHub Action
    - `SERVER_USERNAME`: SSH username (e.g., `root` or a user with Docker permissions)
    - `SSH_PRIVATE_KEY`: Private SSH key for server access
 
+### Manual Documentation Updates
+
+You can manually trigger documentation updates anytime:
+
+1. **Via GitHub UI**: 
+   - Go to Actions → "Update Documentation Submodules" 
+   - Click "Run workflow" → "Run workflow"
+
+2. **Force Update Option**: 
+   - Check "Force update even if no changes detected" to rebuild even without submodule changes
+
+3. **Monitoring**: 
+   - Check the Actions tab for update status and summaries
+   - Each run shows exactly which documentation sources were updated
+
 ### Documentation Sources
 
 The MCP server uses git submodules to include official SAP documentation:
@@ -303,6 +333,8 @@ The MCP server uses git submodules to include official SAP documentation:
 - **`sources/wdi5`**: wdi5 testing framework documentation
 
 The deployment workflow automatically updates these submodules to ensure the latest documentation is always available.
+
+**Automated Updates**: A separate workflow runs daily at 4 AM UTC to check for updates to these documentation sources. If updates are found, they are automatically committed and trigger a new deployment with the latest documentation.
 
 ### Health Check & Version Monitoring
 
@@ -323,7 +355,23 @@ The HTTP server includes an enhanced status endpoint at `/status` that returns c
   "documentation": {
     "status": "available",
     "searchAvailable": true,
-    "communityAvailable": true
+    "communityAvailable": true,
+    "resources": {
+      "totalResources": 4,
+      "lastUpdated": "2024-01-01T12:00:00.000Z",
+      "sources": {
+        "sapui5-docs": {
+          "status": "available",
+          "lastCommit": "abc1234",
+          "lastModified": "2024-01-01T11:30:00.000Z"
+        },
+        "cap-docs": {
+          "status": "available", 
+          "lastCommit": "def5678",
+          "lastModified": "2024-01-01T12:00:00.000Z"
+        }
+      }
+    }
   },
   "deployment": {
     "method": "github-actions",
@@ -340,6 +388,7 @@ The HTTP server includes an enhanced status endpoint at `/status` that returns c
 - **Version tracking**: Shows current package version and build timestamp
 - **Git information**: Current commit hash and branch for deployment verification
 - **Documentation status**: Health check of search and community features
+- **Resource tracking**: Last update times and commit hashes for each documentation source
 - **Deployment tracking**: When deployed, by whom, and via which method
 - **System information**: Uptime, Node.js version, and platform details
 

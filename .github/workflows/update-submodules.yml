@@ -1,0 +1,58 @@
+name: Update Documentation Submodules
+
+on:
+  # Run daily at 4 AM UTC
+  schedule:
+    - cron: '0 4 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  update-submodules:
+    name: Update Submodules on Server
+    runs-on: ubuntu-22.04
+    environment:
+      name: remove server
+
+    steps:
+      - name: Update submodules on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/mcp-sap/mcp-sap-docs
+            
+            # Configure git for HTTPS
+            git config --global url."https://github.com/".insteadOf git@github.com:
+            
+            # Update submodules to latest remote commits
+            git submodule update --init --recursive --remote
+            
+            # Rebuild search index with updated documentation
+            npm run build:index
+            
+            # Restart services to pick up new content
+            cd /opt/mcp-sap
+            docker compose restart
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## Documentation Update Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Submodules updated to latest remote commits**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Search index rebuilt with updated documentation**" >> $GITHUB_STEP_SUMMARY  
+          echo "✅ **Services restarted to pick up new content**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The MCP server now has the latest SAP documentation available."
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "## ❌ Documentation Update Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check server connectivity and try manual trigger." >> $GITHUB_STEP_SUMMARY

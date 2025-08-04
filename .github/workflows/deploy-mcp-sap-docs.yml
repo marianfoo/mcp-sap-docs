@@ -49,10 +49,16 @@ jobs:
               git fetch --prune
               git reset --hard origin/main
               
+              echo "  -> Configuring Git to use HTTPS instead of SSH"
+              git config --global url."https://github.com/".insteadOf git@github.com:
+              
               echo "  -> Updating git submodules (documentation sources)"
               git submodule update --init --recursive --remote
               cd ..
             else
+              echo "  -> Configuring Git to use HTTPS instead of SSH"
+              git config --global url."https://github.com/".insteadOf git@github.com:
+              
               echo "  -> Cloning repository with submodules"
               git clone --recursive https://github.com/marianfoo/mcp-sap-docs.git
               cd mcp-sap-docs
@@ -65,6 +71,7 @@ jobs:
             cd mcp-sap-docs
             npm ci
             npm run build:index
+            npm run build
             cd ..
 
             echo "==> Rebuild/refresh docker compose stack"

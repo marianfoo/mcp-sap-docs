@@ -1,7 +1,8 @@
 import { createServer } from "http";
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { execSync } from "child_process";
 import { searchLibraries, fetchLibraryDocumentation } from "./lib/localDocs.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -88,14 +89,69 @@ const server = createServer(async (req, res) => {
         catch (error) {
             gitInfo = { error: "Git info not available" };
         }
-        // Check if we can access documentation (basic health check)
+        // Check documentation status and get resource information
         let docsStatus = "unknown";
+        let resourceInfo = {
+            totalResources: 0,
+            sources: {},
+            lastUpdated: "unknown"
+        };
         try {
             const testSearch = await searchLibraries("test");
             docsStatus = testSearch.results.length > 0 ? "available" : "no_results";
+            // Get resource information (file counts, last modified times)
+            const sourcesPath = join(__dirname, "../../sources");
+            // Check each documentation source
+            const sources = ["sapui5-docs", "cap-docs", "openui5", "wdi5"];
+            for (const source of sources) {
+                const sourcePath = join(sourcesPath, source);
+                try {
+                    const stats = readFileSync(join(sourcePath, ".git/HEAD"), "utf8").trim();
+                    const refFile = join(sourcePath, ".git", stats.startsWith("ref: ") ? stats.substring(5) : "");
+                    const lastCommit = readFileSync(refFile, "utf8").trim().substring(0, 7);
+                    // Try to get commit date
+                    let lastModified = "unknown";
+                    try {
+                        const gitLog = execSync(`cd "${sourcePath}" && git log -1 --format="%ci"`, { encoding: "utf8" });
+                        lastModified = new Date(gitLog.trim()).toISOString();
+                    }
+                    catch (e) {
+                        // If git log fails, use file modification time as fallback
+                        try {
+                            const headStats = statSync(refFile);
+                            lastModified = headStats.mtime.toISOString();
+                        }
+                        catch (statError) {
+                            // File doesn't exist, keep as "unknown"
+                        }
+                    }
+                    resourceInfo.sources[source] = {
+                        status: "available",
+                        lastCommit,
+                        lastModified,
+                        path: sourcePath
+                    };
+                    resourceInfo.totalResources++;
+                }
+                catch (error) {
+                    resourceInfo.sources[source] = {
+                        status: "missing",
+                        error: error instanceof Error ? error.message : "Unknown error"
+                    };
+                }
+            }
+            // Get overall last updated time (most recent source update)
+            const lastUpdates = Object.values(resourceInfo.sources)
+                .filter((s) => s.lastModified && s.lastModified !== "unknown")
+                .map((s) => new Date(s.lastModified))
+                .sort((a, b) => b.getTime() - a.getTime());
+            if (lastUpdates.length > 0) {
+                resourceInfo.lastUpdated = lastUpdates[0].toISOString();
+            }
         }
         catch (error) {
             docsStatus = "error";
+            resourceInfo = { error: error instanceof Error ? error.message : "Unknown error" };
         }
         const statusResponse = {
             status: "healthy",
@@ -107,7 +163,8 @@ const server = createServer(async (req, res) => {
             documentation: {
                 status: docsStatus,
                 searchAvailable: true,
-                communityAvailable: true
+                communityAvailable: true,
+                resources: resourceInfo
             },
             deployment: {
                 method: process.env.DEPLOYMENT_METHOD || "unknown",
