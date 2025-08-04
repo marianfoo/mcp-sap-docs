@@ -52,6 +52,18 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // Health check endpoint
+  if (req.method === "GET" && req.url === "/status") {
+    res.setHeader("Content-Type", "application/json");
+    res.writeHead(200);
+    res.end(JSON.stringify({ 
+      status: "healthy", 
+      service: "mcp-sap-docs",
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/mcp") {
     let body = "";
     req.on("data", (chunk) => {

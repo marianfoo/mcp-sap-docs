@@ -2,6 +2,8 @@
 
 A comprehensive Model Context Protocol (MCP) server providing **offline access to SAP documentation AND real-time SAP Community content**. This server integrates official documentation with community-driven solutions, giving developers access to both authoritative documentation and practical, real-world insights from the SAP Community.
 
+🌐 **[Remote Server Available](https://mcp-sap-docs.marianzeis.de)** - Use the hosted version for instant setup without local installation!
+
 ## Features
 
 - **🔍 Dual Search System**: 
@@ -31,6 +33,24 @@ A comprehensive Model Context Protocol (MCP) server providing **offline access t
 
 ## Setup
 
+### Option 1: Remote Server (Recommended) 
+
+For instant access without local setup, use the hosted remote server. See **[Remote Setup Guide](REMOTE_SETUP.md)** for detailed instructions.
+
+**Quick setup:**
+```json
+// Add to ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "sap-docs-remote": {
+      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+    }
+  }
+}
+```
+
+### Option 2: Local Installation
+
 1. **Clone and install dependencies:**
    ```bash
    git clone <repository-url>
@@ -56,6 +76,8 @@ A comprehensive Model Context Protocol (MCP) server providing **offline access t
 
 ## Configuration
 
+### Local Installation
+
 Add to your Cursor `settings.json`:
 
 ```json
@@ -63,11 +85,63 @@ Add to your Cursor `settings.json`:
   "mcpServers": {
     "sap-docs": {
       "command": "node",
-      "args": ["/path/to/sap-docs-mcp/dist/index.js"]
+      "args": ["/path/to/sap-docs-mcp/dist/src/server.js"]
     }
   }
 }
 ```
+
+### Remote Server (Recommended)
+
+For easier setup without local installation, you can use the hosted remote server. Add this to your Cursor `mcp.json` file (usually located at `~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "sap-docs-remote": {
+      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+    }
+  }
+}
+```
+
+**Benefits of using the remote server:**
+- ✅ No local setup required - works immediately
+- ✅ Always up-to-date with latest documentation
+- ✅ Automatically includes all SAP documentation and community content
+- ✅ No need to run build processes or manage dependencies
+- ✅ Faster startup - no local indexing required
+
+**To configure the remote server:**
+
+1. **Open/Create MCP configuration file:**
+   - On macOS/Linux: `~/.cursor/mcp.json`
+   - On Windows: `%APPDATA%\Cursor\mcp.json`
+
+2. **Add the remote server configuration** (create the file if it doesn't exist):
+   ```json
+   {
+     "mcpServers": {
+       "sap-docs-remote": {
+         "url": "https://mcp-sap-docs.marianzeis.de/sse"
+       }
+     }
+   }
+   ```
+
+3. **Restart Cursor** to load the new configuration
+
+4. **Verify the connection** by asking Cursor questions about SAP development - the server will automatically provide documentation and community insights.
+
+### Example Usage with Remote Server
+
+Once configured, you can ask Cursor questions like:
+- "How do I implement authentication in SAPUI5?"
+- "Show me wdi5 testing examples"
+- "What are the best practices for CAP services?"
+- "Find SAP Community posts about performance optimization"
+
+The remote server provides the same comprehensive coverage as the local installation but without any setup complexity.
 
 ## Available Libraries
 
@@ -197,6 +271,70 @@ The server intelligently combines offline documentation with live community cont
 - **Type Check**: `npm run type-check`
 
 The build process creates optimized search indices for fast offline access while maintaining real-time connectivity to the SAP Community API for the latest community content.
+
+## Deployment
+
+This project includes automatic deployment to a Hetzner server via GitHub Actions. On every push to the `main` branch, the workflow will:
+
+1. SSH into your Hetzner server
+2. Pull/clone the latest code
+3. Install dependencies and build the project
+4. Restart the Docker Compose stack
+5. Verify deployment with health checks
+
+### Prerequisites
+
+1. **Server Setup**: Ensure your server has Docker and Docker Compose installed
+2. **Docker Compose Configuration**: Set up `/opt/mcp-sap/docker-compose.yml` on your server
+3. **GitHub Secrets**: Configure the following secrets in your repository:
+   - `SERVER_IP`: Your Hetzner server's public IP address
+   - `SERVER_USERNAME`: SSH username (e.g., `root` or a user with Docker permissions)
+   - `SSH_PRIVATE_KEY`: Private SSH key for server access
+
+### Health Check
+
+The HTTP server includes a health check endpoint at `/status` that returns:
+```json
+{
+  "status": "healthy",
+  "service": "mcp-sap-docs", 
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+The deployment workflow uses this endpoint to verify successful deployment.
+
+## Quick Start with Remote Server
+
+For the fastest setup, use the hosted remote server:
+
+1. **Create/Edit your Cursor MCP config:**
+   ```bash
+   # On macOS/Linux
+   nano ~/.cursor/mcp.json
+   
+   # On Windows
+   notepad %APPDATA%\Cursor\mcp.json
+   ```
+
+2. **Add the remote server:**
+   ```json
+   {
+     "mcpServers": {
+       "sap-docs-remote": {
+         "url": "https://mcp-sap-docs.marianzeis.de/sse"
+       }
+     }
+   }
+   ```
+
+3. **Restart Cursor and start asking SAP questions!**
+
+**Try these example prompts:**
+- "How do I create a SAPUI5 dialog with validation?"
+- "Show me wdi5 testing patterns for forms"
+- "What are the latest CAP authentication best practices?"
+- "Find community examples of OData batch operations"
 
 ---
 

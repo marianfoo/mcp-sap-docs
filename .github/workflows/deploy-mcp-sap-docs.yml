@@ -1,0 +1,70 @@
+name: Deploy MCP stack
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    # 👇 must match the environment where you stored the secrets
+    environment:
+      name: remove server
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Preflight verify required secrets are present
+        run: |
+          set -euo pipefail
+          for s in SERVER_IP SERVER_USERNAME SSH_PRIVATE_KEY; do
+            [ -n "${!s}" ] || { echo "Missing $s"; exit 1; }
+          done
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -Eeuo pipefail
+            echo "==> Ensure base path exists"
+            sudo mkdir -p /opt/mcp-sap
+            sudo chown -R $USER:$USER /opt/mcp-sap
+
+            echo "==> Sync/clone repository for mcp-sap-docs"
+            cd /opt/mcp-sap
+            if [ -d mcp-sap-docs/.git ]; then
+              cd mcp-sap-docs
+              if ! git remote -v | grep -q 'marianfoo/mcp-sap-docs'; then
+                git remote set-url origin https://github.com/marianfoo/mcp-sap-docs.git
+              fi
+              git fetch --prune
+              git reset --hard origin/main
+              cd ..
+            else
+              git clone --depth=1 https://github.com/marianfoo/mcp-sap-docs.git
+            fi
+
+            echo "==> Installing dependencies and building"
+            cd mcp-sap-docs
+            npm ci
+            npm run build:index
+            cd ..
+
+            echo "==> Rebuild/refresh docker compose stack"
+            docker compose -f /opt/mcp-sap/docker-compose.yml up -d --build
+
+            echo "==> Health check"
+            for i in $(seq 1 30); do
+              curl -fsS http://127.0.0.1:18080/status >/dev/null 2>&1 && break
+              echo "Attempt $i/30: waiting..."
+              sleep 2
+            done
+            curl -fsS http://127.0.0.1:18080/status || { echo "Service not healthy"; exit 1; }
