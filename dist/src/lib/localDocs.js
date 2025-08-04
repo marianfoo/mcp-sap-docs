@@ -1,12 +1,28 @@
 // src/lib/localDocs.ts
 import fs from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 // Get the directory of this script and find the project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// From dist/src/lib/localDocs.js, go up 3 levels to project root
-const PROJECT_ROOT = path.resolve(__dirname, "../../..");
+// Find project root by looking for package.json
+let PROJECT_ROOT = __dirname;
+while (PROJECT_ROOT !== path.dirname(PROJECT_ROOT)) {
+    try {
+        if (existsSync(path.join(PROJECT_ROOT, 'package.json'))) {
+            break;
+        }
+    }
+    catch {
+        // Continue searching
+    }
+    PROJECT_ROOT = path.dirname(PROJECT_ROOT);
+}
+// Fallback: assume dist structure
+if (!existsSync(path.join(PROJECT_ROOT, 'package.json'))) {
+    PROJECT_ROOT = path.resolve(__dirname, "../../..");
+}
 const DATA_DIR = path.join(PROJECT_ROOT, "data");
 // SAP Community API configuration
 const SAP_COMMUNITY_API_BASE = "https://community.sap.com/api/2.0/search";
@@ -287,18 +303,100 @@ async function loadIndex() {
 // Utility: Expand query with synonyms and related terms
 function expandQuery(query) {
     const synonyms = {
-        wizard: ["wizard", "sap.m.Wizard", "WizardStep", "wizard control", "wizard fragment"],
-        button: ["button", "sap.m.Button", "button control", "button press"],
-        table: ["table", "sap.m.Table", "table control", "table row"],
-        // Add more as needed
+        // === UI5 CONTROL TERMS ===
+        // Wizard-related terms (UI5 only)
+        wizard: ["wizard", "sap.m.Wizard", "WizardStep", "sap.m.WizardStep", "WizardRenderMode",
+            "sap.ui.webc.fiori.IWizardStep", "sap.ui.webc.fiori.WizardContentLayout",
+            "wizard control", "wizard fragment", "wizard step", "step wizard", "multi-step"],
+        // Button-related terms (UI5 + general)
+        button: ["button", "sap.m.Button", "sap.ui.webc.main.Button", "button control",
+            "button press", "action button", "toggle button", "click", "press event"],
+        // Table-related terms (UI5 + CAP)
+        table: ["table", "sap.m.Table", "sap.ui.table.Table", "sap.ui.table.TreeTable",
+            "table control", "table row", "data table", "tree table", "grid table",
+            "entity", "table entity", "database table", "cds table"],
+        // === CAP-SPECIFIC TERMS ===
+        // CDS and modeling
+        cds: ["cds", "Core Data Services", "cds model", "cds file", "schema", "data model",
+            "entity", "service", "view", "type", "aspect", "composition", "association"],
+        entity: ["entity", "cds entity", "data entity", "business entity", "table",
+            "model", "schema", "composition", "association", "key", "managed"],
+        service: ["service", "cds service", "odata service", "rest service", "api",
+            "endpoint", "business service", "application service", "crud"],
+        aspect: ["aspect", "cds aspect", "managed", "temporal", "cuid", "audited",
+            "reuse aspect", "mixin", "common aspect"],
+        annotation: ["annotation", "annotations", "@", "annotation file", "annotation target",
+            "UI annotation", "Common annotation", "Capabilities annotation",
+            "odata annotation", "fiori annotation"],
+        // CAP Authentication & Security  
+        auth: ["authentication", "authorization", "auth", "security", "user", "role",
+            "scopes", "jwt", "oauth", "saml", "xsuaa", "ias", "passport", "login"],
+        // CAP Database & Persistence
+        database: ["database", "db", "hana", "sqlite", "postgres", "h2", "persistence",
+            "connection", "schema", "migration", "deploy"],
+        deployment: ["deployment", "deploy", "cf push", "cloud foundry", "kubernetes",
+            "helm", "docker", "mta", "build", "production"],
+        // === WDI5-SPECIFIC TERMS ===
+        testing: ["testing", "test", "e2e", "end-to-end", "integration test", "ui test",
+            "browser test", "selenium", "webdriver", "automation"],
+        wdi5: ["wdi5", "webdriver", "ui5 testing", "browser automation", "page object",
+            "test framework", "selector", "locator", "element", "assertion"],
+        selector: ["selector", "locator", "element", "control selector", "id", "property",
+            "binding", "aggregation", "wdi5 selector", "ui5 control"],
+        browser: ["browser", "chrome", "firefox", "safari", "webdriver", "headless",
+            "viewport", "screenshot", "debugging"],
+        // === CROSS-PLATFORM TERMS ===
+        // Navigation & Routing (UI5 + CAP)
+        routing: ["routing", "router", "navigation", "route", "target", "pattern",
+            "manifest routing", "app router", "destination"],
+        // Forms (UI5 + CAP + wdi5)
+        form: ["form", "sap.ui.layout.form.Form", "sap.ui.layout.form.SimpleForm",
+            "form control", "form layout", "smart form", "input validation",
+            "form testing"],
+        // Data & Models (UI5 + CAP)
+        model: ["model", "data model", "json model", "odata model", "entity model",
+            "binding", "property binding", "aggregation binding"],
+        // Fiori & Elements
+        fiori: ["fiori", "fiori elements", "list report", "object page", "overview page",
+            "analytical list page", "worklist", "freestyle fiori", "fiori launchpad"],
+        // Development & Tools
+        development: ["development", "dev", "local", "debugging", "console", "devtools",
+            "hot reload", "live reload", "build", "compile"]
     };
-    const q = query.toLowerCase();
-    for (const key in synonyms) {
-        if (q.includes(key))
-            return synonyms[key];
+    const q = query.toLowerCase().trim();
+    // Check for exact matches first
+    for (const [key, values] of Object.entries(synonyms)) {
+        if (q === key || values.some(v => v.toLowerCase() === q)) {
+            return values;
+        }
     }
-    // Default: try original, lower, and capitalized
-    return [query, query.toLowerCase(), query.charAt(0).toUpperCase() + query.slice(1)];
+    // Check for partial matches
+    for (const [key, values] of Object.entries(synonyms)) {
+        if (q.includes(key) || values.some(v => q.includes(v.toLowerCase()))) {
+            return values;
+        }
+    }
+    // Handle common UI5 control patterns
+    const ui5ControlPattern = /^sap\.[a-z]+\.[A-Z][a-zA-Z0-9]*$/;
+    if (ui5ControlPattern.test(query)) {
+        const controlName = query.split('.').pop();
+        return [query, controlName, controlName.toLowerCase(), `${controlName} control`];
+    }
+    // Generate contextual variations based on query type
+    const variations = [query, query.toLowerCase()];
+    // Add technology-specific variations
+    if (q.includes('cap') || q.includes('cds')) {
+        variations.push('CAP', 'cds', 'Core Data Services', 'service', 'entity');
+    }
+    if (q.includes('wdi5') || q.includes('test')) {
+        variations.push('wdi5', 'testing', 'e2e', 'webdriver', 'ui5 testing');
+    }
+    if (q.includes('ui5') || q.includes('sap.')) {
+        variations.push('UI5', 'SAPUI5', 'OpenUI5', 'control', 'Fiori');
+    }
+    // Add common variations
+    variations.push(query.charAt(0).toUpperCase() + query.slice(1).toLowerCase(), query.replace(/[_-]/g, ' '), query.replace(/\s+/g, ''), ...query.split(/[_\s-]/).filter(part => part.length > 2));
+    return [...new Set(variations)];
 }
 // Utility: Extract control names/properties from file content (XML/JS)
 function extractControlsFromContent(content) {
@@ -311,11 +409,158 @@ function extractControlsFromContent(content) {
             tag = tag.split(":").pop();
         controls.add(tag);
     }
-    // JS: sap.m.Wizard, new sap.m.Wizard, etc.
-    const jsMatches = content.matchAll(/sap\.m\.([A-Za-z0-9_]+)/g);
-    for (const m of jsMatches)
-        controls.add("sap.m." + m[1]);
+    // JS: Enhanced pattern matching for all UI5 namespaces
+    const sapNamespaces = ['sap.m', 'sap.ui', 'sap.f', 'sap.tnt', 'sap.suite', 'sap.viz', 'sap.uxap'];
+    for (const namespace of sapNamespaces) {
+        const pattern = new RegExp(`${namespace.replace('.', '\\.')}\.([A-Za-z0-9_]+)`, 'g');
+        const matches = content.matchAll(pattern);
+        for (const m of matches) {
+            controls.add(`${namespace}.${m[1]}`);
+            controls.add(m[1]); // Also add just the control name
+        }
+    }
+    // Extract from extend() calls
+    const extendMatches = content.matchAll(/\.extend\s*\(\s*["']([^"']+)["']/g);
+    for (const m of extendMatches) {
+        controls.add(m[1]);
+        const controlName = m[1].split('.').pop();
+        if (controlName)
+            controls.add(controlName);
+    }
+    // Extract control names from metadata
+    const metadataMatch = content.match(/metadata\s*:\s*\{[\s\S]*?library\s*:\s*["']([^"']+)["'][\s\S]*?\}/);
+    if (metadataMatch) {
+        controls.add(metadataMatch[1]);
+    }
     return Array.from(controls);
+}
+// Utility: Calculate similarity score between strings
+function calculateSimilarity(str1, str2) {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    // Exact match
+    if (s1 === s2)
+        return 100;
+    // One contains the other
+    if (s1.includes(s2) || s2.includes(s1))
+        return 90;
+    // Levenshtein distance for fuzzy matching
+    const matrix = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+    for (let i = 0; i <= s1.length; i++)
+        matrix[0][i] = i;
+    for (let j = 0; j <= s2.length; j++)
+        matrix[j][0] = j;
+    for (let j = 1; j <= s2.length; j++) {
+        for (let i = 1; i <= s1.length; i++) {
+            const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+            matrix[j][i] = Math.min(matrix[j][i - 1] + 1, // deletion
+            matrix[j - 1][i] + 1, // insertion
+            matrix[j - 1][i - 1] + indicator // substitution
+            );
+        }
+    }
+    const distance = matrix[s2.length][s1.length];
+    const maxLength = Math.max(s1.length, s2.length);
+    return Math.max(0, (maxLength - distance) / maxLength * 100);
+}
+// Utility: Enhanced control matching with fuzzy matching
+function isControlMatch(controlName, query) {
+    const name = controlName.toLowerCase();
+    const q = query.toLowerCase();
+    // Exact match
+    if (name === q)
+        return true;
+    // Direct contains
+    if (name.includes(q))
+        return true;
+    // Check if query matches the control class name
+    const controlParts = name.split('.');
+    const lastPart = controlParts[controlParts.length - 1];
+    if (lastPart && (lastPart === q || lastPart.includes(q)))
+        return true;
+    // Check for fuzzy similarity (threshold: 70%)
+    if (calculateSimilarity(name, q) > 70)
+        return true;
+    if (lastPart && calculateSimilarity(lastPart, q) > 70)
+        return true;
+    // Check for common UI5 control patterns with synonyms
+    const controlKeywords = [
+        'wizard', 'button', 'table', 'input', 'list', 'panel', 'dialog', 'form',
+        'navigation', 'layout', 'chart', 'page', 'app', 'shell', 'toolbar', 'menu',
+        'container', 'text', 'label', 'image', 'card', 'tile', 'icon', 'bar',
+        'picker', 'select', 'switch', 'slider', 'progress', 'busy', 'message',
+        'notification', 'popover', 'tooltip', 'breadcrumb', 'rating', 'feed',
+        'upload', 'calendar', 'date', 'time', 'color', 'file', 'search'
+    ];
+    // Check if query is a control keyword and the control name contains it
+    if (controlKeywords.includes(q)) {
+        return controlKeywords.some(kw => name.includes(kw));
+    }
+    return false;
+}
+// Determine the primary context of a query for smart filtering
+function determineQueryContext(originalQuery, expandedQueries) {
+    const q = originalQuery.toLowerCase();
+    const allQueries = [originalQuery, ...expandedQueries].map(s => s.toLowerCase());
+    // CAP context indicators
+    const capIndicators = ['cds', 'cap', 'entity', 'service', 'aspect', 'annotation', 'odata', 'hana'];
+    const capScore = capIndicators.filter(term => allQueries.some(query => query.includes(term))).length;
+    // wdi5 context indicators  
+    const wdi5Indicators = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'webdriver', 'selenium', 'automation'];
+    const wdi5Score = wdi5Indicators.filter(term => allQueries.some(query => query.includes(term))).length;
+    // UI5 context indicators
+    const ui5Indicators = ['sap.m', 'sap.ui', 'sap.f', 'control', 'wizard', 'button', 'table', 'fiori', 'ui5'];
+    const ui5Score = ui5Indicators.filter(term => allQueries.some(query => query.includes(term))).length;
+    // Return strongest context
+    if (capScore > 0 && capScore >= wdi5Score && capScore >= ui5Score)
+        return 'CAP';
+    if (wdi5Score > 0 && wdi5Score >= capScore && wdi5Score >= ui5Score)
+        return 'wdi5';
+    if (ui5Score > 0)
+        return 'UI5';
+    return 'MIXED'; // No clear context
+}
+// Apply context-aware penalties/boosts
+function applyContextPenalties(score, libraryId, queryContext, query) {
+    const q = query.toLowerCase();
+    // Strong penalties for off-context matches
+    if (queryContext === 'CAP') {
+        if (libraryId === '/openui5-api' || libraryId === '/openui5-samples') {
+            // Penalize UI5 results for CAP queries unless they're integration-related
+            if (!q.includes('ui5') && !q.includes('fiori') && !q.includes('integration')) {
+                score *= 0.3; // 70% penalty
+            }
+        }
+        if (libraryId === '/wdi5') {
+            score *= 0.5; // 50% penalty for wdi5 on CAP queries
+        }
+    }
+    else if (queryContext === 'wdi5') {
+        if (libraryId === '/openui5-api' || libraryId === '/openui5-samples') {
+            // Heavily penalize UI5 API for wdi5 queries unless testing-related
+            if (!q.includes('testing') && !q.includes('test') && !q.includes('ui5')) {
+                score *= 0.2; // 80% penalty
+            }
+        }
+        if (libraryId === '/cap') {
+            score *= 0.4; // 60% penalty for CAP on wdi5 queries
+        }
+    }
+    else if (queryContext === 'UI5') {
+        if (libraryId === '/cap') {
+            // Penalize CAP for pure UI5 queries unless integration-related
+            if (!q.includes('service') && !q.includes('odata') && !q.includes('backend')) {
+                score *= 0.4; // 60% penalty
+            }
+        }
+        if (libraryId === '/wdi5') {
+            // Penalize wdi5 for UI5 queries unless testing-related
+            if (!q.includes('test') && !q.includes('testing')) {
+                score *= 0.3; // 70% penalty
+            }
+        }
+    }
+    return score;
 }
 export async function searchLibraries(query, fileContent) {
     const index = await loadIndex();
@@ -327,51 +572,174 @@ export async function searchLibraries(query, fileContent) {
     }
     let allMatches = [];
     let triedQueries = [];
-    let found = false;
+    // Determine query context for smart filtering
+    const queryContext = determineQueryContext(query, queries);
+    // Score matches more comprehensively with context awareness
     for (const q of queries) {
         triedQueries.push(q);
         // Search across all documents in all libraries
         for (const lib of Object.values(index)) {
             // Check if library name/description matches
-            const libNameMatch = lib.name.toLowerCase().includes(q.toLowerCase());
-            const libDescMatch = lib.description.toLowerCase().includes(q.toLowerCase());
-            if (libNameMatch || libDescMatch) {
+            const libNameSimilarity = calculateSimilarity(lib.name, q);
+            const libDescSimilarity = calculateSimilarity(lib.description, q);
+            if (libNameSimilarity > 60 || libDescSimilarity > 40) {
                 allMatches.push({
-                    score: libNameMatch ? 100 : 80,
+                    score: Math.max(libNameSimilarity, libDescSimilarity),
                     libraryId: lib.id,
                     libraryName: lib.name,
                     docId: lib.id,
                     docTitle: `${lib.name} (Full Library)`,
                     docDescription: lib.description,
-                    matchType: libNameMatch ? 'Library Name' : 'Library Description',
+                    matchType: libNameSimilarity > libDescSimilarity ? 'Library Name' : 'Library Description',
                     snippetCount: lib.docs.reduce((s, d) => s + d.snippetCount, 0),
                     source: 'docs'
                 });
             }
-            // Search within individual documents
+            // Search within individual documents with enhanced scoring
             for (const doc of lib.docs) {
                 let score = 0;
                 let matchType = '';
-                // Check title match (highest priority)
-                if (doc.title.toLowerCase().includes(q.toLowerCase())) {
-                    score = 90;
-                    matchType = 'Document Title';
+                // Calculate similarity scores for different aspects
+                const titleSimilarity = calculateSimilarity(doc.title, q);
+                const descSimilarity = calculateSimilarity(doc.description, q);
+                // Check enhanced metadata fields if available (new index format)
+                const docAny = doc;
+                const controlName = docAny.controlName;
+                const keywords = docAny.keywords || [];
+                const properties = docAny.properties || [];
+                const events = docAny.events || [];
+                let keywordMatch = false;
+                let controlNameMatch = false;
+                let propertyMatch = false;
+                // Check keyword matches
+                if (keywords.length > 0) {
+                    keywordMatch = keywords.some((kw) => kw.toLowerCase() === q.toLowerCase() ||
+                        kw.toLowerCase().includes(q.toLowerCase()) ||
+                        calculateSimilarity(kw.toLowerCase(), q.toLowerCase()) > 80);
                 }
-                else if (doc.description.toLowerCase().includes(q.toLowerCase())) {
-                    score = 70;
-                    matchType = 'Document Description';
+                // Check control name matches
+                if (controlName) {
+                    controlNameMatch = controlName.toLowerCase() === q.toLowerCase() ||
+                        controlName.toLowerCase().includes(q.toLowerCase()) ||
+                        calculateSimilarity(controlName.toLowerCase(), q.toLowerCase()) > 80;
+                }
+                // Check property/event matches  
+                if (properties.length > 0 || events.length > 0) {
+                    const allProps = [...properties, ...events];
+                    propertyMatch = allProps.some((prop) => prop.toLowerCase() === q.toLowerCase() ||
+                        calculateSimilarity(prop.toLowerCase(), q.toLowerCase()) > 75);
+                }
+                // Exact matches get highest priority
+                if (doc.title.toLowerCase() === q.toLowerCase()) {
+                    score = 100;
+                    matchType = 'Exact Title Match';
+                }
+                else if (controlNameMatch && controlName?.toLowerCase() === q.toLowerCase()) {
+                    score = 98;
+                    matchType = 'Exact Control Name Match';
+                }
+                else if (keywordMatch && keywords.some((kw) => kw.toLowerCase() === q.toLowerCase())) {
+                    score = 96;
+                    matchType = 'Exact Keyword Match';
+                }
+                else if (titleSimilarity > 80) {
+                    score = 95;
+                    matchType = 'High Title Similarity';
+                }
+                else if (controlNameMatch) {
+                    score = 92;
+                    matchType = 'Control Name Match';
+                }
+                else if (doc.title.toLowerCase().includes(q.toLowerCase())) {
+                    score = 90;
+                    matchType = 'Title Contains Query';
+                }
+                else if (keywordMatch) {
+                    score = 87;
+                    matchType = 'Keyword Match';
+                }
+                else if (descSimilarity > 70) {
+                    score = 85;
+                    matchType = 'High Description Similarity';
+                }
+                else if (propertyMatch) {
+                    score = 82;
+                    matchType = 'Property/Event Match';
                 }
                 else if (lib.id === '/openui5-api' && isControlMatch(doc.title, q)) {
-                    score = 85;
-                    matchType = 'UI5 Control';
+                    score = 80;
+                    matchType = 'UI5 Control Pattern Match';
                 }
-                else if (doc.title.toLowerCase().split(/[.\s_-]/).some(part => part.includes(q.toLowerCase()))) {
+                else if (doc.description.toLowerCase().includes(q.toLowerCase())) {
+                    score = 75;
+                    matchType = 'Description Contains Query';
+                }
+                else if (titleSimilarity > 60) {
+                    score = 70;
+                    matchType = 'Moderate Title Similarity';
+                }
+                else if (descSimilarity > 50) {
+                    score = 65;
+                    matchType = 'Moderate Description Similarity';
+                }
+                else if (doc.title.toLowerCase().split(/[.\s_-]/).some(part => calculateSimilarity(part, q) > 70)) {
                     score = 60;
                     matchType = 'Partial Title Match';
                 }
+                // Context-aware scoring boosts
                 if (score > 0) {
+                    // UI5-specific boosts
+                    if (lib.id === '/openui5-api') {
+                        score += 5; // Base boost for API docs
+                        // Extra boost for UI5 control terms
+                        const ui5Terms = ['control', 'sap.m', 'sap.ui', 'sap.f', 'wizard', 'button', 'table'];
+                        if (ui5Terms.some(term => q.includes(term)))
+                            score += 8;
+                    }
+                    if (lib.id === '/openui5-samples') {
+                        // Boost samples for implementation queries
+                        if (q.includes('sample') || q.includes('example') || q.includes('demo'))
+                            score += 10;
+                        // Boost for UI5 control samples
+                        if (controlName && q.includes(controlName.toLowerCase()))
+                            score += 12;
+                    }
+                    if (lib.id === '/sapui5') {
+                        // Boost SAPUI5 docs for UI5-specific queries
+                        const ui5Queries = ['fiori', 'ui5', 'sapui5', 'control', 'binding', 'routing'];
+                        if (ui5Queries.some(term => q.includes(term)))
+                            score += 8;
+                        // Boost for conceptual queries
+                        if (q.includes('guide') || q.includes('tutorial') || q.includes('how'))
+                            score += 6;
+                    }
+                    // CAP-specific boosts
+                    if (lib.id === '/cap') {
+                        const capTerms = ['cds', 'cap', 'service', 'entity', 'annotation', 'aspect', 'odata', 'hana'];
+                        if (capTerms.some(term => q.includes(term)))
+                            score += 10;
+                        // Extra boost for CAP core concepts
+                        const coreCapTerms = ['cds', 'entity', 'service', 'aspect'];
+                        if (coreCapTerms.some(term => q.includes(term)))
+                            score += 5;
+                        // Boost for development guides
+                        if (q.includes('guide') || q.includes('tutorial') || q.includes('how'))
+                            score += 8;
+                    }
+                    // wdi5-specific boosts
+                    if (lib.id === '/wdi5') {
+                        const wdi5Terms = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'selector', 'webdriver'];
+                        if (wdi5Terms.some(term => q.includes(term)))
+                            score += 12;
+                        // Extra boost for testing concepts
+                        const testingTerms = ['test', 'testing', 'assertion', 'automation'];
+                        if (testingTerms.some(term => q.includes(term)))
+                            score += 8;
+                    }
+                    // Apply context-aware penalties to reduce off-topic results
+                    score = applyContextPenalties(score, lib.id, queryContext, q);
                     allMatches.push({
-                        score,
+                        score: Math.min(100, Math.max(0, score)), // Cap at 100, floor at 0
                         libraryId: lib.id,
                         libraryName: lib.name,
                         docId: doc.id,
@@ -379,62 +747,86 @@ export async function searchLibraries(query, fileContent) {
                         docDescription: doc.description,
                         matchType,
                         snippetCount: doc.snippetCount,
+                        source: 'docs',
+                        titleSimilarity,
+                        descSimilarity
+                    });
+                }
+            }
+        }
+    }
+    // If still no results, try comprehensive fuzzy search
+    if (allMatches.length === 0) {
+        const originalQuery = query.toLowerCase();
+        const queryParts = originalQuery.split(/[\s_-]+/).filter(part => part.length > 2);
+        for (const lib of Object.values(index)) {
+            for (const doc of lib.docs) {
+                let maxScore = 0;
+                let bestMatchType = 'Fuzzy Search';
+                // Try fuzzy matching against title parts
+                const titleParts = doc.title.toLowerCase().split(/[\s._-]+/);
+                for (const titlePart of titleParts) {
+                    for (const queryPart of queryParts) {
+                        const similarity = calculateSimilarity(titlePart, queryPart);
+                        if (similarity > maxScore && similarity > 50) {
+                            maxScore = similarity * 0.8; // Reduce score for fuzzy matches
+                            bestMatchType = 'Fuzzy Title Match';
+                        }
+                    }
+                }
+                // Try fuzzy matching against description parts
+                const descParts = doc.description.toLowerCase().split(/[\s._-]+/);
+                for (const descPart of descParts) {
+                    if (descPart.length > 3) { // Only check meaningful words
+                        for (const queryPart of queryParts) {
+                            const similarity = calculateSimilarity(descPart, queryPart);
+                            if (similarity > maxScore && similarity > 50) {
+                                maxScore = similarity * 0.6; // Further reduce for description matches
+                                bestMatchType = 'Fuzzy Description Match';
+                            }
+                        }
+                    }
+                }
+                if (maxScore > 30) { // Lower threshold for fuzzy results
+                    allMatches.push({
+                        score: maxScore,
+                        libraryId: lib.id,
+                        libraryName: lib.name,
+                        docId: doc.id,
+                        docTitle: doc.title,
+                        docDescription: doc.description,
+                        matchType: bestMatchType,
+                        snippetCount: doc.snippetCount,
                         source: 'docs'
                     });
                 }
             }
         }
-        if (allMatches.length > 0) {
-            found = true;
-            break;
-        }
     }
-    // If still no results, try a last fuzzy search (split words, lower, etc.)
-    if (!found && query.includes(" ")) {
-        const parts = query.split(/\s+/).filter(Boolean);
-        for (const part of parts) {
-            if (part.length > 2) {
-                for (const lib of Object.values(index)) {
-                    for (const doc of lib.docs) {
-                        if (doc.title.toLowerCase().includes(part.toLowerCase()) || doc.description.toLowerCase().includes(part.toLowerCase())) {
-                            allMatches.push({
-                                score: 50,
-                                libraryId: lib.id,
-                                libraryName: lib.name,
-                                docId: doc.id,
-                                docTitle: doc.title,
-                                docDescription: doc.description,
-                                matchType: 'Fuzzy',
-                                snippetCount: doc.snippetCount,
-                                source: 'docs'
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Group and rank results: API > Sample > Guide > Other
-    const apiDocs = allMatches.filter(r => r.libraryId === '/openui5-api');
-    const samples = allMatches.filter(r => r.libraryId === '/openui5-samples');
-    const guides = allMatches.filter(r => r.libraryId === '/sapui5' || r.libraryId === '/cap' || r.libraryId === '/wdi5');
-    const others = allMatches.filter(r => !['/openui5-api', '/openui5-samples', '/sapui5', '/cap', '/wdi5'].includes(r.libraryId));
-    // Sort by score (highest first), then by title
+    // Sort all results by relevance score (highest first), then by title
     function sortByScore(a, b) {
         if (b.score !== a.score)
             return b.score - a.score;
         return a.docTitle.localeCompare(b.docTitle);
     }
-    apiDocs.sort(sortByScore);
-    samples.sort(sortByScore);
-    guides.sort(sortByScore);
-    others.sort(sortByScore);
-    const topResults = [
-        ...apiDocs.slice(0, 3),
-        ...samples.slice(0, 3),
-        ...guides.slice(0, 3),
-        ...others.slice(0, 1)
-    ];
+    allMatches.sort(sortByScore);
+    // Take top results regardless of library, but ensure diversity
+    const topResults = [];
+    const seenLibraries = new Set();
+    const maxPerLibrary = queryContext === 'MIXED' ? 3 : 5; // More diversity for mixed queries
+    for (const result of allMatches) {
+        if (topResults.length >= 10)
+            break; // Limit total results
+        const libraryCount = topResults.filter(r => r.libraryId === result.libraryId).length;
+        if (libraryCount < maxPerLibrary) {
+            topResults.push(result);
+            seenLibraries.add(result.libraryId);
+        }
+    }
+    // Group results by library for presentation (but maintain score order)
+    const apiDocs = topResults.filter(r => r.libraryId === '/openui5-api');
+    const samples = topResults.filter(r => r.libraryId === '/openui5-samples');
+    const guides = topResults.filter(r => r.libraryId === '/sapui5' || r.libraryId === '/cap' || r.libraryId === '/wdi5');
     if (!topResults.length) {
         // User feedback loop: suggest alternatives
         let suggestion = "No documentation found for '" + query + "'. ";
@@ -444,33 +836,52 @@ export async function searchLibraries(query, fileContent) {
         suggestion += "Try terms like 'button', 'table', 'wizard', 'routing', 'annotation', or check for typos.";
         return { results: [], error: suggestion };
     }
-    // Group results for presentation
-    let response = `Found ${topResults.length} results for '${query}':\n\n`;
+    // Group results for presentation with context awareness
+    const contextEmoji = {
+        'CAP': '🏗️',
+        'wdi5': '🧪',
+        'UI5': '🎨',
+        'MIXED': '🔀'
+    };
+    let response = `Found ${topResults.length} results for '${query}' ${contextEmoji[queryContext] || '🔍'} **${queryContext} Context**:\n\n`;
+    // Show results in score order, grouped by type
+    if (guides.length > 0) {
+        const capGuides = guides.filter(r => r.libraryId === '/cap');
+        const wdi5Guides = guides.filter(r => r.libraryId === '/wdi5');
+        const sapui5Guides = guides.filter(r => r.libraryId === '/sapui5');
+        if (capGuides.length > 0) {
+            response += `🏗️ **CAP Documentation:**\n`;
+            for (const r of capGuides) {
+                response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+            }
+        }
+        if (wdi5Guides.length > 0) {
+            response += `🧪 **wdi5 Documentation:**\n`;
+            for (const r of wdi5Guides) {
+                response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+            }
+        }
+        if (sapui5Guides.length > 0) {
+            response += `📖 **SAPUI5 Guides:**\n`;
+            for (const r of sapui5Guides) {
+                response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+            }
+        }
+    }
     if (apiDocs.length > 0) {
-        response += `🔹 **API Docs:**\n`;
+        response += `🔹 **UI5 API Documentation:**\n`;
         for (const r of apiDocs.slice(0, 3)) {
-            response += `⭐️ **${r.docTitle}** - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+            response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
         }
     }
     if (samples.length > 0) {
-        response += `🔸 **Samples:**\n`;
+        response += `🔸 **UI5 Samples:**\n`;
         for (const r of samples.slice(0, 3)) {
-            response += `⭐️ **${r.docTitle}** - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+            response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
         }
     }
-    if (guides.length > 0) {
-        response += `📖 **Guides/Docs:**\n`;
-        for (const r of guides.slice(0, 3)) {
-            response += `• **${r.docTitle}** (${r.libraryName})\n   ${r.docDescription.substring(0, 120)}\n   Use \`${r.docId}\` in sap_docs_get\n\n`;
-        }
-    }
-    if (others.length > 0) {
-        response += `📚 **Other:**\n`;
-        for (const r of others.slice(0, 1)) {
-            response += `• **${r.docTitle}** (${r.libraryName})\n   ${r.docDescription.substring(0, 120)}\n   Use \`${r.docId}\` in sap_docs_get\n\n`;
-        }
-    }
-    response += `💡 **Usage:** Use these IDs with sap_docs_get. Tried queries: ${triedQueries.join(", ")}`;
+    response += `💡 **Context**: ${queryContext} query detected. Scores reflect relevance to this context.\n`;
+    response += `🔍 **Tried queries**: ${triedQueries.slice(0, 3).join(", ")}${triedQueries.length > 3 ? '...' : ''}`;
     return {
         results: [{
                 id: 'search-results',
@@ -479,26 +890,6 @@ export async function searchLibraries(query, fileContent) {
                 totalSnippets: topResults.reduce((sum, r) => sum + r.snippetCount, 0)
             }]
     };
-}
-// Helper function to check if a query matches a UI5 control pattern
-function isControlMatch(controlName, query) {
-    const name = controlName.toLowerCase();
-    const q = query.toLowerCase();
-    // Check if it's a control name that contains the query
-    if (name.includes(q))
-        return true;
-    // Check for common UI5 control patterns
-    const controlParts = name.split('.');
-    const lastPart = controlParts[controlParts.length - 1];
-    // Check if query matches the control class name
-    if (lastPart && lastPart.includes(q))
-        return true;
-    // Check for common control keywords
-    const controlKeywords = ['button', 'table', 'input', 'list', 'panel', 'dialog', 'wizard', 'page', 'app', 'shell', 'toolbar', 'menu'];
-    if (controlKeywords.includes(q) && controlKeywords.some(kw => name.includes(kw))) {
-        return true;
-    }
-    return false;
 }
 export async function fetchLibraryDocumentation(libraryIdOrDocId, topic = "") {
     // Check if this is a community post ID

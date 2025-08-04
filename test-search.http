@@ -1,0 +1,104 @@
+###
+# SAP Docs Search HTTP Tests ✅ WORKING
+# Use with VS Code REST Client extension or any HTTP client
+# 
+# 🚀 Start the HTTP server first: 
+#     npm run start:http
+#
+# ✅ All search queries now work with full context-aware results!
+
+# Check server status
+GET http://localhost:3000/status
+Accept: application/json
+
+###
+# Test search for wizard (UI5)
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "wizard"
+}
+
+###
+# Test search for CDS entity (CAP)  
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user", 
+  "content": "cds entity"
+}
+
+###
+# Test search for wdi5 testing
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "wdi5 testing"
+}
+
+###
+# Test search for service (should prioritize CAP)
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "service"
+}
+
+###
+# Test search for button (UI5)
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "button"
+}
+
+###
+# Test search for annotation (mixed context)
+POST http://localhost:3000/mcp  
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "annotation"
+}
+
+###
+# Test UI5-specific query
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "sap.m.Button"
+}
+
+###
+# Test CAP-specific query
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "CAP events"
+}
+
+###
+# Test SAPUI5 query  
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "SAPUI5"
+}
+
+###

@@ -3,7 +3,7 @@ import { readFileSync, statSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { execSync } from "child_process";
-import { searchLibraries, fetchLibraryDocumentation } from "./lib/localDocs.js";
+import { searchLibraries } from "./lib/localDocs.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Read package.json for version info
@@ -18,34 +18,29 @@ catch (error) {
 // Build timestamp (when the server was compiled)
 const buildTimestamp = new Date().toISOString();
 async function handleMCPRequest(content) {
-    // Simple pattern matching for demo purposes
-    if (content.toLowerCase().includes("cap") && content.toLowerCase().includes("event")) {
-        const docs = await fetchLibraryDocumentation("/cap", "event");
+    // Use the enhanced search functionality for any query
+    try {
+        const searchResult = await searchLibraries(content);
+        if (searchResult.results.length > 0) {
+            return {
+                role: "assistant",
+                content: searchResult.results[0].description
+            };
+        }
+        else {
+            return {
+                role: "assistant",
+                content: searchResult.error || `No results found for "${content}". Try searching for UI5 controls like 'button', 'table', 'wizard', or concepts like 'routing', 'annotation', 'authentication', 'cds entity', 'wdi5 testing'.`
+            };
+        }
+    }
+    catch (error) {
+        console.error("Search error:", error);
         return {
             role: "assistant",
-            content: docs || "No CAP event documentation found."
+            content: `Sorry, there was an error searching for "${content}". Please try again with a different query.`
         };
     }
-    if (content.toLowerCase().includes("sapui5") || content.toLowerCase().includes("ui5")) {
-        const searchResult = await searchLibraries("sapui5");
-        const docs = await fetchLibraryDocumentation("/sapui5");
-        return {
-            role: "assistant",
-            content: `Found SAPUI5 documentation with ${searchResult.results[0]?.totalSnippets || 0} code snippets.\n\nFirst section:\n${docs?.substring(0, 500)}...`
-        };
-    }
-    if (content.toLowerCase().includes("cap")) {
-        const searchResult = await searchLibraries("cap");
-        const docs = await fetchLibraryDocumentation("/cap");
-        return {
-            role: "assistant",
-            content: `Found CAP documentation with ${searchResult.results[0]?.totalSnippets || 0} code snippets.\n\nFirst section:\n${docs?.substring(0, 500)}...`
-        };
-    }
-    return {
-        role: "assistant",
-        content: "I can help with SAP UI5 and CAP documentation. Try asking about specific topics like 'CAP event handlers' or 'SAPUI5 dialogs'."
-    };
 }
 const server = createServer(async (req, res) => {
     // Enable CORS

@@ -27,7 +27,8 @@ const SOURCES = [
         id: "/openui5-api",
         name: "OpenUI5 API",
         description: "OpenUI5 Control API documentation and JSDoc",
-        filePattern: "**/*.js",
+        filePattern: "**/src/**/*.js",
+        exclude: "**/test/**/*",
         type: "jsdoc"
     },
     {
@@ -35,7 +36,7 @@ const SOURCES = [
         absDir: join("sources", "openui5", "src"),
         id: "/openui5-samples",
         name: "OpenUI5 Samples",
-        description: "OpenUI5 sample code and demo implementations",
+        description: "OpenUI5 demokit sample applications and code examples",
         filePattern: "**/demokit/sample/**/*.{js,xml,json,html}",
         type: "sample"
     },
@@ -146,12 +147,16 @@ function extractSampleInfo(content, filePath) {
         snippetCount: Math.max(1, snippetCount) // Ensure at least 1
     };
 }
-// Extract JSDoc information from JavaScript files
+// Extract JSDoc information from JavaScript files with enhanced metadata
 function extractJSDocInfo(content, fileName) {
     const lines = content.split(/\r?\n/);
     // Try to find the main class/control definition
     const classMatch = content.match(/\.extend\s*\(\s*["']([^"']+)["']/);
-    const controlName = classMatch ? classMatch[1] : path.basename(fileName, ".js");
+    const fullControlName = classMatch ? classMatch[1] : path.basename(fileName, ".js");
+    // Extract namespace and control name
+    const namespaceMatch = fullControlName.match(/^(sap\.[^.]+)\.(.*)/);
+    const namespace = namespaceMatch ? namespaceMatch[1] : '';
+    const controlName = namespaceMatch ? namespaceMatch[2] : fullControlName;
     // Extract main class JSDoc comment
     const jsdocMatch = content.match(/\/\*\*\s*([\s\S]*?)\*\//);
     let description = "";
@@ -175,25 +180,92 @@ function extractJSDocInfo(content, fileName) {
             .replace(/\n\s*\n/g, '\n')
             .trim();
     }
-    // Count properties, methods, aggregations, etc.
-    const propertyMatches = content.match(/^\s*properties\s*:\s*\{/m);
-    const eventMatches = content.match(/^\s*events\s*:\s*\{/m);
-    const aggregationMatches = content.match(/^\s*aggregations\s*:\s*\{/m);
-    const associationMatches = content.match(/^\s*associations\s*:\s*\{/m);
+    // Extract properties, events, aggregations with better parsing
+    const properties = [];
+    const events = [];
+    const aggregations = [];
+    const keywords = [];
+    // Extract properties
+    const propertiesSection = content.match(/properties\s*:\s*\{([\s\S]*?)\n\s*\}/);
+    if (propertiesSection) {
+        const propMatches = propertiesSection[1].matchAll(/(\w+)\s*:\s*\{/g);
+        for (const match of propMatches) {
+            properties.push(match[1]);
+        }
+    }
+    // Extract events  
+    const eventsSection = content.match(/events\s*:\s*\{([\s\S]*?)\n\s*\}/);
+    if (eventsSection) {
+        const eventMatches = eventsSection[1].matchAll(/(\w+)\s*:\s*\{/g);
+        for (const match of eventMatches) {
+            events.push(match[1]);
+        }
+    }
+    // Extract aggregations
+    const aggregationsSection = content.match(/aggregations\s*:\s*\{([\s\S]*?)\n\s*\}/);
+    if (aggregationsSection) {
+        const aggMatches = aggregationsSection[1].matchAll(/(\w+)\s*:\s*\{/g);
+        for (const match of aggMatches) {
+            aggregations.push(match[1]);
+        }
+    }
+    // Generate keywords based on control name and content
+    keywords.push(controlName.toLowerCase());
+    if (namespace)
+        keywords.push(namespace);
+    if (fullControlName !== controlName)
+        keywords.push(fullControlName);
+    // Add common UI5 control keywords based on control name
+    const controlLower = controlName.toLowerCase();
+    if (controlLower.includes('wizard'))
+        keywords.push('wizard', 'step', 'multi-step', 'process');
+    if (controlLower.includes('button'))
+        keywords.push('button', 'click', 'press', 'action');
+    if (controlLower.includes('table'))
+        keywords.push('table', 'grid', 'data', 'row', 'column');
+    if (controlLower.includes('dialog'))
+        keywords.push('dialog', 'popup', 'modal', 'overlay');
+    if (controlLower.includes('input'))
+        keywords.push('input', 'field', 'text', 'form');
+    if (controlLower.includes('list'))
+        keywords.push('list', 'item', 'collection');
+    if (controlLower.includes('panel'))
+        keywords.push('panel', 'container', 'layout');
+    if (controlLower.includes('page'))
+        keywords.push('page', 'navigation', 'view');
+    // Add property/event-based keywords
+    if (properties.includes('text'))
+        keywords.push('text');
+    if (properties.includes('value'))
+        keywords.push('value');
+    if (events.includes('press'))
+        keywords.push('press', 'click');
+    if (events.includes('change'))
+        keywords.push('change', 'update');
     // Count code blocks and property definitions
     const codeBlockCount = (content.match(/```/g)?.length || 0) / 2;
-    const propertyCount = content.match(/^\s*[a-zA-Z][a-zA-Z0-9]*\s*:\s*\{/gm)?.length || 0;
+    const propertyCount = properties.length + events.length + aggregations.length;
     return {
-        title: controlName,
-        description: description || `OpenUI5 control: ${controlName}`,
-        snippetCount: codeBlockCount + Math.floor(propertyCount / 5) // Estimate based on properties
+        title: fullControlName,
+        description: description || `OpenUI5 control: ${fullControlName}`,
+        snippetCount: Math.max(1, codeBlockCount + Math.floor(propertyCount / 3)),
+        controlName,
+        namespace,
+        keywords: [...new Set(keywords)],
+        properties,
+        events,
+        aggregations
     };
 }
 async function main() {
     await fs.mkdir("data", { recursive: true });
     const all = {};
     for (const src of SOURCES) {
-        const files = await fg([src.filePattern], { cwd: src.absDir, absolute: true });
+        const patterns = [src.filePattern];
+        if (src.exclude) {
+            patterns.push(`!${src.exclude}`);
+        }
+        const files = await fg(patterns, { cwd: src.absDir, absolute: true });
         const docs = [];
         for (const absPath of files) {
             const rel = path.relative(src.absDir, absPath).replace(/\\/g, "/");
@@ -223,6 +295,20 @@ async function main() {
                 if (!raw.includes('.extend') || !raw.includes('metadata')) {
                     continue;
                 }
+                docs.push({
+                    id,
+                    title,
+                    description,
+                    snippetCount,
+                    relFile: rel,
+                    type: src.type,
+                    controlName: jsDocInfo.controlName,
+                    namespace: jsDocInfo.namespace,
+                    keywords: jsDocInfo.keywords,
+                    properties: jsDocInfo.properties,
+                    events: jsDocInfo.events,
+                    aggregations: jsDocInfo.aggregations
+                });
             }
             else if (src.type === "sample") {
                 // Handle sample files (JS, XML, JSON, HTML)
@@ -235,18 +321,47 @@ async function main() {
                 if (raw.trim().length < 50) {
                     continue;
                 }
+                // Extract control name from sample path for better searchability
+                const pathParts = rel.split('/');
+                const sampleIndex = pathParts.findIndex(part => part === 'sample');
+                const controlName = sampleIndex >= 0 && sampleIndex < pathParts.length - 1
+                    ? pathParts[sampleIndex + 1]
+                    : path.basename(path.dirname(rel));
+                // Generate sample keywords
+                const keywords = [controlName.toLowerCase(), 'sample', 'example'];
+                if (rel.includes('.xml'))
+                    keywords.push('view', 'xml');
+                if (rel.includes('.js'))
+                    keywords.push('controller', 'javascript');
+                if (rel.includes('.json'))
+                    keywords.push('model', 'data', 'configuration');
+                if (rel.includes('manifest'))
+                    keywords.push('manifest', 'app');
+                docs.push({
+                    id,
+                    title,
+                    description,
+                    snippetCount,
+                    relFile: rel,
+                    type: src.type,
+                    controlName,
+                    keywords: [...new Set(keywords)]
+                });
             }
             else {
                 continue; // Skip unknown file types
             }
-            docs.push({
-                id,
-                title,
-                description,
-                snippetCount,
-                relFile: rel,
-                type: src.type
-            });
+            // For markdown files, still use the basic structure
+            if (src.type === "markdown") {
+                docs.push({
+                    id,
+                    title,
+                    description,
+                    snippetCount,
+                    relFile: rel,
+                    type: src.type
+                });
+            }
         }
         const bundle = {
             id: src.id,
