@@ -291,18 +291,46 @@ This project includes automatic deployment to a Hetzner server via GitHub Action
    - `SERVER_USERNAME`: SSH username (e.g., `root` or a user with Docker permissions)
    - `SSH_PRIVATE_KEY`: Private SSH key for server access
 
-### Health Check
+### Health Check & Version Monitoring
 
-The HTTP server includes a health check endpoint at `/status` that returns:
+The HTTP server includes an enhanced status endpoint at `/status` that returns comprehensive deployment and version information:
+
 ```json
 {
   "status": "healthy",
-  "service": "mcp-sap-docs", 
-  "timestamp": "2024-01-01T00:00:00.000Z"
+  "service": "mcp-sap-docs",
+  "version": "0.2.0",
+  "timestamp": "2024-01-01T12:34:56.789Z",
+  "buildTimestamp": "2024-01-01T12:30:00.000Z",
+  "git": {
+    "branch": "main",
+    "commit": "abc1234",
+    "fullCommit": "abc1234567890abcdef..."
+  },
+  "documentation": {
+    "status": "available",
+    "searchAvailable": true,
+    "communityAvailable": true
+  },
+  "deployment": {
+    "method": "github-actions",
+    "timestamp": "2024-01-01T12:30:00Z",
+    "triggeredBy": "marianfoo"
+  },
+  "uptime": 3600,
+  "nodeVersion": "v20.x.x",
+  "platform": "linux"
 }
 ```
 
-The deployment workflow uses this endpoint to verify successful deployment.
+**Key Status Information:**
+- **Version tracking**: Shows current package version and build timestamp
+- **Git information**: Current commit hash and branch for deployment verification
+- **Documentation status**: Health check of search and community features
+- **Deployment tracking**: When deployed, by whom, and via which method
+- **System information**: Uptime, Node.js version, and platform details
+
+The deployment workflow uses this endpoint to verify that the correct commit was deployed and the service is functioning properly.
 
 ## Quick Start with Remote Server
 

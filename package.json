@@ -1,6 +1,6 @@
 {
-  "name": "local-mcp-docs",
-  "version": "0.1.0",
+  "name": "mcp-sap-docs",
+  "version": "0.2.0",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

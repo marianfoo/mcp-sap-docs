@@ -1,5 +1,23 @@
 import { createServer } from "http";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { searchLibraries, fetchLibraryDocumentation } from "./lib/localDocs.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Read package.json for version info
+let packageInfo = { version: "unknown", name: "mcp-sap-docs" };
+try {
+  const packagePath = join(__dirname, "../../package.json");
+  packageInfo = JSON.parse(readFileSync(packagePath, "utf8"));
+} catch (error) {
+  console.warn("Could not read package.json:", error instanceof Error ? error.message : "Unknown error");
+}
+
+// Build timestamp (when the server was compiled)
+const buildTimestamp = new Date().toISOString();
 
 interface MCPRequest {
   role: string;
@@ -52,15 +70,71 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // Health check endpoint
+  // Enhanced status endpoint with version and deployment info
   if (req.method === "GET" && req.url === "/status") {
     res.setHeader("Content-Type", "application/json");
     res.writeHead(200);
-    res.end(JSON.stringify({ 
-      status: "healthy", 
-      service: "mcp-sap-docs",
-      timestamp: new Date().toISOString()
-    }));
+    
+    // Try to read git info if available
+    let gitInfo = {};
+    try {
+      const gitHeadPath = join(__dirname, "../../.git/HEAD");
+      const gitHead = readFileSync(gitHeadPath, "utf8").trim();
+      
+      if (gitHead.startsWith("ref: ")) {
+        // We're on a branch
+        const branchRef = gitHead.substring(5);
+        const commitPath = join(__dirname, "../../.git", branchRef);
+        const commitHash = readFileSync(commitPath, "utf8").trim();
+        gitInfo = {
+          branch: branchRef.split("/").pop(),
+          commit: commitHash.substring(0, 7),
+          fullCommit: commitHash
+        };
+      } else {
+        // Detached HEAD
+        gitInfo = {
+          commit: gitHead.substring(0, 7),
+          fullCommit: gitHead,
+          detached: true
+        };
+      }
+    } catch (error) {
+      gitInfo = { error: "Git info not available" };
+    }
+
+    // Check if we can access documentation (basic health check)
+    let docsStatus = "unknown";
+    try {
+      const testSearch = await searchLibraries("test");
+      docsStatus = testSearch.results.length > 0 ? "available" : "no_results";
+    } catch (error) {
+      docsStatus = "error";
+    }
+
+    const statusResponse = {
+      status: "healthy",
+      service: packageInfo.name,
+      version: packageInfo.version,
+      timestamp: new Date().toISOString(),
+      buildTimestamp,
+      git: gitInfo,
+      documentation: {
+        status: docsStatus,
+        searchAvailable: true,
+        communityAvailable: true
+      },
+      deployment: {
+        method: process.env.DEPLOYMENT_METHOD || "unknown",
+        timestamp: process.env.DEPLOYMENT_TIMESTAMP || "unknown",
+        triggeredBy: process.env.GITHUB_ACTOR || "unknown"
+      },
+      uptime: process.uptime(),
+      nodeVersion: process.version,
+      platform: process.platform
+    };
+
+    res.end(JSON.stringify(statusResponse, null, 2));
     return;
   }
 
