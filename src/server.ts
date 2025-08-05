@@ -14,13 +14,14 @@ import {
   readDocumentationResource,
   searchCommunity
 } from "./lib/localDocs.js";
+import { searchSapHelp, getSapHelpContent } from "./lib/sapHelp.js";
 import { SearchResponse } from "./lib/types.js";
 
 function createServer() {
   const srv = new Server({
     name: "Local SAP Docs",
     description:
-      "Offline SAPUI5 & CAP documentation server with SAP Community integration",
+      "Offline SAPUI5 & CAP documentation server with SAP Community and SAP Help Portal integration",
     version: "0.1.0"
   }, {
     capabilities: { 
@@ -102,6 +103,34 @@ function createServer() {
             },
             required: ["library_id"]
           }
+        },
+        {
+          name: "sap_help_search",
+          description: "Search the SAP Help Portal using private APIs. This searches across all SAP Help documentation including product guides, implementation guides, and technical documentation. Returns real-time results from help.sap.com with IDs for retrieving full content.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "What to search for in SAP Help Portal. Examples: 'S/4HANA configuration', 'Fiori Launchpad setup', 'BTP integration', 'ABAP development', 'SAP Analytics Cloud', or any SAP product or technical topic. Searches across all SAP Help content."
+              }
+            },
+            required: ["query"]
+          }
+        },
+        {
+          name: "sap_help_get",
+          description: "Retrieve the full content of a specific SAP Help page. Use the IDs returned from sap_help_search to get the complete documentation page content. This uses the private SAP Help APIs to fetch metadata and page content.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              result_id: {
+                type: "string",
+                description: "The ID from sap_help_search results (e.g., 'sap-help-12345abc'). This ID is used to fetch the complete page content including metadata."
+              }
+            },
+            required: ["result_id"]
+          }
         }
       ]
     };
@@ -182,6 +211,57 @@ function createServer() {
       }
       
       return { content: [{ type: "text", text }] };
+    }
+
+    if (name === "sap_help_search") {
+      const { query } = args as { query: string };
+      const res: SearchResponse = await searchSapHelp(query);
+      
+      if (!res.results.length) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: res.error || `No SAP Help results found for "${query}". Try different keywords or check your connection.`
+            }
+          ]
+        };
+      }
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: res.results[0].description
+          }
+        ]
+      };
+    }
+
+    if (name === "sap_help_get") {
+      const { result_id } = args as { result_id: string };
+      
+      try {
+        const content = await getSapHelpContent(result_id);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: content
+            }
+          ]
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error retrieving SAP Help content: ${error.message}`
+            }
+          ]
+        };
+      }
     }
 
     throw new Error(`Unknown tool: ${name}`);
