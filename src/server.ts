@@ -194,6 +194,11 @@ async function main() {
   const srv = createServer();
   await srv.connect(new StdioServerTransport());
   console.error("📚 MCP server ready (stdio) with Resources and Tools support.");
+  
+  // Log the port if we're running in HTTP mode (for debugging)
+  if (process.env.PORT) {
+    console.error(`📚 MCP server configured for port: ${process.env.PORT}`);
+  }
 }
 
 main().catch((e) => {

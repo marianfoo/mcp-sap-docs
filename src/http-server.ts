@@ -216,7 +216,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`📚 HTTP test server running on http://localhost:${PORT}/mcp`);
 }); 
