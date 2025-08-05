@@ -57,10 +57,8 @@ jobs:
               git submodule update --init --recursive --remote --depth 1
             fi
 
-            echo "==> Build index + FTS"
+            echo "==> Build everything (TypeScript + indexes)"
             npm ci
-            npm run build:all
-            # ensure TS compiled dist/ is up to date
             npm run build
 
             echo "==> (Re)start PM2 processes"

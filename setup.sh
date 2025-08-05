@@ -25,7 +25,6 @@ git submodule update --init --recursive --remote --depth 1
 # Build the search index
 echo "🔍 Building search index..."
 npm run build
-npm run build:all
 
 echo "✅ Setup complete!"
 echo ""

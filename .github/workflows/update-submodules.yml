@@ -32,9 +32,8 @@ jobs:
             # Update submodules to latest remote commits
             git submodule update --init --recursive --remote --depth 1
             
-            # Rebuild search index with updated documentation
+            # Rebuild everything with updated documentation
             npm ci
-            npm run build:all
             npm run build
             
             # Restart services to pick up new content
