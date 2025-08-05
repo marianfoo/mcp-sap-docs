@@ -28,7 +28,7 @@ if (!existsSync(path.join(PROJECT_ROOT, 'package.json'))) {
   PROJECT_ROOT = path.resolve(__dirname, "../../..");
 }
 
-const DATA_DIR = path.join(PROJECT_ROOT, "data");
+const DATA_DIR = path.join(PROJECT_ROOT, "dist", "data");
 
 // SAP Community API configuration
 const SAP_COMMUNITY_API_BASE = "https://community.sap.com/api/2.0/search";

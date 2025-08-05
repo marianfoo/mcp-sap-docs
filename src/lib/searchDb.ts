@@ -7,7 +7,7 @@ let db: Database.Database | null = null;
 export function openDb(dbPath?: string): Database.Database {
   if (!db) {
     // Default path relative to project root
-    const defaultPath = path.join(process.cwd(), "data", "docs.sqlite");
+    const defaultPath = path.join(process.cwd(), "dist", "data", "docs.sqlite");
     const finalPath = dbPath || defaultPath;
     
     if (!existsSync(finalPath)) {

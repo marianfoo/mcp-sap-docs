@@ -306,7 +306,7 @@ function extractJSDocInfo(content: string, fileName: string) {
 }
 
 async function main() {
-  await fs.mkdir("data", { recursive: true });
+  await fs.mkdir("dist/data", { recursive: true });
   const all: Record<string, LibraryBundle> = {};
 
   for (const src of SOURCES) {
@@ -428,12 +428,12 @@ async function main() {
 
     all[src.id] = bundle;
     await fs.writeFile(
-      `data${src.id}.json`.replace(/\//g, "_"),
+      path.join("dist", "data", `data${src.id}.json`.replace(/\//g, "_")),
       JSON.stringify(bundle, null, 2)
     );
   }
 
-  await fs.writeFile("data/index.json", JSON.stringify(all, null, 2));
+  await fs.writeFile("dist/data/index.json", JSON.stringify(all, null, 2));
   console.log("✅  Index built with", Object.keys(all).length, "libraries.");
 }
 

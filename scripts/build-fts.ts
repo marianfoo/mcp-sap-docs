@@ -24,7 +24,7 @@ type LibraryBundle = {
   docs: Doc[];
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = path.join(process.cwd(), "dist", "data");
 const SRC = path.join(DATA_DIR, "index.json");
 const DST = path.join(DATA_DIR, "docs.sqlite");
 
