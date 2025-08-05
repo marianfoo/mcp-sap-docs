@@ -4,6 +4,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { SearchResponse, SearchResult } from "./types.js";
+import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
 
 // Get the directory of this script and find the project root
 const __filename = fileURLToPath(import.meta.url);
@@ -701,11 +702,36 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   // Determine query context for smart filtering
   const queryContext = determineQueryContext(query, queries);
   
+  // HYBRID FTS APPROACH: Use FTS for fast candidate filtering, then apply sophisticated scoring
+  let candidateDocIds = new Set<string>();
+  let usedFTS = false;
+  
+  try {
+    // Get FTS candidates for each expanded query
+    for (const q of queries) {
+      // Try to get FTS candidates - this is the fast filter step
+      const ftsResults = getFTSCandidateIds(q, {}, 100); // Get top 100 candidates per query
+      if (ftsResults.length > 0) {
+        ftsResults.forEach(id => candidateDocIds.add(id));
+        usedFTS = true;
+      }
+    }
+    
+    // If FTS found no candidates or failed, fall back to searching everything
+    if (candidateDocIds.size === 0) {
+      console.log("FTS found no candidates, falling back to full search");
+      usedFTS = false;
+    }
+  } catch (error) {
+    console.warn("FTS search failed, falling back to full search:", error);
+    usedFTS = false;
+  }
+  
   // Score matches more comprehensively with context awareness
   for (const q of queries) {
     triedQueries.push(q);
     
-    // Search across all documents in all libraries
+    // Search across all documents in all libraries (filtered by FTS candidates if available)
     for (const lib of Object.values(index)) {
       // Check if library name/description matches
       const libNameSimilarity = calculateSimilarity(lib.name, q);
@@ -727,6 +753,10 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
       
       // Search within individual documents with enhanced scoring
       for (const doc of lib.docs) {
+        // If we're using FTS filtering, only process documents that are in the candidate set
+        if (usedFTS && !candidateDocIds.has(doc.id)) {
+          continue;
+        }
         let score = 0;
         let matchType = '';
         
@@ -888,6 +918,10 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     
     for (const lib of Object.values(index)) {
       for (const doc of lib.docs) {
+        // If we're using FTS filtering, only process documents that are in the candidate set
+        if (usedFTS && !candidateDocIds.has(doc.id)) {
+          continue;
+        }
         let maxScore = 0;
         let bestMatchType = 'Fuzzy Search';
         
@@ -979,7 +1013,9 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     'MIXED': '🔀'
   };
   
-  let response = `Found ${topResults.length} results for '${query}' ${contextEmoji[queryContext] || '🔍'} **${queryContext} Context**:\n\n`;
+  // Add FTS info to response for transparency
+  const ftsInfo = usedFTS ? ` (🚀 FTS-filtered from ${candidateDocIds.size} candidates)` : ' (🔍 Full search)';
+  let response = `Found ${topResults.length} results for '${query}' ${contextEmoji[queryContext] || '🔍'} **${queryContext} Context**${ftsInfo}:\n\n`;
   
   // Show results in score order, grouped by type
   if (guides.length > 0) {

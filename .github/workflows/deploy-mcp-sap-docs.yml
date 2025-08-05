@@ -70,7 +70,7 @@ jobs:
             echo "==> Installing dependencies and building"
             cd mcp-sap-docs
             npm ci
-            npm run build:index
+            npm run build:all
             npm run build
             cd ..
 

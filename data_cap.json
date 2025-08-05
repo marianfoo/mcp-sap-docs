@@ -220,6 +220,38 @@
       "type": "markdown"
     },
     {
+      "id": "/cap/get-started/in-a-nutshell",
+      "title": "Getting Started in a Nutshell",
+      "description": "Build Your First App with CAP {.subtitle}",
+      "snippetCount": 39,
+      "relFile": "get-started/in-a-nutshell.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/get-started/index",
+      "title": "Getting Started",
+      "description": "Your First Steps {.subtitle}",
+      "snippetCount": 8,
+      "relFile": "get-started/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/get-started/learning-sources",
+      "title": "Learning Sources",
+      "description": "[[toc]]",
+      "snippetCount": 0,
+      "relFile": "get-started/learning-sources.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/get-started/troubleshooting",
+      "title": "Troubleshooting",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 25,
+      "relFile": "get-started/troubleshooting.md",
+      "type": "markdown"
+    },
+    {
       "id": "/cap/guides/databases-h2",
       "title": "Using H2 for Development in CAP Java",
       "description": "For local development and testing, CAP Java supports the [H2](https://www.h2database.com/) database, which can be configured to run in-memory.",
@@ -324,75 +356,163 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/plugins/index",
-      "title": "CAP Plugins & Enhancements",
-      "description": "Following is a curated list of plugins that are available for the SAP Cloud Application Programming Model (CAP) which provide integration with SAP BTP services and technologies, or other SAP products.",
-      "snippetCount": 14,
-      "relFile": "plugins/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/get-started/in-a-nutshell",
-      "title": "Getting Started in a Nutshell",
-      "description": "Build Your First App with CAP {.subtitle}",
-      "snippetCount": 39,
-      "relFile": "get-started/in-a-nutshell.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/get-started/index",
-      "title": "Getting Started",
-      "description": "Your First Steps {.subtitle}",
-      "snippetCount": 8,
-      "relFile": "get-started/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/get-started/learning-sources",
-      "title": "Learning Sources",
-      "description": "[[toc]]",
+      "id": "/cap/java/_menu",
+      "title": "[Getting Started](getting-started)",
+      "description": "## [Build CQL Statements](working-with-cql/query-api)",
       "snippetCount": 0,
-      "relFile": "get-started/learning-sources.md",
+      "relFile": "java/_menu.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/get-started/troubleshooting",
-      "title": "Troubleshooting",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 25,
-      "relFile": "get-started/troubleshooting.md",
+      "id": "/cap/java/auditlog",
+      "title": "Audit Logging",
+      "description": "<style scoped>",
+      "snippetCount": 10,
+      "relFile": "java/auditlog.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/tools/cds-cli",
-      "title": "CDS Command Line Interface (CLI) {#cli}",
-      "description": "<script setup>",
-      "snippetCount": 36,
-      "relFile": "tools/cds-cli.md",
+      "id": "/cap/java/building-plugins",
+      "title": "Building Plugins",
+      "description": "<style scoped>",
+      "snippetCount": 13,
+      "relFile": "java/building-plugins.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/tools/cds-editors",
-      "title": "CDS Editors and IDEs",
-      "description": "[[toc]]",
+      "id": "/cap/java/cds-data",
+      "title": "Working with CDS Data",
+      "description": "<style scoped>",
+      "snippetCount": 84,
+      "relFile": "java/cds-data.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/change-tracking",
+      "title": "Change Tracking",
+      "description": "<style scoped>",
       "snippetCount": 15,
-      "relFile": "tools/cds-editors.md",
+      "relFile": "java/change-tracking.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/tools/cds-typer",
-      "title": "CDS Typer {#cds-typer}",
-      "description": "The following chapter describes the [`cds-typer` package](https://www.npmjs.com/package/@cap-js/cds-typer) in detail using the [bookshop sample](https://github.com/SAP-samples/cloud-cap-samples/tree/main/bookshop) as a running example.",
-      "snippetCount": 26,
-      "relFile": "tools/cds-typer.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/index",
-      "title": "Choose Your Preferred Tools",
-      "description": "{{$frontmatter?.synopsis}}",
+      "id": "/cap/java/developing-applications",
+      "title": "developing-applications",
+      "description": "",
       "snippetCount": 0,
-      "relFile": "tools/index.md",
+      "relFile": "java/developing-applications.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/fiori-drafts",
+      "title": "Fiori Drafts",
+      "description": "<style scoped>",
+      "snippetCount": 15,
+      "relFile": "java/fiori-drafts.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/getting-started",
+      "title": "Getting Started",
+      "description": "<style scoped>",
+      "snippetCount": 11,
+      "relFile": "java/getting-started.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/index",
+      "title": "CAP Service SDK for Java",
+      "description": "<style scoped>",
+      "snippetCount": 0,
+      "relFile": "java/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/messaging",
+      "title": "Messaging",
+      "description": "<script setup>",
+      "snippetCount": 43,
+      "relFile": "java/messaging.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/migration",
+      "title": "Migration Guides",
+      "description": "<script setup>",
+      "snippetCount": 48,
+      "relFile": "java/migration.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/multitenancy-classic",
+      "title": "Multitenancy (Classic) { #multitenancy-classic}",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 37,
+      "relFile": "java/multitenancy-classic.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/multitenancy",
+      "title": "Multitenancy { #multitenancy}",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 15,
+      "relFile": "java/multitenancy.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/operating-applications",
+      "title": "operating-applications",
+      "description": "",
+      "snippetCount": 0,
+      "relFile": "java/operating-applications.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/outbox",
+      "title": "Transactional Outbox",
+      "description": "<style scoped>",
+      "snippetCount": 17,
+      "relFile": "java/outbox.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/reflection-api",
+      "title": "Working with CDS Models",
+      "description": "<style scoped>",
+      "snippetCount": 15,
+      "relFile": "java/reflection-api.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/security",
+      "title": "Security",
+      "description": "<script setup>",
+      "snippetCount": 14,
+      "relFile": "java/security.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/services",
+      "title": "Services",
+      "description": "<style scoped>",
+      "snippetCount": 6,
+      "relFile": "java/services.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/spring-boot-integration",
+      "title": "Spring Boot Integration",
+      "description": "<style scoped>",
+      "snippetCount": 2,
+      "relFile": "java/spring-boot-integration.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/versions",
+      "title": "Versions & Dependencies",
+      "description": "<style scoped>",
+      "snippetCount": 2,
+      "relFile": "java/versions.md",
       "type": "markdown"
     },
     {
@@ -612,163 +732,43 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/java/_menu",
-      "title": "[Getting Started](getting-started)",
-      "description": "## [Build CQL Statements](working-with-cql/query-api)",
-      "snippetCount": 0,
-      "relFile": "java/_menu.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/auditlog",
-      "title": "Audit Logging",
-      "description": "<style scoped>",
-      "snippetCount": 10,
-      "relFile": "java/auditlog.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/building-plugins",
-      "title": "Building Plugins",
-      "description": "<style scoped>",
-      "snippetCount": 13,
-      "relFile": "java/building-plugins.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/cds-data",
-      "title": "Working with CDS Data",
-      "description": "<style scoped>",
-      "snippetCount": 84,
-      "relFile": "java/cds-data.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/change-tracking",
-      "title": "Change Tracking",
-      "description": "<style scoped>",
-      "snippetCount": 15,
-      "relFile": "java/change-tracking.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/developing-applications",
-      "title": "developing-applications",
-      "description": "",
-      "snippetCount": 0,
-      "relFile": "java/developing-applications.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/fiori-drafts",
-      "title": "Fiori Drafts",
-      "description": "<style scoped>",
-      "snippetCount": 15,
-      "relFile": "java/fiori-drafts.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/getting-started",
-      "title": "Getting Started",
-      "description": "<style scoped>",
-      "snippetCount": 11,
-      "relFile": "java/getting-started.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/index",
-      "title": "CAP Service SDK for Java",
-      "description": "<style scoped>",
-      "snippetCount": 0,
-      "relFile": "java/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/messaging",
-      "title": "Messaging",
-      "description": "<script setup>",
-      "snippetCount": 43,
-      "relFile": "java/messaging.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/migration",
-      "title": "Migration Guides",
-      "description": "<script setup>",
-      "snippetCount": 48,
-      "relFile": "java/migration.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/multitenancy-classic",
-      "title": "Multitenancy (Classic) { #multitenancy-classic}",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 37,
-      "relFile": "java/multitenancy-classic.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/multitenancy",
-      "title": "Multitenancy { #multitenancy}",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 15,
-      "relFile": "java/multitenancy.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/operating-applications",
-      "title": "operating-applications",
-      "description": "",
-      "snippetCount": 0,
-      "relFile": "java/operating-applications.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/outbox",
-      "title": "Transactional Outbox",
-      "description": "<style scoped>",
-      "snippetCount": 17,
-      "relFile": "java/outbox.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/reflection-api",
-      "title": "Working with CDS Models",
-      "description": "<style scoped>",
-      "snippetCount": 15,
-      "relFile": "java/reflection-api.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/security",
-      "title": "Security",
-      "description": "<script setup>",
+      "id": "/cap/plugins/index",
+      "title": "CAP Plugins & Enhancements",
+      "description": "Following is a curated list of plugins that are available for the SAP Cloud Application Programming Model (CAP) which provide integration with SAP BTP services and technologies, or other SAP products.",
       "snippetCount": 14,
-      "relFile": "java/security.md",
+      "relFile": "plugins/index.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/services",
-      "title": "Services",
-      "description": "<style scoped>",
-      "snippetCount": 6,
-      "relFile": "java/services.md",
+      "id": "/cap/tools/cds-cli",
+      "title": "CDS Command Line Interface (CLI) {#cli}",
+      "description": "<script setup>",
+      "snippetCount": 36,
+      "relFile": "tools/cds-cli.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/spring-boot-integration",
-      "title": "Spring Boot Integration",
-      "description": "<style scoped>",
-      "snippetCount": 2,
-      "relFile": "java/spring-boot-integration.md",
+      "id": "/cap/tools/cds-editors",
+      "title": "CDS Editors and IDEs",
+      "description": "[[toc]]",
+      "snippetCount": 15,
+      "relFile": "tools/cds-editors.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/versions",
-      "title": "Versions & Dependencies",
-      "description": "<style scoped>",
-      "snippetCount": 2,
-      "relFile": "java/versions.md",
+      "id": "/cap/tools/cds-typer",
+      "title": "CDS Typer {#cds-typer}",
+      "description": "The following chapter describes the [`cds-typer` package](https://www.npmjs.com/package/@cap-js/cds-typer) in detail using the [bookshop sample](https://github.com/SAP-samples/cloud-cap-samples/tree/main/bookshop) as a running example.",
+      "snippetCount": 26,
+      "relFile": "tools/cds-typer.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/index",
+      "title": "Choose Your Preferred Tools",
+      "description": "{{$frontmatter?.synopsis}}",
+      "snippetCount": 0,
+      "relFile": "tools/index.md",
       "type": "markdown"
     },
     {
@@ -820,6 +820,46 @@
       "type": "markdown"
     },
     {
+      "id": "/cap/guides/data-privacy/annotations",
+      "title": "Annotating Personal Data",
+      "description": "<style scoped>",
+      "snippetCount": 7,
+      "relFile": "guides/data-privacy/annotations.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/data-privacy/audit-logging",
+      "title": "Audit Logging",
+      "description": "The  [`@cap-js/audit-logging`](https://www.npmjs.com/package/@cap-js/audit-logging) plugin provides out-of-the box support for automatic audit logging of data privacy-related events, in particular changes to *personal data* and reads of *sensitive* data. Find here a step-by-step guide how to use it.",
+      "snippetCount": 22,
+      "relFile": "guides/data-privacy/audit-logging.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/data-privacy/drm",
+      "title": "Data Retention Management",
+      "description": "Under construction.",
+      "snippetCount": 0,
+      "relFile": "guides/data-privacy/drm.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/data-privacy/index",
+      "title": "Managing Data Privacy",
+      "description": "{{ $frontmatter.synopsis }} Find a step-by-step guide to these hereinafter...",
+      "snippetCount": 0,
+      "relFile": "guides/data-privacy/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/data-privacy/pdm",
+      "title": "Personal Data Management",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 9,
+      "relFile": "guides/data-privacy/pdm.md",
+      "type": "markdown"
+    },
+    {
       "id": "/cap/guides/extensibility/composition",
       "title": "Reuse and Compose",
       "description": "{{$frontmatter?.synopsis}}",
@@ -849,6 +889,78 @@
       "description": "{{ $frontmatter.synopsis }}",
       "snippetCount": 0,
       "relFile": "guides/extensibility/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/multitenancy/index",
+      "title": "Multitenancy",
+      "description": "[[toc]]",
+      "snippetCount": 80,
+      "relFile": "guides/multitenancy/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/multitenancy/mtxs",
+      "title": "MTX Services Reference",
+      "description": "{{$frontmatter?.synopsis}}",
+      "snippetCount": 67,
+      "relFile": "guides/multitenancy/mtxs.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/multitenancy/old-mtx-apis",
+      "title": "Old MTX Reference",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 37,
+      "relFile": "guides/multitenancy/old-mtx-apis.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/multitenancy/old-mtx-migration",
+      "title": "Migration from Old MTX {#migration}",
+      "description": "Towards new multitenancy capabilities",
+      "snippetCount": 29,
+      "relFile": "guides/multitenancy/old-mtx-migration.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/messaging/event-broker",
+      "title": "Using SAP Cloud Application Event Hub in Cloud Foundry",
+      "description": "[SAP Cloud Application Event Hub](https://help.sap.com/docs/event-broker) is the new default offering for messaging in SAP Business Technology Platform (SAP BTP).",
+      "snippetCount": 9,
+      "relFile": "guides/messaging/event-broker.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/messaging/event-mesh",
+      "title": "Using SAP Event Mesh in Cloud Foundry",
+      "description": "CAP provides out-of-the-box support for [SAP Event Mesh](https://help.sap.com/docs/event-mesh), and automatically handles many things behind the scenes, so that application coding stays agnostic and focused on conceptual messaging.",
+      "snippetCount": 10,
+      "relFile": "guides/messaging/event-mesh.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/messaging/index",
+      "title": "Events and Messaging",
+      "description": "<!-- <div id=\"impl-variants\" style=\"margin:-80px 0 80px 3px;\">",
+      "snippetCount": 30,
+      "relFile": "guides/messaging/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/messaging/s4",
+      "title": "Receiving Events from SAP S/4HANA Cloud Systems",
+      "description": "SAP S/4HANA integrates SAP Event Mesh as well as SAP Cloud Application Event Hub for messaging.",
+      "snippetCount": 7,
+      "relFile": "guides/messaging/s4.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/guides/messaging/task-queues",
+      "title": "Task Queues",
+      "description": "The _Outbox Pattern_ is a reliable strategy used in distributed systems to ensure that messages or events are consistently recorded and delivered, even in the face of failures.",
+      "snippetCount": 0,
+      "relFile": "guides/messaging/task-queues.md",
       "type": "markdown"
     },
     {
@@ -908,38 +1020,6 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/guides/multitenancy/index",
-      "title": "Multitenancy",
-      "description": "[[toc]]",
-      "snippetCount": 80,
-      "relFile": "guides/multitenancy/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/multitenancy/mtxs",
-      "title": "MTX Services Reference",
-      "description": "{{$frontmatter?.synopsis}}",
-      "snippetCount": 67,
-      "relFile": "guides/multitenancy/mtxs.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/multitenancy/old-mtx-apis",
-      "title": "Old MTX Reference",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 37,
-      "relFile": "guides/multitenancy/old-mtx-apis.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/multitenancy/old-mtx-migration",
-      "title": "Migration from Old MTX {#migration}",
-      "description": "Towards new multitenancy capabilities",
-      "snippetCount": 29,
-      "relFile": "guides/multitenancy/old-mtx-migration.md",
-      "type": "markdown"
-    },
-    {
       "id": "/cap/guides/security/aspects",
       "title": "Security Aspects",
       "description": "{{ $frontmatter.synopsis }}",
@@ -980,107 +1060,35 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/guides/data-privacy/annotations",
-      "title": "Annotating Personal Data",
+      "id": "/cap/java/cqn-services/application-services",
+      "title": "Application Services",
       "description": "<style scoped>",
-      "snippetCount": 7,
-      "relFile": "guides/data-privacy/annotations.md",
+      "snippetCount": 21,
+      "relFile": "java/cqn-services/application-services.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/guides/data-privacy/audit-logging",
-      "title": "Audit Logging",
-      "description": "The  [`@cap-js/audit-logging`](https://www.npmjs.com/package/@cap-js/audit-logging) plugin provides out-of-the box support for automatic audit logging of data privacy-related events, in particular changes to *personal data* and reads of *sensitive* data. Find here a step-by-step guide how to use it.",
+      "id": "/cap/java/cqn-services/index",
+      "title": "CQN Services { #cdsservices }",
+      "description": "<style scoped>",
+      "snippetCount": 0,
+      "relFile": "java/cqn-services/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/cqn-services/persistence-services",
+      "title": "Persistence Services",
+      "description": "<style scoped>",
+      "snippetCount": 32,
+      "relFile": "java/cqn-services/persistence-services.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/cqn-services/remote-services",
+      "title": "Remote Services",
+      "description": "<style scoped>",
       "snippetCount": 22,
-      "relFile": "guides/data-privacy/audit-logging.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/data-privacy/drm",
-      "title": "Data Retention Management",
-      "description": "Under construction.",
-      "snippetCount": 0,
-      "relFile": "guides/data-privacy/drm.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/data-privacy/index",
-      "title": "Managing Data Privacy",
-      "description": "{{ $frontmatter.synopsis }} Find a step-by-step guide to these hereinafter...",
-      "snippetCount": 0,
-      "relFile": "guides/data-privacy/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/data-privacy/pdm",
-      "title": "Personal Data Management",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 9,
-      "relFile": "guides/data-privacy/pdm.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/messaging/event-broker",
-      "title": "Using SAP Cloud Application Event Hub in Cloud Foundry",
-      "description": "[SAP Cloud Application Event Hub](https://help.sap.com/docs/event-broker) is the new default offering for messaging in SAP Business Technology Platform (SAP BTP).",
-      "snippetCount": 9,
-      "relFile": "guides/messaging/event-broker.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/messaging/event-mesh",
-      "title": "Using SAP Event Mesh in Cloud Foundry",
-      "description": "CAP provides out-of-the-box support for [SAP Event Mesh](https://help.sap.com/docs/event-mesh), and automatically handles many things behind the scenes, so that application coding stays agnostic and focused on conceptual messaging.",
-      "snippetCount": 10,
-      "relFile": "guides/messaging/event-mesh.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/messaging/index",
-      "title": "Events and Messaging",
-      "description": "<!-- <div id=\"impl-variants\" style=\"margin:-80px 0 80px 3px;\">",
-      "snippetCount": 30,
-      "relFile": "guides/messaging/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/messaging/s4",
-      "title": "Receiving Events from SAP S/4HANA Cloud Systems",
-      "description": "SAP S/4HANA integrates SAP Event Mesh as well as SAP Cloud Application Event Hub for messaging.",
-      "snippetCount": 7,
-      "relFile": "guides/messaging/s4.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/guides/messaging/task-queues",
-      "title": "Task Queues",
-      "description": "The _Outbox Pattern_ is a reliable strategy used in distributed systems to ensure that messages or events are consistently recorded and delivered, even in the face of failures.",
-      "snippetCount": 0,
-      "relFile": "guides/messaging/task-queues.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/apis/cds-add",
-      "title": "Plugins for `cds add`{#cds-add}",
-      "description": "<style scoped lang=\"scss\">",
-      "snippetCount": 29,
-      "relFile": "tools/apis/cds-add.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/apis/cds-import",
-      "title": "CDS Import API",
-      "description": "[[toc]]",
-      "snippetCount": 5,
-      "relFile": "tools/apis/cds-import.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/apis/index",
-      "title": "CDS Design Time APIs",
-      "description": "This guide is about programmatic CDS design-time APIs.",
-      "snippetCount": 2,
-      "relFile": "tools/apis/index.md",
+      "relFile": "java/cqn-services/remote-services.md",
       "type": "markdown"
     },
     {
@@ -1116,35 +1124,75 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/java/cqn-services/application-services",
-      "title": "Application Services",
+      "id": "/cap/java/operating-applications/dashboard",
+      "title": "Developer Dashboard",
       "description": "<style scoped>",
-      "snippetCount": 21,
-      "relFile": "java/cqn-services/application-services.md",
+      "snippetCount": 8,
+      "relFile": "java/operating-applications/dashboard.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/cqn-services/index",
-      "title": "CQN Services { #cdsservices }",
-      "description": "<style scoped>",
+      "id": "/cap/java/operating-applications/index",
+      "title": "Operating CAP Java Applications",
+      "description": "{{ $frontmatter.synopsis }}",
       "snippetCount": 0,
-      "relFile": "java/cqn-services/index.md",
+      "relFile": "java/operating-applications/index.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/cqn-services/persistence-services",
-      "title": "Persistence Services",
+      "id": "/cap/java/operating-applications/observability",
+      "title": "Observability",
       "description": "<style scoped>",
-      "snippetCount": 32,
-      "relFile": "java/cqn-services/persistence-services.md",
+      "snippetCount": 35,
+      "relFile": "java/operating-applications/observability.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/cqn-services/remote-services",
-      "title": "Remote Services",
+      "id": "/cap/java/operating-applications/optimizing",
+      "title": "Optimizing Applications",
       "description": "<style scoped>",
-      "snippetCount": 22,
-      "relFile": "java/cqn-services/remote-services.md",
+      "snippetCount": 5,
+      "relFile": "java/operating-applications/optimizing.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/operating-applications/sizing",
+      "title": "sizing",
+      "description": "",
+      "snippetCount": 0,
+      "relFile": "java/operating-applications/sizing.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/working-with-cql/index",
+      "title": "Working with CDS CQL",
+      "description": "{{ $frontmatter.synopsis }}",
+      "snippetCount": 0,
+      "relFile": "java/working-with-cql/index.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/working-with-cql/query-api",
+      "title": "Building CQL Statements",
+      "description": "<style scoped>",
+      "snippetCount": 130,
+      "relFile": "java/working-with-cql/query-api.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/working-with-cql/query-execution",
+      "title": "Executing CQL Statements",
+      "description": "<style scoped>",
+      "snippetCount": 40,
+      "relFile": "java/working-with-cql/query-execution.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/java/working-with-cql/query-introspection",
+      "title": "Introspecting CQL Statements",
+      "description": "<style scoped>",
+      "snippetCount": 27,
+      "relFile": "java/working-with-cql/query-introspection.md",
       "type": "markdown"
     },
     {
@@ -1196,35 +1244,27 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/java/working-with-cql/index",
-      "title": "Working with CDS CQL",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 0,
-      "relFile": "java/working-with-cql/index.md",
+      "id": "/cap/tools/apis/cds-add",
+      "title": "Plugins for `cds add`{#cds-add}",
+      "description": "<style scoped lang=\"scss\">",
+      "snippetCount": 29,
+      "relFile": "tools/apis/cds-add.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/working-with-cql/query-api",
-      "title": "Building CQL Statements",
-      "description": "<style scoped>",
-      "snippetCount": 130,
-      "relFile": "java/working-with-cql/query-api.md",
+      "id": "/cap/tools/apis/cds-import",
+      "title": "CDS Import API",
+      "description": "[[toc]]",
+      "snippetCount": 5,
+      "relFile": "tools/apis/cds-import.md",
       "type": "markdown"
     },
     {
-      "id": "/cap/java/working-with-cql/query-execution",
-      "title": "Executing CQL Statements",
-      "description": "<style scoped>",
-      "snippetCount": 40,
-      "relFile": "java/working-with-cql/query-execution.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/working-with-cql/query-introspection",
-      "title": "Introspecting CQL Statements",
-      "description": "<style scoped>",
-      "snippetCount": 27,
-      "relFile": "java/working-with-cql/query-introspection.md",
+      "id": "/cap/tools/apis/index",
+      "title": "CDS Design Time APIs",
+      "description": "This guide is about programmatic CDS design-time APIs.",
+      "snippetCount": 2,
+      "relFile": "tools/apis/index.md",
       "type": "markdown"
     },
     {
@@ -1236,51 +1276,123 @@
       "type": "markdown"
     },
     {
-      "id": "/cap/java/operating-applications/dashboard",
-      "title": "Developer Dashboard",
-      "description": "<style scoped>",
-      "snippetCount": 8,
-      "relFile": "java/operating-applications/dashboard.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/operating-applications/index",
-      "title": "Operating CAP Java Applications",
-      "description": "{{ $frontmatter.synopsis }}",
-      "snippetCount": 0,
-      "relFile": "java/operating-applications/index.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/operating-applications/observability",
-      "title": "Observability",
-      "description": "<style scoped>",
-      "snippetCount": 35,
-      "relFile": "java/operating-applications/observability.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/operating-applications/optimizing",
-      "title": "Optimizing Applications",
-      "description": "<style scoped>",
-      "snippetCount": 5,
-      "relFile": "java/operating-applications/optimizing.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/java/operating-applications/sizing",
-      "title": "sizing",
-      "description": "",
-      "snippetCount": 0,
-      "relFile": "java/operating-applications/sizing.md",
-      "type": "markdown"
-    },
-    {
       "id": "/cap/guides/extensibility/assets/customization-old",
       "title": "Extending and Customizing SaaS Solutions (Old)",
       "description": "{{ $frontmatter.synopsis }}",
       "snippetCount": 10,
       "relFile": "guides/extensibility/assets/customization-old.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-add.out",
+      "title": "cds-add.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-add.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-compile.out",
+      "title": "cds-compile.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-compile.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-debug.out",
+      "title": "cds-debug.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-debug.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-env-ls-requires-db.out",
+      "title": "cds-env-ls-requires-db.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-env-ls-requires-db.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-env-requires-db.out",
+      "title": "cds-env-requires-db.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-env-requires-db.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-env.out",
+      "title": "cds-env.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-env.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-eval-env-requires-db.out",
+      "title": "cds-eval-env-requires-db.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-eval-env-requires-db.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-help.out",
+      "title": "cds-help.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-help.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-init.out",
+      "title": "cds-init.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-init.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-repl.out",
+      "title": "cds-repl.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-repl.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-typer.out",
+      "title": "cds-typer.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-typer.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-version-md.out",
+      "title": "cds-version-md.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-version-md.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-version.out",
+      "title": "cds-version.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-version.out.md",
+      "type": "markdown"
+    },
+    {
+      "id": "/cap/tools/assets/help/cds-watch.out",
+      "title": "cds-watch.out",
+      "description": "<!-- this file is automatically generated and updated by a github action -->",
+      "snippetCount": 0,
+      "relFile": "tools/assets/help/cds-watch.out.md",
       "type": "markdown"
     },
     {
@@ -1449,118 +1561,6 @@
       "description": "<script setup>",
       "snippetCount": 0,
       "relFile": "tools/cds-lint/rules/valid-csv-header.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-add.out",
-      "title": "cds-add.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-add.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-compile.out",
-      "title": "cds-compile.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-compile.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-debug.out",
-      "title": "cds-debug.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-debug.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-env-ls-requires-db.out",
-      "title": "cds-env-ls-requires-db.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-env-ls-requires-db.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-env-requires-db.out",
-      "title": "cds-env-requires-db.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-env-requires-db.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-env.out",
-      "title": "cds-env.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-env.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-eval-env-requires-db.out",
-      "title": "cds-eval-env-requires-db.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-eval-env-requires-db.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-help.out",
-      "title": "cds-help.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-help.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-init.out",
-      "title": "cds-init.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-init.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-repl.out",
-      "title": "cds-repl.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-repl.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-typer.out",
-      "title": "cds-typer.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-typer.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-version-md.out",
-      "title": "cds-version-md.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-version-md.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-version.out",
-      "title": "cds-version.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-version.out.md",
-      "type": "markdown"
-    },
-    {
-      "id": "/cap/tools/assets/help/cds-watch.out",
-      "title": "cds-watch.out",
-      "description": "<!-- this file is automatically generated and updated by a github action -->",
-      "snippetCount": 0,
-      "relFile": "tools/assets/help/cds-watch.out.md",
       "type": "markdown"
     }
   ]

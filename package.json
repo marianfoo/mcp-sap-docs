@@ -4,24 +4,28 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "build":        "tsc",
-    "build:index":  "tsc && node dist/scripts/build-index.js",
-    "start":        "node dist/src/server.js",
-    "start:http":   "node dist/src/http-server.js"
+    "build": "tsc",
+    "build:index": "tsc && node dist/scripts/build-index.js",
+    "build:fts": "tsc && node dist/scripts/build-fts.js",
+    "build:all": "npm run build:index && npm run build:fts",
+    "start": "node dist/src/server.js",
+    "start:http": "node dist/src/http-server.js"
   },
   "ts-node": {
     "esm": true
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
+    "better-sqlite3": "^12.2.0",
     "commander": "^11.0.0",
     "fast-glob": "^3.3.2",
     "gray-matter": "^4.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.11.19",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.4",
-    "@types/node": "^20.11.19"
+    "typescript": "^5.4.4"
   }
-} 
+}
