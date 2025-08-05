@@ -9,13 +9,16 @@ interface DocEntry {
   description: string;
   snippetCount: number;
   relFile: string;         // path relative to sources/…
-  type?: "markdown" | "jsdoc" | "sample";  // type of documentation
+  type?: "markdown" | "jsdoc" | "sample" | "markdown-section";  // type of documentation
   controlName?: string;    // extracted UI5 control name (e.g., "Wizard", "Button")
   namespace?: string;      // UI5 namespace (e.g., "sap.m", "sap.f")
   keywords?: string[];     // searchable keywords and tags
   properties?: string[];   // control properties for API docs
   events?: string[];       // control events for API docs
   aggregations?: string[]; // control aggregations for API docs
+  parentDocument?: string; // for sections, the ID of the parent document
+  sectionStartLine?: number; // for sections, the line number where the section starts
+  headingLevel?: number;   // for sections, the heading level (2=##, 3=###, 4=####)
 }
 
 interface LibraryBundle {
@@ -305,6 +308,83 @@ function extractJSDocInfo(content: string, fileName: string) {
   };
 }
 
+function extractMarkdownSections(content: string, lines: string[], src: any, relFile: string, docs: DocEntry[]) {
+  const sections: { title: string; content: string; startLine: number; level: number }[] = [];
+  let currentSection: { title: string; content: string; startLine: number; level: number } | null = null;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Check for headings (##, ###, ####)
+    let headingLevel = 0;
+    let headingText = '';
+    
+    if (line.startsWith('#### ')) {
+      headingLevel = 4;
+      headingText = line.slice(5).trim();
+    } else if (line.startsWith('### ')) {
+      headingLevel = 3;
+      headingText = line.slice(4).trim();
+    } else if (line.startsWith('## ')) {
+      headingLevel = 2;
+      headingText = line.slice(3).trim();
+    }
+    
+    if (headingLevel > 0) {
+      // Save previous section if it exists
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      
+      // Start new section
+      currentSection = {
+        title: headingText,
+        content: '',
+        startLine: i,
+        level: headingLevel
+      };
+    } else if (currentSection) {
+      // Add content to current section
+      currentSection.content += line + '\n';
+    }
+  }
+  
+  // Add the last section
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+  
+  // Create separate docs entries for meaningful sections
+  for (const section of sections) {
+    // Skip very short sections or those with placeholder titles
+    if (section.content.trim().length < 100 || section.title.length < 3) {
+      continue;
+    }
+    
+    // Generate description from first few sentences of section content
+    const contentLines = section.content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    const description = contentLines.slice(0, 3).join(' ').trim() || section.title;
+    
+    // Count code snippets in this section
+    const snippetCount = (section.content.match(/```/g)?.length || 0) / 2;
+    
+    // Create section entry
+    const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    
+    docs.push({
+      id: sectionId,
+      title: section.title,
+      description: description.substring(0, 300) + (description.length > 300 ? '...' : ''),
+      snippetCount,
+      relFile,
+      type: 'markdown-section' as any,
+      parentDocument: `${src.id}/${relFile.replace(/\.md$/, "")}`,
+      sectionStartLine: section.startLine,
+      headingLevel: section.level
+    });
+  }
+}
+
 async function main() {
   await fs.mkdir("dist/data", { recursive: true });
   const all: Record<string, LibraryBundle> = {};
@@ -315,11 +395,13 @@ async function main() {
       patterns.push(`!${src.exclude}`);
     }
     const files = await fg(patterns, { cwd: src.absDir, absolute: true });
+
     const docs: DocEntry[] = [];
 
     for (const absPath of files) {
       const rel = path.relative(src.absDir, absPath).replace(/\\/g, "/");
       const raw = await fs.readFile(absPath, "utf8");
+
 
       let title: string;
       let description: string;
@@ -328,14 +410,27 @@ async function main() {
 
       if (src.type === "markdown") {
         // Handle markdown files
-        const { content } = matter(raw);                  // strip front-matter if any
+        const { content, data: frontmatter } = matter(raw);
         const lines = content.split(/\r?\n/);
 
         title = lines.find((l) => l.startsWith("# "))?.slice(2).trim() ||
                 path.basename(rel, ".md");
-        description = lines.find((l) => l.trim() && !l.startsWith("#"))?.trim() || "";
+        
+        // Try to get description from frontmatter synopsis first, then fall back to content
+        let rawDescription = lines.find((l) => l.trim() && !l.startsWith("#"))?.trim() || "";
+        if (frontmatter?.synopsis && rawDescription.includes("{{ $frontmatter.synopsis }}")) {
+          description = frontmatter.synopsis;
+        } else {
+          description = rawDescription;
+        }
+        
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
         id = `${src.id}/${rel.replace(/\.md$/, "")}`;
+        
+        // Extract individual sections as separate entries for all markdown docs
+        if (content.includes('##')) {
+          extractMarkdownSections(content, lines, src, rel, docs);
+        }
       } else if (src.type === "jsdoc") {
         // Handle JavaScript files with JSDoc
         const jsDocInfo = extractJSDocInfo(raw, path.basename(absPath));
@@ -408,6 +503,7 @@ async function main() {
 
       // For markdown files, still use the basic structure
       if (src.type === "markdown") {
+
         docs.push({ 
           id, 
           title, 

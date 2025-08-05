@@ -694,6 +694,9 @@ function applyContextPenalties(score: number, libraryId: string, queryContext: s
 export async function searchLibraries(query: string, fileContent?: string): Promise<SearchResponse> {
   const index = await loadIndex();
   let queries = expandQuery(query);
+  
+  // Ensure original query is always first for exact matches
+  queries = [query, ...queries.filter(q => q !== query)];
 
   // If file content is provided, extract controls/properties and add to queries
   if (fileContent) {
@@ -805,10 +808,30 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           );
         }
         
-        // Exact matches get highest priority
+        // Exact matches get highest priority with heading level scoring
         if (doc.title.toLowerCase() === q.toLowerCase()) {
-          score = 150; // Much higher than boost can reach
-          matchType = 'Exact Title Match';
+          // Base score for exact match
+          score = 150;
+          
+
+          
+          // Adjust score based on heading level for sections
+          if ((doc as any).headingLevel) {
+            const headingLevel = (doc as any).headingLevel;
+            if (headingLevel === 2) {
+              score = 160; // ## sections get highest score
+            } else if (headingLevel === 3) {
+              score = 155; // ### sections get medium score  
+            } else if (headingLevel === 4) {
+              score = 152; // #### sections get lower score
+            }
+            matchType = `Exact Title Match (H${headingLevel})`;
+          } else {
+            // Main document title (# level) gets the highest score
+            score = 165;
+            matchType = 'Exact Title Match (Main)';
+          }
+
         } else if (controlNameMatch && controlName?.toLowerCase() === q.toLowerCase()) {
           score = 98;
           matchType = 'Exact Control Name Match';
@@ -877,10 +900,10 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           
           // CAP-specific boosts
           if (lib.id === '/cap') {
-            const capTerms = ['cds', 'cap', 'service', 'entity', 'annotation', 'aspect', 'odata', 'hana'];
+            const capTerms = ['cds', 'cap', 'service', 'entity', 'annotation', 'aspect', 'odata', 'hana', 'temporal'];
             if (capTerms.some(term => q.includes(term))) score += 10;
             // Extra boost for CAP core concepts
-            const coreCapTerms = ['cds', 'entity', 'service', 'aspect'];
+            const coreCapTerms = ['cds', 'entity', 'service', 'aspect', 'temporal'];
             if (coreCapTerms.some(term => q.includes(term))) score += 5;
             // Boost for development guides
             if (q.includes('guide') || q.includes('tutorial') || q.includes('how')) score += 8;
