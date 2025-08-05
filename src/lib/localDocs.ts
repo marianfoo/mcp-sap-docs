@@ -419,16 +419,21 @@ function expandQuery(query: string): string[] {
     
     // === WDI5-SPECIFIC TERMS ===
     testing: ["testing", "test", "e2e", "end-to-end", "integration test", "ui test",
-              "browser test", "selenium", "webdriver", "automation"],
+              "browser test", "selenium", "webdriver", "automation", "test framework"],
     
     wdi5: ["wdi5", "webdriver", "ui5 testing", "browser automation", "page object", 
-           "test framework", "selector", "locator", "element", "assertion"],
+           "test framework", "selector", "locator", "element", "assertion", "wdio",
+           "ui5 test api", "sap.ui.test", "test library", "fe-testlib"],
     
     selector: ["selector", "locator", "element", "control selector", "id", "property",
-               "binding", "aggregation", "wdi5 selector", "ui5 control"],
+               "binding", "aggregation", "wdi5 selector", "ui5 control", "matcher",
+               "sap.ui.test.matchers", "byId", "byProperty", "byBinding"],
     
     browser: ["browser", "chrome", "firefox", "safari", "webdriver", "headless",
-              "viewport", "screenshot", "debugging"],
+              "viewport", "screenshot", "debugging", "browser automation"],
+    
+    pageobject: ["page object", "pageobject", "page objects", "test structure", 
+                 "test organization", "test patterns", "ui5 test patterns"],
     
     // === CROSS-PLATFORM TERMS ===
     // Navigation & Routing (UI5 + CAP)
@@ -483,8 +488,8 @@ function expandQuery(query: string): string[] {
   if (q.includes('cap') || q.includes('cds')) {
     variations.push('CAP', 'cds', 'Core Data Services', 'service', 'entity');
   }
-  if (q.includes('wdi5') || q.includes('test')) {
-    variations.push('wdi5', 'testing', 'e2e', 'webdriver', 'ui5 testing');
+  if (q.includes('wdi5') || q.includes('test') || q.includes('testing') || q.includes('e2e')) {
+    variations.push('wdi5', 'testing', 'e2e', 'webdriver', 'ui5 testing', 'wdio', 'pageobject', 'selector', 'locator');
   }
   if (q.includes('ui5') || q.includes('sap.')) {
     variations.push('UI5', 'SAPUI5', 'OpenUI5', 'control', 'Fiori');
@@ -624,7 +629,7 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   ).length;
   
   // wdi5 context indicators  
-  const wdi5Indicators = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'webdriver', 'selenium', 'automation'];
+  const wdi5Indicators = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'webdriver', 'selenium', 'automation', 'wdio', 'pageobject', 'selector', 'locator', 'assertion', 'fe-testlib'];
   const wdi5Score = wdi5Indicators.filter(term => 
     allQueries.some(query => query.includes(term))
   ).length;
@@ -883,11 +888,14 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           
           // wdi5-specific boosts
           if (lib.id === '/wdi5') {
-            const wdi5Terms = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'selector', 'webdriver'];
-            if (wdi5Terms.some(term => q.includes(term))) score += 12;
+            const wdi5Terms = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'selector', 'webdriver', 'wdio', 'pageobject', 'fe-testlib'];
+            if (wdi5Terms.some(term => q.includes(term))) score += 15;
             // Extra boost for testing concepts
-            const testingTerms = ['test', 'testing', 'assertion', 'automation'];
-            if (testingTerms.some(term => q.includes(term))) score += 8;
+            const testingTerms = ['test', 'testing', 'assertion', 'automation', 'locator', 'matcher'];
+            if (testingTerms.some(term => q.includes(term))) score += 10;
+            // Boost for UI5 testing specific terms
+            const ui5TestingTerms = ['sap.ui.test', 'ui5 test', 'control selector', 'byId', 'byProperty'];
+            if (ui5TestingTerms.some(term => q.includes(term))) score += 12;
           }
           
           // Apply context-aware penalties to reduce off-topic results
@@ -1102,6 +1110,8 @@ export async function fetchLibraryDocumentation(
           sourcePath = "openui5/src";
         } else if (lib.id === "/openui5-samples") {
           sourcePath = "openui5/src";
+        } else if (lib.id === "/wdi5") {
+          sourcePath = "wdi5/docs";
         } else {
           throw new Error(`Unknown library ID: ${lib.id}`);
         }
@@ -1150,6 +1160,8 @@ export async function fetchLibraryDocumentation(
       sourcePath = "openui5/src";
     } else if (lib.id === "/openui5-samples") {
       sourcePath = "openui5/src";
+    } else if (lib.id === "/wdi5") {
+      sourcePath = "wdi5/docs";
     } else {
       throw new Error(`Unknown library ID: ${lib.id}`);
     }
@@ -1307,6 +1319,8 @@ export async function readDocumentationResource(uri: string) {
       sourcePath = "openui5/src";
     } else if (libraryId === "/openui5-samples") {
       sourcePath = "openui5/src";
+    } else if (libraryId === "/wdi5") {
+      sourcePath = "wdi5/docs";
     } else {
       throw new Error(`Unknown library ID: ${libraryId}`);
     }

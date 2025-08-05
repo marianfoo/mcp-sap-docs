@@ -59,13 +59,13 @@ function createServer() {
       tools: [
         {
           name: "sap_docs_search",
-          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, and OpenUI5 control APIs. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
+          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, wdi5 testing framework, and OpenUI5 control APIs. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), testing topics (like wdi5, e2e testing, browser automation), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
           inputSchema: {
             type: "object",
             properties: {
               query: {
                 type: "string",
-                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', or any SAP development concept. Can be UI5 control names, technical concepts, or general topics."
+                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', or any SAP development concept. Can be UI5 control names, technical concepts, testing topics, or general topics."
               }
             },
             required: ["query"]
@@ -87,17 +87,17 @@ function createServer() {
         },
         {
           name: "sap_docs_get",
-          description: "Retrieve specific SAP documentation, UI5 control API details, or SAP Community posts. Use the IDs returned from sap_docs_search or sap_community_search to get full content. Works with library IDs, document IDs, and community post IDs (e.g., 'community-12345').",
+          description: "Retrieve specific SAP documentation, UI5 control API details, wdi5 testing docs, or SAP Community posts. Use the IDs returned from sap_docs_search or sap_community_search to get full content. Works with library IDs, document IDs, and community post IDs (e.g., 'community-12345').",
           inputSchema: {
             type: "object",
             properties: {
               library_id: {
                 type: "string",
-                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/openui5-api' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation. For community posts, use IDs like 'community-12345' from sap_community_search results."
+                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation, or '/wdi5/authentication' for testing docs. For community posts, use IDs like 'community-12345' from sap_community_search results."
               },
               topic: {
                 type: "string",
-                description: "Optional topic filter to narrow down results within a library. Examples: 'properties', 'events', 'methods', 'aggregations', 'routing', 'authentication', 'annotations'. Most useful with library IDs rather than specific document IDs."
+                description: "Optional topic filter to narrow down results within a library. Examples: 'properties', 'events', 'methods', 'aggregations', 'routing', 'authentication', 'annotations', 'testing', 'locators', 'pageObjects'. Most useful with library IDs rather than specific document IDs."
               }
             },
             required: ["library_id"]
@@ -120,7 +120,7 @@ function createServer() {
           content: [
             {
               type: "text",
-              text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', or concepts like 'routing', 'annotation', 'authentication'.`
+              text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication'.`
             }
           ]
         };
