@@ -9,7 +9,9 @@
     "build:fts": "tsc && node dist/scripts/build-fts.js",
     "build:all": "npm run build:index && npm run build:fts",
     "start": "node dist/src/server.js",
-    "start:http": "node dist/src/http-server.js"
+    "start:http": "node dist/src/http-server.js",
+    "setup": "bash setup.sh",
+    "setup:submodules": "git submodule update --init --recursive --remote --depth 1"
   },
   "ts-node": {
     "esm": true

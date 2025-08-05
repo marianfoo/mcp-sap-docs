@@ -1,0 +1,23 @@
+{
+  "search.exclude": {
+    "**/sources/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/data/**": true
+  },
+  "files.exclude": {
+    "**/sources/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/data/**": true
+  },
+  "files.watcherExclude": {
+    "**/sources/**": true,
+    "**/dist/**": true,
+    "**/data/**": true
+  },
+  "git.ignoredFolders": [
+    "sources"
+  ],
+  "typescript.preferences.includePackageJsonAutoImports": "off"
+} 

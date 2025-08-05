@@ -7,29 +7,20 @@ echo "🚀 Setting up SAP Documentation MCP Server..."
 echo "📦 Installing dependencies..."
 npm install
 
-# Clone documentation repositories
-echo "📚 Cloning documentation repositories..."
+# Initialize and update git submodules
+echo "📚 Initializing documentation submodules..."
 
+# Initialize submodules if not already done
 if [ ! -d "./sources/sapui5-docs" ]; then
-    echo "  → Cloning SAP UI5 documentation..."
-    git clone --depth=1 https://github.com/SAP-docs/sapui5 ./sources/sapui5-docs
+    echo "  → Initializing git submodules..."
+    git submodule update --init --recursive --depth 1
 else
-    echo "  ✓ SAP UI5 documentation already exists"
+    echo "  ✓ Submodules already initialized"
 fi
 
-if [ ! -d "./sources/cap-docs" ]; then
-    echo "  → Cloning SAP CAP documentation..."
-    git clone --depth=1 https://github.com/cap-js/docs ./sources/cap-docs
-else
-    echo "  ✓ SAP CAP documentation already exists"
-fi
-
-if [ ! -d "./sources/openui5" ]; then
-    echo "  → Cloning OpenUI5 API documentation..."
-    git clone --depth=1 https://github.com/SAP/openui5 ./sources/openui5
-else
-    echo "  ✓ OpenUI5 API documentation already exists"
-fi
+# Update submodules to latest
+echo "  → Updating submodules to latest..."
+git submodule update --init --recursive --remote --depth 1
 
 # Build the search index
 echo "🔍 Building search index..."

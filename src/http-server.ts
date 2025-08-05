@@ -245,5 +245,3 @@ const PORT = Number(process.env.PORT || 3001);
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
 });
-
-}); 

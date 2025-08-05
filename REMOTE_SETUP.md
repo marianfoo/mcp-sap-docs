@@ -130,6 +130,27 @@ You can use both local and remote MCP servers simultaneously:
 - **Protocol**: Server-Sent Events (SSE)
 - **Uptime**: Monitored 24/7 with automatic deployment
 - **Updates**: Automatically synced with latest documentation
+- **Environment**: Uses PM2 for process management (no Docker)
+
+## 🖥️ Local Development
+
+### VS Code Performance Optimization
+The large documentation submodules are excluded from VS Code operations to prevent crashes:
+
+- **Search Excluded**: `sources/`, `node_modules/`, `dist/`, `data/`
+- **File Explorer Hidden**: Large submodule folders are hidden
+- **Git Operations**: Submodules are excluded from local git tracking
+
+### Local Setup
+For local development without the large submodules:
+
+```bash
+# Quick setup (excludes large submodules)
+npm run setup
+
+# Or manually initialize submodules
+npm run setup:submodules
+```
 
 ## 📞 Support
 

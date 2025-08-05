@@ -1,0 +1,11 @@
+# Handle large files
+*.sqlite binary
+*.sqlite-shm binary
+*.sqlite-wal binary
+*.json -text
+*.md text
+*.ts text
+*.js text
+
+# Submodules
+sources/ -text 
