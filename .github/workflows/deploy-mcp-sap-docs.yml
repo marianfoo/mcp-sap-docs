@@ -12,7 +12,7 @@ jobs:
       name: remove server
 
     steps:
-      - name: Check out repo
+      - name: Check out repo (for action context only)
         uses: actions/checkout@v4
 
       - name: Preflight verify required secrets are present
@@ -26,7 +26,7 @@ jobs:
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to server
+      - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -34,62 +34,40 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -Eeuo pipefail
-            echo "==> Ensure base path exists"
-            sudo mkdir -p /opt/mcp-sap
-            sudo chown -R $USER:$USER /opt/mcp-sap
 
-            echo "==> Sync/clone repository for mcp-sap-docs"
-            cd /opt/mcp-sap
-            if [ -d mcp-sap-docs/.git ]; then
-              cd mcp-sap-docs
-              if ! git remote -v | grep -q 'marianfoo/mcp-sap-docs'; then
-                git remote set-url origin https://github.com/marianfoo/mcp-sap-docs.git
-              fi
-              echo "  -> Fetching latest changes"
+            echo "==> Ensure base path exists and owned by user"
+            sudo mkdir -p /opt/mcp-sap
+            sudo chown -R "$USER":"$USER" /opt/mcp-sap
+
+            echo "==> Clone or update repo (with submodules)"
+            if [ -d /opt/mcp-sap/mcp-sap-docs/.git ]; then
+              cd /opt/mcp-sap/mcp-sap-docs
+              git config --global url."https://github.com/".insteadOf git@github.com:
               git fetch --prune
               git reset --hard origin/main
-              
-              echo "  -> Configuring Git to use HTTPS instead of SSH"
-              git config --global url."https://github.com/".insteadOf git@github.com:
-              
-              echo "  -> Updating git submodules (documentation sources)"
-              git config --global url."https://github.com/".insteadOf git@github.com:
               git submodule update --init --recursive --remote --depth 1
-              cd ..
             else
-              echo "  -> Configuring Git to use HTTPS instead of SSH"
+              cd /opt/mcp-sap
               git config --global url."https://github.com/".insteadOf git@github.com:
-              
-              echo "  -> Cloning repository with submodules"
               git clone --recursive --depth 1 https://github.com/marianfoo/mcp-sap-docs.git
               cd mcp-sap-docs
-              echo "  -> Ensuring submodules are up to date"
-              git submodule update --remote --depth 1
-              cd ..
+              git submodule update --init --recursive --remote --depth 1
             fi
 
-            echo "==> Installing dependencies and building"
-            cd mcp-sap-docs
+            echo "==> Build index + FTS"
             npm ci
             npm run build:all
+            # ensure TS compiled dist/ is up to date
             npm run build
-            cd ..
 
-            echo "==> Rebuild/refresh docker compose stack"
-            docker compose -f /opt/mcp-sap/docker-compose.yml up -d --build
+            echo "==> (Re)start PM2 processes"
+            # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001
+            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-proxy || pm2 restart mcp-sap-proxy
+            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http  || pm2 restart mcp-sap-http
+            pm2 save
 
-            echo "==> Restart PM2 processes (if PM2 is available)"
-            if command -v pm2 &> /dev/null; then
-              echo "  -> Restarting PM2 processes"
-              pm2 restart ecosystem.config.js || echo "PM2 restart failed, continuing..."
-            else
-              echo "  -> PM2 not available, skipping PM2 restart"
-            fi
-
-            echo "==> Health check"
-            for i in $(seq 1 30); do
-              curl -fsS http://127.0.0.1:18080/status >/dev/null 2>&1 && break
-              echo "Attempt $i/30: waiting..."
-              sleep 2
-            done
-            curl -fsS http://127.0.0.1:18080/status || { echo "Service not healthy"; exit 1; }
+            echo "==> Health checks"
+            for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/status >/dev/null && break || sleep 2; done
+            curl -fsS http://127.0.0.1:18080/status
+            for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3001/status  >/dev/null && break || sleep 2; done
+            curl -fsS http://127.0.0.1:3001/status

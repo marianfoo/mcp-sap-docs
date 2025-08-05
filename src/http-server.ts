@@ -1,167 +1,176 @@
 import { createServer } from "http";
-import { readFileSync, statSync } from "fs";
+import { readFileSync, statSync, existsSync, readdirSync } from "fs";
 import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { dirname, join, resolve } from "path";
 import { execSync } from "child_process";
-import { searchLibraries, fetchLibraryDocumentation } from "./lib/localDocs.js";
+import { searchLibraries } from "./lib/localDocs.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Read package.json for version info
-let packageInfo = { version: "unknown", name: "mcp-sap-docs" };
+// ---- build/package meta -----------------------------------------------------
+let packageInfo: { version: string; name: string } = { version: "unknown", name: "mcp-sap-docs" };
 try {
   const packagePath = join(__dirname, "../../package.json");
   packageInfo = JSON.parse(readFileSync(packagePath, "utf8"));
 } catch (error) {
   console.warn("Could not read package.json:", error instanceof Error ? error.message : "Unknown error");
 }
-
-// Build timestamp (when the server was compiled)
 const buildTimestamp = new Date().toISOString();
 
-interface MCPRequest {
-  role: string;
-  content: string;
+// ---- helpers ----------------------------------------------------------------
+function safeExec(cmd: string, cwd?: string) {
+  try {
+    return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], cwd }).trim();
+  } catch {
+    return "";
+  }
+}
+
+// Handle both normal repos and submodules where `.git` is a FILE with `gitdir: …`
+function resolveGitDir(repoPath: string): string | null {
+  const dotGit = join(repoPath, ".git");
+  if (!existsSync(dotGit)) return null;
+  const st = statSync(dotGit);
+  if (st.isDirectory()) return dotGit;
+
+  // .git is a file that points to the real gitdir
+  const content = readFileSync(dotGit, "utf8");
+  const m = content.match(/^gitdir:\s*(.+)$/m);
+  if (!m) return null;
+  return resolve(repoPath, m[1]);
+}
+
+function readGitMeta(repoPath: string) {
+  try {
+    const gitDir = resolveGitDir(repoPath);
+    if (!gitDir) return { error: "No git dir" };
+
+    const headPath = join(gitDir, "HEAD");
+    const head = readFileSync(headPath, "utf8").trim();
+    if (head.startsWith("ref: ")) {
+      const ref = head.slice(5).trim();
+      const refPath = join(gitDir, ref);
+      const commit = readFileSync(refPath, "utf8").trim();
+      const date = safeExec(`git log -1 --format="%ci"`, repoPath);
+      return {
+        branch: ref.split("/").pop(),
+        commit: commit.substring(0, 7),
+        fullCommit: commit,
+        lastModified: date ? new Date(date).toISOString() : statSync(refPath).mtime.toISOString(),
+      };
+    } else {
+      // detached
+      const date = safeExec(`git log -1 --format="%ci"`, repoPath);
+      return {
+        commit: head.substring(0, 7),
+        fullCommit: head,
+        detached: true,
+        lastModified: date ? new Date(date).toISOString() : statSync(headPath).mtime.toISOString(),
+      };
+    }
+  } catch (e: any) {
+    return { error: e?.message || "git meta error" };
+  }
 }
 
 async function handleMCPRequest(content: string) {
-  // Use the enhanced search functionality for any query
   try {
     const searchResult = await searchLibraries(content);
-    
     if (searchResult.results.length > 0) {
-      return {
-        role: "assistant",
-        content: searchResult.results[0].description
-      };
-    } else {
-      return {
-        role: "assistant",
-        content: searchResult.error || `No results found for "${content}". Try searching for UI5 controls like 'button', 'table', 'wizard', or concepts like 'routing', 'annotation', 'authentication', 'cds entity', 'wdi5 testing'.`
-      };
+      return { role: "assistant", content: searchResult.results[0].description };
     }
-  } catch (error) {
-    console.error("Search error:", error);
     return {
       role: "assistant",
-      content: `Sorry, there was an error searching for "${content}". Please try again with a different query.`
+      content:
+        searchResult.error ||
+        `No results for "${content}". Try 'button', 'table', 'wizard', 'routing', 'annotation', 'authentication', 'cds entity', 'wdi5 testing'.`,
     };
+  } catch (error) {
+    console.error("Search error:", error);
+    return { role: "assistant", content: `Error searching for "${content}". Try a different query.` };
   }
 }
 
+function json(res: any, code: number, payload: unknown) {
+  res.statusCode = code;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(payload, null, 2));
+}
+
+// ---- server -----------------------------------------------------------------
 const server = createServer(async (req, res) => {
-  // Enable CORS
+  // CORS (you can tighten later if needed)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return json(res, 200, { ok: true });
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(200);
-    res.end();
-    return;
+  // healthz/readyz: cheap checks for PM2/K8s or manual curl
+  if (req.method === "GET" && (req.url === "/healthz" || req.url === "/readyz")) {
+    return json(res, 200, { status: "ok", ts: new Date().toISOString() });
   }
 
-  // Enhanced status endpoint with version and deployment info
+  // status: richer info
   if (req.method === "GET" && req.url === "/status") {
-    res.setHeader("Content-Type", "application/json");
-    res.writeHead(200);
-    
-    // Try to read git info if available
-    let gitInfo = {};
+    // top-level repo git info
+    let gitInfo: any = {};
     try {
-      const gitHeadPath = join(__dirname, "../../.git/HEAD");
-      const gitHead = readFileSync(gitHeadPath, "utf8").trim();
-      
-      if (gitHead.startsWith("ref: ")) {
-        // We're on a branch
-        const branchRef = gitHead.substring(5);
-        const commitPath = join(__dirname, "../../.git", branchRef);
-        const commitHash = readFileSync(commitPath, "utf8").trim();
-        gitInfo = {
-          branch: branchRef.split("/").pop(),
-          commit: commitHash.substring(0, 7),
-          fullCommit: commitHash
-        };
-      } else {
-        // Detached HEAD
-        gitInfo = {
-          commit: gitHead.substring(0, 7),
-          fullCommit: gitHead,
-          detached: true
-        };
+      const repoPath = resolve(__dirname, "../..");
+      gitInfo = readGitMeta(repoPath);
+      // normalize to include branch if unknown
+      if (!gitInfo.branch) {
+        const branch = safeExec("git rev-parse --abbrev-ref HEAD", repoPath);
+        if (branch && branch !== "HEAD") gitInfo.branch = branch;
       }
-    } catch (error) {
+    } catch {
       gitInfo = { error: "Git info not available" };
     }
 
-    // Check documentation status and get resource information
+    // docs/search status
+    const sourcesRoot = join(__dirname, "../../sources");
+    const knownSources = ["sapui5-docs", "cap-docs", "openui5", "wdi5"];
+    const presentSources = existsSync(sourcesRoot)
+      ? readdirSync(sourcesRoot, { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name)
+      : [];
+
+    const toCheck = knownSources.filter((s) => presentSources.includes(s));
+    const resources: Record<string, any> = {};
+    let totalResources = 0;
+
+    for (const name of knownSources) {
+      const p = join(sourcesRoot, name);
+      if (!existsSync(p)) {
+        resources[name] = { status: "missing", error: "not found" };
+        continue;
+      }
+      const meta = readGitMeta(p);
+      if ((meta as any).error) {
+        // still count as available content; just git meta missing (e.g., copied tree)
+        resources[name] = { status: "available", note: (meta as any).error, path: p };
+        totalResources++;
+      } else {
+        resources[name] = { status: "available", path: p, ...meta };
+        totalResources++;
+      }
+    }
+
+    // index + FTS footprint
+    const dataRoot = join(__dirname, "../../data");
+    const indexJson = join(dataRoot, "index.json");
+    const ftsDb = join(dataRoot, "docs.sqlite");
+    const indexStat = existsSync(indexJson) ? statSync(indexJson) : null;
+    const ftsStat = existsSync(ftsDb) ? statSync(ftsDb) : null;
+
+    // quick search smoke test
     let docsStatus = "unknown";
-    let resourceInfo: any = {
-      totalResources: 0,
-      sources: {},
-      lastUpdated: "unknown"
-    };
-    
     try {
-      const testSearch = await searchLibraries("test");
+      const testSearch = await searchLibraries("button");
       docsStatus = testSearch.results.length > 0 ? "available" : "no_results";
-      
-      // Get resource information (file counts, last modified times)
-      const sourcesPath = join(__dirname, "../../sources");
-      
-      // Check each documentation source
-      const sources = ["sapui5-docs", "cap-docs", "openui5", "wdi5"];
-      for (const source of sources) {
-        const sourcePath = join(sourcesPath, source);
-        try {
-          const stats = readFileSync(join(sourcePath, ".git/HEAD"), "utf8").trim();
-          const refFile = join(sourcePath, ".git", stats.startsWith("ref: ") ? stats.substring(5) : "");
-          const lastCommit = readFileSync(refFile, "utf8").trim().substring(0, 7);
-          
-          // Try to get commit date
-          let lastModified = "unknown";
-          try {
-            const gitLog = execSync(`cd "${sourcePath}" && git log -1 --format="%ci"`, { encoding: "utf8" });
-            lastModified = new Date(gitLog.trim()).toISOString();
-          } catch (e) {
-            // If git log fails, use file modification time as fallback
-            try {
-              const headStats = statSync(refFile);
-              lastModified = headStats.mtime.toISOString();
-            } catch (statError) {
-              // File doesn't exist, keep as "unknown"
-            }
-          }
-          
-          resourceInfo.sources[source] = {
-            status: "available",
-            lastCommit,
-            lastModified,
-            path: sourcePath
-          };
-          resourceInfo.totalResources++;
-        } catch (error) {
-          resourceInfo.sources[source] = {
-            status: "missing",
-            error: error instanceof Error ? error.message : "Unknown error"
-          };
-        }
-      }
-      
-      // Get overall last updated time (most recent source update)
-      const lastUpdates = Object.values(resourceInfo.sources)
-        .filter((s: any) => s.lastModified && s.lastModified !== "unknown")
-        .map((s: any) => new Date(s.lastModified))
-        .sort((a, b) => b.getTime() - a.getTime());
-      
-      if (lastUpdates.length > 0) {
-        resourceInfo.lastUpdated = lastUpdates[0].toISOString();
-      }
-      
-    } catch (error) {
+    } catch {
       docsStatus = "error";
-      resourceInfo = { error: error instanceof Error ? error.message : "Unknown error" };
     }
 
     const statusResponse = {
@@ -175,48 +184,66 @@ const server = createServer(async (req, res) => {
         status: docsStatus,
         searchAvailable: true,
         communityAvailable: true,
-        resources: resourceInfo
+        resources: {
+          totalResources,
+          sources: resources,
+          lastUpdated:
+            Object.values(resources)
+              .map((s: any) => s.lastModified)
+              .filter(Boolean)
+              .sort()
+              .pop() || "unknown",
+          artifacts: {
+            indexJson: indexStat
+              ? { path: indexJson, sizeBytes: indexStat.size, mtime: indexStat.mtime.toISOString() }
+              : "missing",
+            ftsSqlite: ftsStat
+              ? { path: ftsDb, sizeBytes: ftsStat.size, mtime: ftsStat.mtime.toISOString() }
+              : "missing",
+          },
+        },
       },
       deployment: {
         method: process.env.DEPLOYMENT_METHOD || "unknown",
         timestamp: process.env.DEPLOYMENT_TIMESTAMP || "unknown",
-        triggeredBy: process.env.GITHUB_ACTOR || "unknown"
+        triggeredBy: process.env.GITHUB_ACTOR || "unknown",
       },
-      uptime: process.uptime(),
-      nodeVersion: process.version,
-      platform: process.platform
+      runtime: {
+        uptimeSeconds: process.uptime(),
+        nodeVersion: process.version,
+        platform: process.platform,
+        pid: process.pid,
+        port: Number(process.env.PORT || 3001),
+        bind: "127.0.0.1",
+      },
     };
 
-    res.end(JSON.stringify(statusResponse, null, 2));
-    return;
+    return json(res, 200, statusResponse);
   }
 
   if (req.method === "POST" && req.url === "/mcp") {
     let body = "";
-    req.on("data", (chunk) => {
-      body += chunk.toString();
-    });
-
+    req.on("data", (chunk) => (body += chunk.toString()));
     req.on("end", async () => {
       try {
-        const mcpRequest: MCPRequest = JSON.parse(body);
+        const mcpRequest: { role: string; content: string } = JSON.parse(body);
         const response = await handleMCPRequest(mcpRequest.content);
-        
-        res.setHeader("Content-Type", "application/json");
-        res.writeHead(200);
-        res.end(JSON.stringify(response));
-      } catch (error) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: "Invalid JSON" }));
+        return json(res, 200, response);
+      } catch {
+        return json(res, 400, { error: "Invalid JSON" });
       }
     });
-  } else {
-    res.writeHead(404);
-    res.end("Not Found");
+    return;
   }
+
+  // default 404 JSON (keeps curl|jq friendly)
+  return json(res, 404, { error: "Not Found", path: req.url, method: req.method });
 });
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`📚 HTTP test server running on http://localhost:${PORT}/mcp`);
+const PORT = Number(process.env.PORT || 3001);
+// Bind to 127.0.0.1 to keep local-only
+server.listen(PORT, "127.0.0.1", () => {
+  console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
+});
+
 }); 
