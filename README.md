@@ -286,9 +286,10 @@ node <absolute-path>/dist/src/server.js
 
 ## Features
 
-### 🔍 Dual Search System
+### 🔍 Triple Search System
 - **sap_docs_search**: Search official SAP documentation, APIs, sample code, and wdi5 docs
 - **sap_community_search**: Search real-time SAP Community content
+- **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation
 
 ### 📚 Comprehensive Coverage
 - **1,485+ SAPUI5 files** - Complete developer guide
