@@ -807,7 +807,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
         
         // Exact matches get highest priority
         if (doc.title.toLowerCase() === q.toLowerCase()) {
-          score = 100;
+          score = 150; // Much higher than boost can reach
           matchType = 'Exact Title Match';
         } else if (controlNameMatch && controlName?.toLowerCase() === q.toLowerCase()) {
           score = 98;
@@ -902,7 +902,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           score = applyContextPenalties(score, lib.id, queryContext, q);
           
           allMatches.push({
-            score: Math.min(100, Math.max(0, score)), // Cap at 100, floor at 0
+            score: Math.min(200, Math.max(0, score)), // Cap at 200 to allow exact matches, floor at 0
             libraryId: lib.id,
             libraryName: lib.name,
             docId: doc.id,
