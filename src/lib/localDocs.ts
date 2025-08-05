@@ -399,8 +399,11 @@ function expandQuery(query: string): string[] {
     service: ["service", "cds service", "odata service", "rest service", "api", 
               "endpoint", "business service", "application service", "crud"],
     
-    aspect: ["aspect", "cds aspect", "managed", "temporal", "cuid", "audited", 
+    aspect: ["aspect", "cds aspect", "managed", "cuid", "audited", 
              "reuse aspect", "mixin", "common aspect"],
+    
+    temporal: ["temporal", "temporal data", "time slice", "valid from", "valid to", 
+               "temporal entity", "temporal aspect", "time travel", "as-of-now"],
     
     annotation: ["annotation", "annotations", "@", "annotation file", "annotation target",
                  "UI annotation", "Common annotation", "Capabilities annotation", 
@@ -467,11 +470,35 @@ function expandQuery(query: string): string[] {
     }
   }
   
-  // Check for partial matches
+  // Generic approach: Build smart query variations with term prioritization
+  const queryTerms = q.toLowerCase().split(/\s+/);
+  const importantMatches: string[] = [];
+  const supplementaryMatches: string[] = [];
+  let hasSpecificMatch = false;
+  
   for (const [key, values] of Object.entries(synonyms)) {
+    // Check if query contains this key term
     if (q.includes(key) || values.some(v => q.includes(v.toLowerCase()))) {
-      return values;
+      // If the key term is a major word in the query, prioritize it
+      if (queryTerms.includes(key) || queryTerms.some(term => term.length > 3 && key.includes(term))) {
+        importantMatches.unshift(...values);
+        hasSpecificMatch = true;
+      } else {
+        // Minor/partial matches go to supplementary
+        supplementaryMatches.push(...values);
+      }
     }
+  }
+  
+  if (importantMatches.length > 0 || supplementaryMatches.length > 0) {
+    // Always start with original query variations, then important matches, then supplementary
+    const result = [
+      query, // Original exact query first
+      query.toLowerCase(),
+      ...new Set(importantMatches), // Important domain-specific terms
+      ...new Set(supplementaryMatches.slice(0, 5)) // Limit supplementary to avoid pollution
+    ];
+    return result;
   }
   
   // Handle common UI5 control patterns
@@ -695,8 +722,16 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   const index = await loadIndex();
   let queries = expandQuery(query);
   
-  // Ensure original query is always first for exact matches
-  queries = [query, ...queries.filter(q => q !== query)];
+  // Generic query prioritization: ensure original user query is always first and most important
+  const originalQuery = query.trim();
+  const lowercaseQuery = originalQuery.toLowerCase();
+  
+  // Remove duplicates and ensure original query variants come first
+  queries = [
+    originalQuery,                    // User's exact query (highest priority)
+    lowercaseQuery,                   // Lowercase version
+    ...queries.filter(q => q !== originalQuery && q !== lowercaseQuery)
+  ];
 
   // If file content is provided, extract controls/properties and add to queries
   if (fileContent) {
@@ -715,12 +750,30 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   let usedFTS = false;
   
   try {
-    // Get FTS candidates for each expanded query
-    for (const q of queries) {
-      // Try to get FTS candidates - this is the fast filter step
-      const ftsResults = getFTSCandidateIds(q, {}, 100); // Get top 100 candidates per query
+    // Get FTS candidates with smart prioritization
+    for (let i = 0; i < queries.length; i++) {
+      const q = queries[i];
+      // Higher limit for original/important queries, lower for supplementary
+      const limit = i < 3 ? 150 : 50; // First 3 queries get more candidates
+      
+      const ftsResults = getFTSCandidateIds(q, {}, limit);
+      
       if (ftsResults.length > 0) {
-        ftsResults.forEach(id => candidateDocIds.add(id));
+        // For original query (first), add all candidates
+        // For others, prioritize candidates that aren't already included
+        if (i === 0) {
+          // Original query gets full priority
+          ftsResults.forEach(id => candidateDocIds.add(id));
+        } else {
+          // Add new candidates, but don't overwhelm
+          let added = 0;
+          for (const id of ftsResults) {
+            if (!candidateDocIds.has(id) && added < 30) {
+              candidateDocIds.add(id);
+              added++;
+            }
+          }
+        }
         usedFTS = true;
       }
     }
@@ -808,12 +861,24 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           );
         }
         
-        // Exact matches get highest priority with heading level scoring
+        // Enhanced generic scoring for better relevance detection
+        
+        // 1. Check for multi-word query matches in title
+        const queryWords = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+        const titleWords = doc.title.toLowerCase().split(/\s+/);
+        const wordMatchCount = queryWords.filter(qw => 
+          titleWords.some(tw => tw.includes(qw) || qw.includes(tw))
+        ).length;
+        const wordMatchRatio = queryWords.length > 0 ? wordMatchCount / queryWords.length : 0;
+        
+        // 2. Check for phrase containment (e.g., "temporal entities" in "Declaring Temporal Entities")
+        const titleContainsQuery = doc.title.toLowerCase().includes(q.toLowerCase());
+        const queryContainsTitle = q.toLowerCase().includes(doc.title.toLowerCase());
+        
+        // 3. Exact matches get highest priority with heading level scoring
         if (doc.title.toLowerCase() === q.toLowerCase()) {
           // Base score for exact match
           score = 150;
-          
-
           
           // Adjust score based on heading level for sections
           if ((doc as any).headingLevel) {
@@ -831,8 +896,24 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
             score = 165;
             matchType = 'Exact Title Match (Main)';
           }
-
-        } else if (controlNameMatch && controlName?.toLowerCase() === q.toLowerCase()) {
+        }
+        // 4. High word match ratio (most query words found in title)
+        else if (wordMatchRatio >= 0.6 && wordMatchCount >= 2) {
+          score = 140 + (wordMatchRatio * 20); // 140-160 range
+          matchType = `High Word Match (${Math.round(wordMatchRatio * 100)}%)`;
+        }
+        // 5. Title contains full query phrase
+        else if (titleContainsQuery && q.length > 5) {
+          score = 135;
+          matchType = 'Title Contains Query';
+        }
+        // 6. Query contains title (searching for specific within general)
+        else if (queryContainsTitle && doc.title.length > 5) {
+          score = 130;
+          matchType = 'Query Contains Title';
+        }
+        // 7. Fall back to existing logic for other cases
+        else if (controlNameMatch && controlName?.toLowerCase() === q.toLowerCase()) {
           score = 98;
           matchType = 'Exact Control Name Match';
         } else if (keywordMatch && keywords.some((kw: string) => kw.toLowerCase() === q.toLowerCase())) {
