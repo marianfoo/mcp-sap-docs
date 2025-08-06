@@ -11,7 +11,11 @@ module.exports = {
       ],
       interpreter: "none",                 // <— very important (Python app, not Node)
       cwd: "/opt/mcp-sap/mcp-sap-docs",
-      env: { NODE_ENV: "production" },
+      env: { 
+        NODE_ENV: "production",
+        LOG_LEVEL: "INFO",
+        LOG_FORMAT: "json"
+      },
       autorestart: true,
       max_restarts: 10,
       restart_delay: 2000

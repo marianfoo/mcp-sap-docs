@@ -16,6 +16,34 @@ import {
 } from "./lib/localDocs.js";
 import { searchSapHelp, getSapHelpContent } from "./lib/sapHelp.js";
 import { SearchResponse } from "./lib/types.js";
+import { logger } from "./lib/logger.js";
+
+// Helper function to extract client metadata from request
+function extractClientMetadata(request: any): Record<string, any> {
+  const metadata: Record<string, any> = {};
+  
+  // Try to extract available metadata from the request
+  if (request.meta) {
+    metadata.meta = request.meta;
+  }
+  
+  // Extract any client identification from headers or other sources
+  if (request.headers) {
+    metadata.headers = request.headers;
+  }
+  
+  // Extract transport information if available
+  if (request.transport) {
+    metadata.transport = request.transport;
+  }
+  
+  // Extract session or connection info
+  if (request.id) {
+    metadata.requestId = request.id;
+  }
+  
+  return metadata;
+}
 
 function createServer() {
   const srv = new Server({
@@ -139,9 +167,14 @@ function createServer() {
   // Handle tool execution
   srv.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    const clientMetadata = extractClientMetadata(request);
 
     if (name === "sap_docs_search") {
       const { query } = args as { query: string };
+      
+      // Log the search request with client metadata
+      logger.logRequest(name, query, clientMetadata);
+      
       const res: SearchResponse = await searchLibraries(query);
       
       if (!res.results.length) {
@@ -168,6 +201,10 @@ function createServer() {
 
     if (name === "sap_community_search") {
       const { query } = args as { query: string };
+      
+      // Log the community search request
+      logger.logRequest(name, query, clientMetadata);
+      
       const res: SearchResponse = await searchCommunity(query);
       
       if (!res.results.length) {
@@ -197,6 +234,9 @@ function createServer() {
         topic?: string; 
       };
       
+      // Log the docs get request
+      logger.logRequest(name, library_id + (topic ? `/${topic}` : ''), clientMetadata);
+      
       const text = await fetchLibraryDocumentation(library_id, topic);
       
       if (!text) {
@@ -215,6 +255,10 @@ function createServer() {
 
     if (name === "sap_help_search") {
       const { query } = args as { query: string };
+      
+      // Log the SAP Help search request
+      logger.logRequest(name, query, clientMetadata);
+      
       const res: SearchResponse = await searchSapHelp(query);
       
       if (!res.results.length) {
@@ -240,6 +284,9 @@ function createServer() {
 
     if (name === "sap_help_get") {
       const { result_id } = args as { result_id: string };
+      
+      // Log the SAP Help get request
+      logger.logRequest(name, result_id, clientMetadata);
       
       try {
         const content = await getSapHelpContent(result_id);
@@ -272,8 +319,22 @@ function createServer() {
 
 async function main() {
   const srv = createServer();
+  
+  // Log server startup
+  logger.info("MCP SAP Docs server starting up", {
+    nodeEnv: process.env.NODE_ENV,
+    logLevel: process.env.LOG_LEVEL,
+    logFormat: process.env.LOG_FORMAT
+  });
+  
   await srv.connect(new StdioServerTransport());
   console.error("📚 MCP server ready (stdio) with Resources and Tools support.");
+  
+  // Log successful startup
+  logger.info("MCP SAP Docs server ready and connected", {
+    transport: "stdio",
+    pid: process.pid
+  });
   
   // Log the port if we're running in HTTP mode (for debugging)
   if (process.env.PORT) {
