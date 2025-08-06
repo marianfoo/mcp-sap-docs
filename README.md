@@ -64,8 +64,10 @@ curl -sS http://127.0.0.1:3001/status | jq .
 
 ## What you get
 - **sap_docs_search** – unified search across SAPUI5/CAP/OpenUI5 APIs & samples, wdi5, and more
-- **sap_community_search** – real-time SAP Community posts with quality filtering  
+- **sap_community_search** – real-time SAP Community posts with **full content** of top 3 results
+- **sap_help_search** – comprehensive search across all SAP Help Portal documentation  
 - **sap_docs_get** – fetches full documents/snippets with smart formatting
+- **sap_help_get** – retrieves complete SAP Help pages with metadata
 
 ---
 
@@ -286,10 +288,10 @@ node <absolute-path>/dist/src/server.js
 
 ## Features
 
-### 🔍 Triple Search System
+### 🔍 Comprehensive Search System
 - **sap_docs_search**: Search official SAP documentation, APIs, sample code, and wdi5 docs
-- **sap_community_search**: Search real-time SAP Community content
-- **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation
+- **sap_community_search**: Search real-time SAP Community content with **automatic full content retrieval** of top 3 posts
+- **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation across S/4HANA, BTP, Analytics Cloud, and more
 
 ### 📚 Comprehensive Coverage
 - **1,485+ SAPUI5 files** - Complete developer guide
@@ -300,9 +302,17 @@ node <absolute-path>/dist/src/server.js
 - **Real-time community content** - Live posts with engagement filtering
 
 ### 🌐 SAP Community Integration
-- High-quality community blog posts, solutions, and discussions
-- Live content fetched in real-time with quality filtering (kudos > 5)
-- Real-world developer knowledge and practical insights
+- **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
+- **Full Content Delivery**: Automatic retrieval of complete blog post content for top 3 results
+- **Quality Filtering**: Only posts with kudos > 5 for high-quality content
+- **Efficient API Usage**: Batch content retrieval using LiQL API for fast response times
+- **Real-world Knowledge**: Live posts with practical developer insights and solutions
+
+### 🏢 SAP Help Portal Integration  
+- **Comprehensive Coverage**: Search across all SAP product documentation
+- **Private API Access**: Direct integration with help.sap.com internal APIs
+- **Full Content Retrieval**: Complete documentation pages with metadata
+- **Product Scope**: S/4HANA, SAP BTP, Analytics Cloud, Fiori, ABAP, and more
 
 ### 💡 Smart Features
 - Automatic code highlighting and sample categorization
@@ -320,12 +330,20 @@ node <absolute-path>/dist/src/server.js
 - **OpenUI5 Sample Code** (`/openui5-samples`) - 2,000+ working examples
 - **wdi5 Documentation** (`/wdi5`) - End-to-end test framework documentation
 
-### Community Content
-- **Blog Posts** - Technical tutorials and deep-dives from SAP Community
-- **Solutions** - Real-world answers to common development problems
-- **Best Practices** - Community-tested approaches and patterns
-- **Code Examples** - Practical implementations shared by developers
-- **High-Quality Filter** - Only posts with kudos > 5 for quality assurance
+### Community Content (Full Content Included)
+- **Complete Blog Posts** - Full technical tutorials and deep-dives with complete content
+- **Real-world Solutions** - Comprehensive answers to development problems with full context
+- **Best Practices** - Community-tested approaches with detailed explanations
+- **Code Examples** - Complete implementations with full source code and explanations
+- **Quality Assurance** - Only posts with kudos > 5, automatically ranked by relevance
+- **Instant Access** - Top 3 results include full post content (no additional API calls needed)
+
+### SAP Help Portal Content
+- **Product Documentation** - Complete guides for S/4HANA, BTP, Analytics Cloud
+- **Implementation Guides** - Step-by-step setup and configuration documentation
+- **Technical References** - API documentation, development guides, and technical specs
+- **Troubleshooting** - Comprehensive problem-solving documentation
+- **Release Notes** - Latest updates and changes across SAP products
 
 ---
 
@@ -343,11 +361,23 @@ Use sap_docs_get with: /wdi5
 ```
 **Returns**: wdi5 documentation overview
 
-### Search SAP Community
+### Search SAP Community (with Full Content)
 ```
 Use sap_community_search with: "wdi5 best practices"
 ```
-**Returns**: Recent community posts, blog articles, and discussions about wdi5 best practices.
+**Returns**: Top 3 most relevant community posts about wdi5 best practices **with complete blog post content included** - no need for additional API calls.
+
+### Search SAP Help Portal
+```
+Use sap_help_search with: "S/4HANA Fiori configuration"
+```
+**Returns**: Comprehensive SAP Help documentation about S/4HANA and Fiori configuration from help.sap.com.
+
+### Get SAP Help Content
+```
+Use sap_help_get with: sap-help-12345abc
+```
+**Returns**: Complete SAP Help page with full content and metadata.
 
 ### Find Sample Implementations
 ```
@@ -364,11 +394,20 @@ Use sap_docs_search with: "button click handler"
 
 Try these with any connected MCP client:
 
+**Official Documentation:**
 - "How do I implement authentication in SAPUI5?"
 - "Show me wdi5 testing examples for forms"
-- "What are the latest CAP authentication best practices?"
-- "Find community examples of OData batch operations"
-- "Search for temporal data handling in CAP"
+- "Find OpenUI5 button control examples with click handlers"
+
+**Community Knowledge (with full content):**
+- "What are the latest CAP authentication best practices from the community?"
+- "Find community examples of OData batch operations with complete implementation"
+- "Search for temporal data handling in CAP with real-world solutions"
+
+**SAP Help Portal:**
+- "How to configure S/4HANA Fiori Launchpad?"
+- "Find BTP integration documentation for Analytics Cloud"
+- "Search for ABAP development best practices in S/4HANA"
 
 ---
 
@@ -428,6 +467,7 @@ curl -fsS http://127.0.0.1:18080/status | jq .
 npm run build        # Compile TypeScript
 npm run build:index  # Build search index from sources
 npm run build:fts    # Build FTS5 database
+npm run test:community # Test community search functionality
 ```
 
 ### Local Setup
@@ -487,23 +527,26 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 
 ## Architecture
 
-- **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs & community
+- **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs, community & help portal
 - **SSE Proxy** (Python) - Bridges STDIO → URL for remote clients  
 - **Reverse Proxy** (Caddy) - TLS termination and routing
 - **Search Engine** - SQLite FTS5 + JSON indices for fast local search
-- **Community API** - Real-time integration with SAP Community
+- **Community Integration** - HTML scraping + LiQL API for full content retrieval
+- **SAP Help Integration** - Private API access to help.sap.com content
 
 ---
 
 ## Project Statistics
 
-- **Total Files**: 4,180+ documentation files + real-time community content
+- **Total Files**: 4,180+ documentation files + real-time community & help portal content
 - **SAPUI5 Docs**: 1,485 markdown files
 - **CAP Docs**: 195 markdown files  
 - **OpenUI5 APIs**: 500+ JavaScript control definitions
 - **Sample Code**: 2,000+ implementation examples
-- **Community Posts**: Real-time access to filtered, high-quality content
+- **Community Posts**: Real-time access with full content delivery (top 3 results)
+- **SAP Help Portal**: Comprehensive access to all SAP product documentation
 - **Search Database**: 8+ MB FTS5 database with 14,822+ indexed documents
+- **Search Coverage**: Official docs + community + help portal = complete SAP ecosystem
 
 ---
 

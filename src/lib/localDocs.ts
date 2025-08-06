@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
+import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, getCommunityPostsByIds, searchAndGetTopPosts, BestMatchHit } from "./communityBestMatch.js";
 
 // Get the directory of this script and find the project root
 const __filename = fileURLToPath(import.meta.url);
@@ -30,78 +31,28 @@ if (!existsSync(path.join(PROJECT_ROOT, 'package.json'))) {
 
 const DATA_DIR = path.join(PROJECT_ROOT, "dist", "data");
 
-// SAP Community API configuration
-const SAP_COMMUNITY_API_BASE = "https://community.sap.com/api/2.0/search";
-const SAP_PRODUCTS = {
-  SAPUI5: "500983881501772639608291559920477",
-  CAP: "ed5c1ef6-932f-4c19-b2ba-1be375109ff5"
-};
+// Note: SAP Community search now uses HTML scraping via communityBestMatch.ts
 
-// SAP Community API types
-interface CommunityPost {
-  type: string;
-  id: string;
-  subject: string;
-  body?: string;
-  search_snippet: string;
-  post_time: string;
-}
-
-interface CommunityResponse {
-  status: string;
-  data: {
-    items: CommunityPost[];
-    size: number;
-  };
-}
-
-// Search SAP Community for relevant posts
+// Search SAP Community for relevant posts using HTML scraping
 async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
   try {
-    // Build LiQL query for SAP Community API
-    const liqlQuery = `
-      select body, id, subject, search_snippet, post_time 
-      from messages 
-      where (subject MATCHES '${query}' or body MATCHES '${query}') 
-      and kudos.sum(weight) > 5 
-      and conversation.style = 'blog' 
-      and depth = 0 
-      and (
-        products.id = '${SAP_PRODUCTS.SAPUI5}' or 
-        products.id = '${SAP_PRODUCTS.CAP}'
-      )
-      ORDER BY post_time DESC 
-      LIMIT 10
-    `.replace(/\s+/g, ' ').trim();
-
-    const url = `${SAP_COMMUNITY_API_BASE}?q=${encodeURIComponent(liqlQuery)}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'SAP-Docs-MCP/1.0'
-      }
+    const hits: BestMatchHit[] = await searchCommunityBestMatch(query, {
+      includeBlogs: true,
+      limit: 10,
+      userAgent: 'SAP-Docs-MCP/1.0'
     });
 
-    if (!response.ok) {
-      console.warn(`SAP Community API returned ${response.status}: ${response.statusText}`);
-      return [];
-    }
-
-    const data: CommunityResponse = await response.json();
-    
-    if (data.status !== 'success' || !data.data?.items) {
-      return [];
-    }
-
-    return data.data.items.map(post => ({
-      id: `community-${post.id}`,
-      title: post.subject,
-      description: post.search_snippet.replace(/<[^>]*>/g, ''), // Strip HTML tags
+    return hits.map(hit => ({
+      id: hit.postId ? `community-${hit.postId}` : `community-url-${encodeURIComponent(hit.url)}`,
+      title: hit.title,
+      description: hit.snippet || '',
       totalSnippets: 1,
       source: 'community',
-      url: `https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}`,
-      postTime: post.post_time
+      url: hit.url,
+      postTime: hit.published,
+      author: hit.author,
+      likes: hit.likes,
+      tags: hit.tags
     }));
   } catch (error) {
     console.warn('Failed to search SAP Community:', error);
@@ -109,53 +60,20 @@ async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
   }
 }
 
-// Get full content of a community post
+// Get full content of a community post using LiQL API
 async function getCommunityPost(postId: string): Promise<string | null> {
   try {
-    // Extract numeric ID from community post ID
-    const numericId = postId.replace('community-', '');
-    
-    const liqlQuery = `
-      select body, subject, post_time 
-      from messages 
-      where id = '${numericId}'
-    `.replace(/\s+/g, ' ').trim();
-
-    const url = `${SAP_COMMUNITY_API_BASE}?q=${encodeURIComponent(liqlQuery)}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'SAP-Docs-MCP/1.0'
-      }
-    });
-
-    if (!response.ok) {
-      return null;
+    // Handle both postId formats: "community-postId" and "community-url-encodedUrl"
+    if (postId.startsWith('community-url-')) {
+      // Extract URL from encoded format and fall back to URL scraping
+      const encodedUrl = postId.replace('community-url-', '');
+      const postUrl = decodeURIComponent(encodedUrl);
+      return await getCommunityPostByUrl(postUrl, 'SAP-Docs-MCP/1.0');
+    } else {
+      // For standard post IDs, use the efficient LiQL API
+      const numericId = postId.replace('community-', '');
+      return await getCommunityPostById(numericId, 'SAP-Docs-MCP/1.0');
     }
-
-    const data: CommunityResponse = await response.json();
-    
-    if (data.status !== 'success' || !data.data?.items?.[0]) {
-      return null;
-    }
-
-    const post = data.data.items[0];
-    const postDate = new Date(post.post_time).toLocaleDateString();
-    
-    return `# ${post.subject}
-
-**Source**: SAP Community Blog Post  
-**Published**: ${postDate}  
-**URL**: https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}
-
----
-
-${post.body || post.search_snippet}
-
----
-
-*This content is from the SAP Community and represents community knowledge and experiences.*`;
   } catch (error) {
     console.warn('Failed to get community post:', error);
     return null;
@@ -1457,37 +1375,50 @@ export async function readDocumentationResource(uri: string) {
 // Export the community search function for use as a separate tool
 export async function searchCommunity(query: string): Promise<SearchResponse> {
   try {
-    const communityResults = await searchSAPCommunity(query);
+    // Use the convenience function to search and get top 3 posts with full content
+    const result = await searchAndGetTopPosts(query, 3, {
+      includeBlogs: true,
+      userAgent: 'SAP-Docs-MCP/1.0'
+    });
     
-    if (communityResults.length === 0) {
+    if (result.search.length === 0) {
       return { 
         results: [], 
         error: `No SAP Community posts found for "${query}". Try different keywords or check your connection.` 
       };
     }
 
-    // Format the results for display
-    let response = `Found ${communityResults.length} SAP Community posts for "${query}":\n\n`;
-    response += `🌐 **SAP Community Posts:**\n\n`;
+    // Format the results with full post content
+    let response = `Found ${result.search.length} SAP Community posts for "${query}" with full content:\n\n`;
+    response += `🌐 **SAP Community Posts with Full Content:**\n\n`;
 
-    for (const post of communityResults) {
-      const postDate = post.postTime ? new Date(post.postTime).toLocaleDateString() : 'Unknown';
-      response += `### **${post.title}**\n`;
-      response += `**Posted:** ${postDate}\n`;
-      response += `**Description:** ${post.description}\n`;
-      response += `**URL:** ${post.url}\n`;
-      response += `**ID:** \`${post.id}\` (Use this ID with sap_docs_get to view full content)\n\n`;
-      response += `---\n\n`;
+    for (const searchResult of result.search) {
+      const postContent = result.posts[searchResult.postId || ''];
+      
+      if (postContent) {
+        // Add the full post content
+        response += postContent + '\n\n';
+        response += `---\n\n`;
+      } else {
+        // Fallback to search result info if full content not available
+        const postDate = searchResult.published || 'Unknown';
+        response += `### **${searchResult.title}**\n`;
+        response += `**Posted:** ${postDate}\n`;
+        response += `**Description:** ${searchResult.snippet || 'No description available'}\n`;
+        response += `**URL:** ${searchResult.url}\n`;
+        response += `**ID:** \`community-${searchResult.postId}\`\n\n`;
+        response += `---\n\n`;
+      }
     }
 
-    response += `💡 **Note:** These results are from the SAP Community and represent real-world developer experiences and solutions. Use the post IDs with sap_docs_get to view the full content.`;
+    response += `💡 **Note:** These results include the full content from ${Object.keys(result.posts).length} SAP Community posts, representing real-world developer experiences and solutions.`;
 
     return { 
       results: [{
-        id: 'community-search-results',
-        title: `SAP Community Results for "${query}"`,
+        id: 'community-search-results-with-content',
+        title: `SAP Community Results with Full Content for "${query}"`,
         description: response,
-        totalSnippets: communityResults.length,
+        totalSnippets: result.search.length,
         source: 'community'
       }]
     };

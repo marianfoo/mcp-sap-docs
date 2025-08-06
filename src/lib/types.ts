@@ -6,6 +6,9 @@ export interface SearchResult {
   source?: string; // "docs" | "community" | "help"
   url?: string;    // For community posts or help pages
   postTime?: string; // For community posts
+  author?: string; // For community posts - author name
+  likes?: number;  // For community posts - number of likes/kudos
+  tags?: string[]; // For community posts - associated tags
 }
 
 export interface SearchResponse {

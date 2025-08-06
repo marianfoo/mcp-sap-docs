@@ -10,6 +10,7 @@
     "build": "npm run build:tsc && npm run build:index && npm run build:fts",
     "start": "node dist/src/server.js",
     "start:http": "node dist/src/http-server.js",
+    "test:community": "npm run build:tsc && node test/community-search.ts",
     "setup": "bash setup.sh",
     "setup:submodules": "git submodule update --init --recursive --remote --depth 1"
   },
