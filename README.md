@@ -4,6 +4,7 @@ An MCP server that unifies official SAP docs (SAPUI5, CAP, OpenUI5 APIs & sample
 Use it remotely (hosted URL) or run it locally and point your client to STDIO.
 
 **Public server**: https://mcp-sap-docs.marianzeis.de/sse  
+**Streamable HTTP**: http://127.0.0.1:3002/mcp  
 **Local HTTP status**: http://127.0.0.1:3001/status  
 **Proxy status (SSE gateway)**: http://127.0.0.1:18080/status  
 
@@ -33,7 +34,7 @@ curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | 
 </details>
 
 <details>
-<summary><b>Run it locally (STDIO + local HTTP status)</b></summary>
+<summary><b>Run it locally (STDIO + local HTTP status + Streamable HTTP)</b></summary>
 
 ```bash
 # From repo root
@@ -43,9 +44,13 @@ npm run build
 
 # Start the MCP server (STDIO)
 node dist/src/server.js
+
+# OR start the Streamable HTTP server (latest MCP spec)
+npm run start:streamable
 ```
 
 The companion HTTP status server runs (via PM2 in your setup) on 127.0.0.1:3001.
+The Streamable HTTP server runs on 127.0.0.1:3002 and supports the latest MCP protocol (2025-03-26).
 The SSE proxy runs on 127.0.0.1:18080 and is what remote clients use.
 
 **Local health checks**
@@ -56,6 +61,9 @@ curl -sS http://127.0.0.1:18080/status | jq .
 
 # HTTP server
 curl -sS http://127.0.0.1:3001/status | jq .
+
+# Streamable HTTP server
+curl -sS http://127.0.0.1:3002/health | jq .
 ```
 
 </details>
@@ -74,9 +82,10 @@ curl -sS http://127.0.0.1:3001/status | jq .
 ## Connect from your MCP client
 
 ✅ **Remote URL**: use the public SSE endpoint  
-✅ **Local/STDIO**: run `node dist/src/server.js` and point the client to a command + args
+✅ **Local/STDIO**: run `node dist/src/server.js` and point the client to a command + args  
+✅ **Local/Streamable HTTP**: run `npm run start:streamable` and point the client to `http://127.0.0.1:3002/mcp`
 
-Below are copy-paste setups for popular clients. Each block has remote and local options.
+Below are copy-paste setups for popular clients. Each block has remote, local, and streamable HTTP options.
 
 ---
 
@@ -111,6 +120,25 @@ args: ["<absolute-path-to-your-repo>/dist/src/server.js"]
 ```
 
 Claude's [user quickstart](https://modelcontextprotocol.io/docs/tutorials/use-remote-mcp-server) shows how to add local servers by specifying a command/args pair.
+
+</details>
+
+<details>
+<summary><b>Local (Streamable HTTP) — latest MCP protocol</b></summary>
+
+For the latest MCP protocol (2025-03-26) with Streamable HTTP support:
+
+1. Start the streamable HTTP server:
+```bash
+npm run start:streamable
+```
+
+2. Add a custom connector with the URL:
+```
+http://127.0.0.1:3002/mcp
+```
+
+This provides better performance and supports the latest MCP features including session management and resumability.
 
 </details>
 
@@ -165,8 +193,8 @@ Restart Cursor.
 <summary><b>Add an MCP server</b></summary>
 
 Open Copilot Chat → gear icon → MCP Servers → Add.
-You can add by command (local/STDIO) or by URL (remote HTTP/SSE) using the built-in wizard.
-Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) doc walks through this flow.
+You can add by command (local/STDIO), by URL (remote HTTP/SSE), or by local Streamable HTTP using the built-in wizard.
+Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/copilot-mcp) doc walks through this flow.
 
 **Remote (URL)**:
 ```
@@ -178,6 +206,12 @@ https://mcp-sap-docs.marianzeis.de/sse
 command: node
 args: ["<absolute-path>/dist/src/server.js"]
 ```
+
+**Local (Streamable HTTP)** - latest MCP protocol:
+```
+http://127.0.0.1:3002/mcp
+```
+(Start with `npm run start:streamable` first)
 
 </details>
 
@@ -470,6 +504,13 @@ npm run build:fts    # Build FTS5 database
 npm run test:community # Test community search functionality
 ```
 
+### Server Commands
+```bash
+npm start                  # Start STDIO MCP server
+npm run start:http         # Start HTTP status server (port 3001)
+npm run start:streamable   # Start Streamable HTTP MCP server (port 3002)
+```
+
 ### Local Setup
 ```bash
 git clone https://github.com/marianfoo/mcp-sap-docs.git
@@ -528,6 +569,7 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 ## Architecture
 
 - **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs, community & help portal
+- **Streamable HTTP Transport** (Latest MCP spec 2025-03-26) - HTTP-based transport with session management and resumability
 - **SSE Proxy** (Python) - Bridges STDIO → URL for remote clients  
 - **Reverse Proxy** (Caddy) - TLS termination and routing
 - **Search Engine** - SQLite FTS5 + JSON indices for fast local search

@@ -229,7 +229,7 @@ function extToMime (type) {
  * Check if mime is valid.
  *
  * @param {String} type
- * @return {Boolean}
+ * @return {String}
  * @private
  */
 
