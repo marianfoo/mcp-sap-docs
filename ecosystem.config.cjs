@@ -31,6 +31,18 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 2000
+    },
+
+    // Streamable HTTP MCP server (latest MCP spec)
+    {
+      name: "mcp-sap-streamable",
+      script: "node",
+      args: ["/opt/mcp-sap/mcp-sap-docs/dist/src/streamable-http-server.js"],
+      cwd: "/opt/mcp-sap/mcp-sap-docs",
+      env: { NODE_ENV: "production", MCP_PORT: "3122" },
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 2000
     }
   ]
 }

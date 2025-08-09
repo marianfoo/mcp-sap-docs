@@ -10,7 +10,9 @@
     "build": "npm run build:tsc && npm run build:index && npm run build:fts",
     "start": "node dist/src/server.js",
     "start:http": "node dist/src/http-server.js",
+    "start:streamable": "node dist/src/streamable-http-server.js",
     "test:community": "npm run build:tsc && node test/community-search.ts",
+    "test:streamable": "node test/streamable-health.js",
     "setup": "bash setup.sh",
     "setup:submodules": "git submodule update --init --recursive --remote --depth 1"
   },
@@ -18,15 +20,19 @@
     "esm": true
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.2.0",
+    "@modelcontextprotocol/sdk": "^1.17.2",
     "better-sqlite3": "^12.2.0",
     "commander": "^11.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "fast-glob": "^3.3.2",
     "gray-matter": "^4.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
     "@types/node": "^20.11.19",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.4"
