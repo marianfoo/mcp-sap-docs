@@ -4,7 +4,8 @@ An MCP server that unifies official SAP docs (SAPUI5, CAP, OpenUI5 APIs & sample
 Use it remotely (hosted URL) or run it locally and point your client to STDIO.
 
 **Public server**: https://mcp-sap-docs.marianzeis.de/sse  
-**Streamable HTTP**: http://127.0.0.1:3002/mcp  
+**Streamable HTTP (local default)**: http://127.0.0.1:3002/mcp  
+_(deployment uses MCP_PORT=3122 → http://127.0.0.1:3122/mcp)_  
 **Local HTTP status**: http://127.0.0.1:3001/status  
 **Proxy status (SSE gateway)**: http://127.0.0.1:18080/status  
 
@@ -50,7 +51,8 @@ npm run start:streamable
 ```
 
 The companion HTTP status server runs (via PM2 in your setup) on 127.0.0.1:3001.
-The Streamable HTTP server runs on 127.0.0.1:3002 and supports the latest MCP protocol (2025-03-26).
+The Streamable HTTP server runs on 127.0.0.1:3002 by default and supports the latest MCP protocol (2025-03-26).
+In the deployment, it is configured via MCP_PORT to 127.0.0.1:3122.
 The SSE proxy runs on 127.0.0.1:18080 and is what remote clients use.
 
 **Local health checks**
@@ -62,8 +64,11 @@ curl -sS http://127.0.0.1:18080/status | jq .
 # HTTP server
 curl -sS http://127.0.0.1:3001/status | jq .
 
-# Streamable HTTP server
+# Streamable HTTP server (local default)
 curl -sS http://127.0.0.1:3002/health | jq .
+
+# Streamable HTTP server (deployment default)
+curl -sS http://127.0.0.1:3122/health | jq .
 ```
 
 </details>

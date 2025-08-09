@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
 import cors from "cors";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -383,7 +383,7 @@ async function main() {
   const eventStore = new InMemoryEventStore();
 
   // Handle all MCP Streamable HTTP requests (GET, POST, DELETE) on a single endpoint
-  app.all('/mcp', async (req, res) => {
+  app.all('/mcp', async (req: Request, res: Response) => {
     console.log(`Received ${req.method} request to /mcp`);
     
     try {
@@ -449,7 +449,7 @@ async function main() {
   });
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (req: Request, res: Response) => {
     res.json({
       status: 'healthy',
       service: 'mcp-sap-docs-streamable',
@@ -460,13 +460,13 @@ async function main() {
     });
   });
 
-  // Start the server
-  app.listen(MCP_PORT, (error?: Error) => {
+  // Start the server (bind to localhost for local-only access)
+  app.listen(MCP_PORT, '127.0.0.1', (error?: Error) => {
     if (error) {
       console.error('Failed to start server:', error);
       process.exit(1);
     }
-    console.log(`📚 MCP Streamable HTTP Server listening on port ${MCP_PORT}`);
+    console.log(`📚 MCP Streamable HTTP Server listening on http://127.0.0.1:${MCP_PORT}`);
     console.log(`
 ==============================================
 MCP STREAMABLE HTTP SERVER
