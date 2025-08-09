@@ -332,6 +332,10 @@ Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
 
 </details>
 
+Raycast by default asks to confirm each usage of an MCP tool. You can enable automatic confirmation:
+
+Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "Automatically confirm all tool calls"
+
 ---
 
 ## Features
