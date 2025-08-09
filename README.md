@@ -305,8 +305,7 @@ Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
 {
   "mcpServers": {
     "sap-docs-remote": {
-      "command": "npx",
-      "args": ["mcp-remote@latest", "https://mcp-sap-docs.marianzeis.de/sse"]
+      "url" : "https://mcp-sap-docs.marianzeis.de/sse"
     }
   }
 }
