@@ -62,9 +62,10 @@ jobs:
             npm run build
 
             echo "==> (Re)start PM2 processes"
-            # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001
-            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-proxy || pm2 restart mcp-sap-proxy
-            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http  || pm2 restart mcp-sap-http
+            # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001; Streamable HTTP on 127.0.0.1:3122
+            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-proxy      || pm2 restart mcp-sap-proxy
+            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http       || pm2 restart mcp-sap-http
+            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-streamable || pm2 restart mcp-sap-streamable
             pm2 save
 
             echo "==> Health checks"
@@ -72,3 +73,6 @@ jobs:
             curl -fsS http://127.0.0.1:18080/status
             for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3001/status  >/dev/null && break || sleep 2; done
             curl -fsS http://127.0.0.1:3001/status
+            # Streamable HTTP server health on 127.0.0.1:3122
+            for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3122/health  >/dev/null && break || sleep 2; done
+            curl -fsS http://127.0.0.1:3122/health
