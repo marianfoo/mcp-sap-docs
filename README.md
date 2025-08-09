@@ -110,7 +110,7 @@ command: node
 args: ["<absolute-path-to-your-repo>/dist/src/server.js"]
 ```
 
-Claude's [user quickstart](https://modelcontextprotocol.info/quickstart) shows how to add local servers by specifying a command/args pair.
+Claude's [user quickstart](https://modelcontextprotocol.io/docs/tutorials/use-remote-mcp-server) shows how to add local servers by specifying a command/args pair.
 
 </details>
 
@@ -166,7 +166,7 @@ Restart Cursor.
 
 Open Copilot Chat → gear icon → MCP Servers → Add.
 You can add by command (local/STDIO) or by URL (remote HTTP/SSE) using the built-in wizard.
-Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/copilot-mcp) doc walks through this flow.
+Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) doc walks through this flow.
 
 **Remote (URL)**:
 ```
@@ -436,7 +436,7 @@ You should see `event: endpoint` and a `/messages?...` path. (This is the expect
 node <absolute-path>/dist/src/server.js
 ```
 
-- Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/copilot-mcp) guide shows both URL and command flows.
+- Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) guide shows both URL and command flows.
 
 </details>
 
@@ -555,11 +555,3 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 MIT
 
 ---
-
-## References
-- [Model Context Protocol — Quickstart for users](https://modelcontextprotocol.info/quickstart) (local servers).
-- [Model Context Protocol — Connect to remote MCP servers](https://modelcontextprotocol.info/docs/clients/) (SSE).
-- [VS Code / GitHub Copilot Chat — Add an MCP server](https://code.visualstudio.com/docs/copilot/copilot-mcp).
-- [Zed — Model Context Protocol](https://zed.dev/docs/extensions/mcp).
-
-If you need additional client snippets (e.g., Qodo Gen, other tools), please open an issue with your specific client requirements.
