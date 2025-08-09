@@ -286,6 +286,54 @@ node <absolute-path>/dist/src/server.js
 
 ---
 
+## Raycast
+
+<details>
+<summary><b>Remote (SSE URL)</b></summary>
+
+Raycast doesn't support SSE protocol, we can use [mcp-remote](https://www.npmjs.com/package/mcp-remote) to bridge SSE to local stdio
+
+First install mcp-remote using command:
+
+```bash
+npm install -g mcp-remote
+```
+
+Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
+
+```json
+{
+  "mcpServers": {
+    "sap-docs-remote": {
+      "command": "npx",
+      "args": ["mcp-remote@latest", "https://mcp-sap-docs.marianzeis.de/sse"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Local (STDIO)</b></summary>
+
+Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
+
+```json
+{
+  "mcpServers": {
+    "sap-docs": {
+      "command": "node",
+      "args": ["/absolute/path/to/dist/src/server.js"]
+    }
+  }
+}
+```
+
+</details>
+
+---
+
 ## Features
 
 ### 🔍 Comprehensive Search System
