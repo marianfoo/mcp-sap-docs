@@ -16,6 +16,15 @@ function toQuery(params: Record<string, any>): string {
     .join("&");
 }
 
+function ensureAbsoluteUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Ensure leading slash for relative URLs
+  const cleanUrl = url.startsWith('/') ? url : '/' + url;
+  return BASE + cleanUrl;
+}
+
 function parseDocsPathParts(urlOrPath: string): { productUrlSeg: string; deliverableLoio: string } {
   // Accept relative path like /docs/PROD/DELIVERABLE/FILE.html?... or full URL
   const u = new URL(urlOrPath, BASE);
@@ -77,7 +86,7 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
       description: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
       totalSnippets: 1,
       source: "help",
-      url: hit.url
+      url: ensureAbsoluteUrl(hit.url)
     }));
 
     // Store the full search results in a simple cache for retrieval
@@ -91,7 +100,7 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
 
     // Format response similar to other search functions
     const formattedResults = searchResults.slice(0, 10).map((result, i) => 
-      `[${i}] **${result.title}**\n   ID: \`${result.id}\`\n   ${result.description}\n`
+      `[${i}] **${result.title}**\n   ID: \`${result.id}\`\n   URL: ${result.url}\n   ${result.description}\n`
     ).join('\n');
 
     return {
@@ -268,13 +277,19 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
     return `# ${title}
 
 **Source:** SAP Help Portal
-**URL:** ${hit.url}
+**URL:** ${ensureAbsoluteUrl(hit.url)}
 **Product:** ${hit.product || hit.productId || "Unknown"}
 **Version:** ${hit.version || hit.versionId || "Latest"}
+**Language:** ${hit.language || "en-US"}
+${hit.snippet ? `**Summary:** ${hit.snippet}` : ''}
 
 ---
 
-${cleanText}`;
+${cleanText}
+
+---
+
+*This content is from the SAP Help Portal and represents official SAP documentation.*`;
 
   } catch (error: any) {
     throw new Error(`Failed to get SAP Help content: ${error.message}`);

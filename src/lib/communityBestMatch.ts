@@ -189,7 +189,7 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
     // Build LiQL query for batch retrieval
     const idList = postIds.map(id => `'${id}'`).join(', ');
     const liqlQuery = `
-      select body, id, subject, search_snippet, post_time 
+      select body, id, subject, search_snippet, post_time, view_href 
       from messages 
       where id in (${idList})
     `.replace(/\s+/g, ' ').trim();
@@ -217,12 +217,13 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
     // Process each post
     for (const post of data.data.items) {
       const postDate = post.post_time ? new Date(post.post_time).toLocaleDateString() : 'Unknown';
+      const postUrl = post.view_href || `https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}`;
       
       const content = `# ${post.subject}
 
 **Source**: SAP Community Blog Post  
 **Published**: ${postDate}  
-**URL**: https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}
+**URL**: ${postUrl}
 
 ---
 

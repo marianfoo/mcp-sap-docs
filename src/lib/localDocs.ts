@@ -7,6 +7,92 @@ import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
 import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, getCommunityPostsByIds, searchAndGetTopPosts, BestMatchHit } from "./communityBestMatch.js";
 
+// Documentation URL configuration for different libraries
+interface DocUrlConfig {
+  baseUrl: string;
+  pathPattern: string; // How to construct the path: {file} or {file}#{anchor}
+  anchorStyle: 'docsify' | 'github' | 'custom'; // How anchors are formatted
+}
+
+const DOC_URL_CONFIGS: Record<string, DocUrlConfig> = {
+  '/wdi5': {
+    baseUrl: 'https://ui5-community.github.io/wdi5',
+    pathPattern: '#{file}',
+    anchorStyle: 'docsify'
+  },
+  '/cap': {
+    baseUrl: 'https://cap.cloud.sap',
+    pathPattern: '/docs/{file}',
+    anchorStyle: 'docsify'
+  },
+  '/sapui5': {
+    baseUrl: 'https://ui5.sap.com',
+    pathPattern: '/#/topic/{file}',
+    anchorStyle: 'custom'
+  },
+  '/openui5-api': {
+    baseUrl: 'https://ui5.sap.com',
+    pathPattern: '/#/api/{file}',
+    anchorStyle: 'custom'
+  }
+};
+
+// Generic function to generate documentation URLs
+function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
+  const config = DOC_URL_CONFIGS[libraryId];
+  if (!config) {
+    return null;
+  }
+
+  // Convert file path to URL path
+  const fileName = relFile.replace(/\.md$/, '');
+  let urlPath = config.pathPattern.replace('{file}', fileName);
+  
+  // Try to detect the most relevant section in the content for anchor
+  const anchor = detectContentSection(content, config.anchorStyle);
+  if (anchor) {
+    const separator = config.anchorStyle === 'docsify' ? '?id=' : '#';
+    urlPath += separator + anchor;
+  }
+  
+  return config.baseUrl + urlPath;
+}
+
+// Detect the main section/topic from content
+function detectContentSection(content: string, anchorStyle: 'docsify' | 'github' | 'custom'): string | null {
+  // Find the first major heading (## or #) that gives context about the content
+  const headingMatch = content.match(/^#{1,2}\s+(.+)$/m);
+  if (!headingMatch) {
+    return null;
+  }
+  
+  const heading = headingMatch[1].trim();
+  
+  // Convert heading to anchor format based on style
+  switch (anchorStyle) {
+    case 'docsify':
+      // Docsify format: lowercase, spaces to hyphens, remove special chars
+      return heading
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
+        .replace(/\s+/g, '-')     // Spaces to hyphens
+        .replace(/-+/g, '-')      // Multiple hyphens to single
+        .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
+        
+    case 'github':
+      // GitHub format: lowercase, spaces to hyphens, keep some special chars
+      return heading
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-');
+        
+    case 'custom':
+    default:
+      // Return as-is for custom handling
+      return heading;
+  }
+}
+
 // Get the directory of this script and find the project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1148,6 +1234,23 @@ export async function fetchLibraryDocumentation(
         // For sample files, format them appropriately
         else if (lib.id === '/openui5-samples') {
           return formatSampleContent(content, doc.relFile, doc.title || '');
+        }
+        // For documented libraries, add URL context
+        else if (DOC_URL_CONFIGS[lib.id]) {
+          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
+          const libName = lib.id.replace('/', '').toUpperCase();
+          
+          return `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
         } else {
           return content;
         }
@@ -1199,6 +1302,24 @@ export async function fetchLibraryDocumentation(
     // For sample files, format them appropriately
     else if (lib.id === '/openui5-samples') {
       const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
+      parts.push(formattedContent);
+    }
+    // For documented libraries, add URL context
+    else if (DOC_URL_CONFIGS[lib.id]) {
+      const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
+      const libName = lib.id.replace('/', '').toUpperCase();
+      
+      const formattedContent = `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
       parts.push(formattedContent);
     } else {
       parts.push(content);
@@ -1358,6 +1479,21 @@ export async function readDocumentationResource(uri: string) {
       formattedContent = formatJSDocContent(content, doc.title || '');
     } else if (libraryId === '/openui5-samples') {
       formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
+    } else if (DOC_URL_CONFIGS[libraryId]) {
+      const documentationUrl = generateDocumentationUrl(libraryId, doc.relFile, content);
+      const libName = libraryId.replace('/', '').toUpperCase();
+      
+      formattedContent = `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
     }
     
     return {
