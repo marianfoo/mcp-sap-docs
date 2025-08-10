@@ -85,6 +85,24 @@ const SOURCES: SourceConfig[] = [
     description: "wdi5 end-to-end test framework documentation",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "ui5-tooling",
+    absDir: join("sources", "ui5-tooling", "docs"),
+    id: "/ui5-tooling",
+    name: "UI5 Tooling ",
+    description: "UI5 Tooling documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-mta-build-tool",
+    absDir: join("sources", "cloud-mta-build-tool", "docs", "docs"),
+    id: "/cloud-mta-build-tool",
+    name: "Cloud MTA Build Tool",
+    description: "Cloud MTA Build Tool documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
   }
 ];
 

@@ -88,7 +88,7 @@ function createServer() {
       tools: [
         {
           name: "sap_docs_search",
-          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, wdi5 testing framework, and OpenUI5 control APIs. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), testing topics (like wdi5, e2e testing, browser automation), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
+          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, wdi5 testing framework, OpenUI5 control APIs, Cloud MTA Build Tool documentation and UI5 Tooling documentation. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), testing topics (like wdi5, e2e testing, browser automation), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
           inputSchema: {
             type: "object",
             properties: {
@@ -122,7 +122,7 @@ function createServer() {
             properties: {
               library_id: {
                 type: "string",
-                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation, or '/wdi5/authentication' for testing docs. For community posts, use IDs like 'community-12345' from sap_community_search results."
+                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api', '/cloud-mta-build-tool', '/ui5-tooling' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation, or '/wdi5/authentication' for testing docs. For community posts, use IDs like 'community-12345' from sap_community_search results."
               },
               topic: {
                 type: "string",
