@@ -26,3 +26,7 @@
 	path = sources/ui5-webcomponents
 	url = https://github.com/SAP/ui5-webcomponents.git
 	branch = main
+[submodule "sources/cloud-sdk"]
+	path = sources/cloud-sdk
+	url = https://github.com/SAP/cloud-sdk.git
+	branch = main
