@@ -339,6 +339,8 @@ node <absolute-path>/dist/src/server.js
 - **UI5 Tooling docs** - UI5 Tooling documentation
 - **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
 - **UI5 Web Components docs** - UI5 Web Components documentation
+- **SAP Cloud SDK** - SAP Cloud SDK documentation (Javascript & Java)
+- **SAP Cloud SDK for AI** - SAP Cloud SDK for AI documentation (Javascript & Java)
 
 ### 🌐 SAP Community Integration
 - **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
