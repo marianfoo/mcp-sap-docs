@@ -34,6 +34,41 @@ const DOC_URL_CONFIGS: Record<string, DocUrlConfig> = {
     baseUrl: 'https://ui5.sap.com',
     pathPattern: '/#/api/{file}',
     anchorStyle: 'custom'
+  },
+  '/ui5-tooling': {
+    baseUrl: 'https://sap.github.io/ui5-tooling/stable',
+    pathPattern: '/pages/{file}',
+    anchorStyle: 'github'
+  },
+  '/cloud-mta-build-tool': {
+    baseUrl: 'https://sap.github.io/cloud-mta-build-tool',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
+  },
+  '/ui5-webcomponents': {
+    baseUrl: 'https://sap.github.io/ui5-webcomponents/docs',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
+  },
+  '/cloud-sdk-js': {
+    baseUrl: 'https://sap.github.io/cloud-sdk/docs/js',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
+  },
+  '/cloud-sdk-java': {
+    baseUrl: 'https://sap.github.io/cloud-sdk/docs/java',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
+  },
+  '/cloud-sdk-ai-js': {
+    baseUrl: 'https://sap.github.io/ai-sdk/docs/js',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
+  },
+  '/cloud-sdk-ai-java': {
+    baseUrl: 'https://sap.github.io/ai-sdk/docs/java',
+    pathPattern: '/{file}',
+    anchorStyle: 'github'
   }
 };
 
@@ -45,7 +80,7 @@ function generateDocumentationUrl(libraryId: string, relFile: string, content: s
   }
 
   // Convert file path to URL path
-  const fileName = relFile.replace(/\.md$/, '');
+  const fileName = relFile.replace(/\.md$/, '').replace(/\.mdx$/, '');
   let urlPath = config.pathPattern.replace('{file}', fileName);
   
   // Try to detect the most relevant section in the content for anchor
