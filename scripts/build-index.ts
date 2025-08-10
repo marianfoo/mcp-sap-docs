@@ -112,6 +112,24 @@ const SOURCES: SourceConfig[] = [
     description: "UI5 Web Components documentation",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk",
+    absDir: join("sources", "cloud-sdk", "docs-js"),
+    id: "/cloud-sdk-js",
+    name: "Cloud SDK (JavaScript)",
+    description: "Cloud SDK (JavaScript) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk",
+    absDir: join("sources", "cloud-sdk", "docs-java"),
+    id: "/cloud-sdk-java",
+    name: "Cloud SDK (Java)",
+    description: "Cloud SDK (Java) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
   }
 ];
 

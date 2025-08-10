@@ -1220,6 +1220,16 @@ export async function fetchLibraryDocumentation(
           sourcePath = "openui5/src";
         } else if (lib.id === "/wdi5") {
           sourcePath = "wdi5/docs";
+        } else if (lib.id === "/ui5-tooling") {
+          sourcePath = "ui5-tooling/docs";
+        } else if (lib.id === "/cloud-mta-build-tool") {
+          sourcePath = "cloud-mta-build-tool/docs/docs";
+        } else if (lib.id === "/ui5-webcomponents") {
+          sourcePath = "ui5-webcomponents/docs";
+        } else if (lib.id === "/cloud-sdk-js") {
+          sourcePath = "cloud-sdk/docs-js";
+        } else if (lib.id === "/cloud-sdk-java") {
+          sourcePath = "cloud-sdk/docs-java";
         } else {
           throw new Error(`Unknown library ID: ${lib.id}`);
         }
@@ -1287,6 +1297,16 @@ ${content}
       sourcePath = "openui5/src";
     } else if (lib.id === "/wdi5") {
       sourcePath = "wdi5/docs";
+    } else if (lib.id === "/ui5-tooling") {
+      sourcePath = "ui5-tooling/docs";
+    } else if (lib.id === "/cloud-mta-build-tool") {
+      sourcePath = "cloud-mta-build-tool/docs/docs";
+    } else if (lib.id === "/ui5-webcomponents") {
+      sourcePath = "ui5-webcomponents/docs";
+    } else if (lib.id === "/cloud-sdk-js") {
+      sourcePath = "cloud-sdk/docs-js";
+    } else if (lib.id === "/cloud-sdk-java") {
+      sourcePath = "cloud-sdk/docs-java";
     } else {
       throw new Error(`Unknown library ID: ${lib.id}`);
     }
