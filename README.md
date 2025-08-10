@@ -322,6 +322,50 @@ node <absolute-path>/dist/src/server.js
 
 ---
 
+## Raycast
+
+<details>
+<summary><b>Remote (SSE URL)</b></summary>
+
+Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
+
+```json
+{
+  "mcpServers": {
+    "sap-docs": {
+      "command": "npx",
+      "args": ["mcp-remote@latest", "https://mcp-sap-docs.marianzeis.de/sse"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Local (STDIO)</b></summary>
+
+Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
+
+```json
+{
+  "mcpServers": {
+    "sap-docs": {
+      "command": "node",
+      "args": ["/absolute/path/to/dist/src/server.js"]
+    }
+  }
+}
+```
+
+</details>
+
+Raycast by default asks to confirm each usage of an MCP tool. You can enable automatic confirmation:
+
+Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "Automatically confirm all tool calls"
+
+---
+
 ## Features
 
 ### 🔍 Comprehensive Search System
