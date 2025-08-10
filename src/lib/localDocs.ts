@@ -1492,6 +1492,20 @@ export async function readDocumentationResource(uri: string) {
       sourcePath = "openui5/src";
     } else if (libraryId === "/wdi5") {
       sourcePath = "wdi5/docs";
+    } else if (lib.id === "/ui5-tooling") {
+      sourcePath = "ui5-tooling/docs";
+    } else if (lib.id === "/cloud-mta-build-tool") {
+      sourcePath = "cloud-mta-build-tool/docs/docs";
+    } else if (lib.id === "/ui5-webcomponents") {
+      sourcePath = "ui5-webcomponents/docs";
+    } else if (lib.id === "/cloud-sdk-js") {
+      sourcePath = "cloud-sdk/docs-js";
+    } else if (lib.id === "/cloud-sdk-java") {
+      sourcePath = "cloud-sdk/docs-java";
+    } else if (lib.id === "/cloud-sdk-ai-js") {
+      sourcePath = "cloud-sdk-ai/docs-js";
+    } else if (lib.id === "/cloud-sdk-ai-java") {
+      sourcePath = "cloud-sdk-ai/docs-java";
     } else {
       throw new Error(`Unknown library ID: ${libraryId}`);
     }
