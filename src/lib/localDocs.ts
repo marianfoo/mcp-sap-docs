@@ -549,7 +549,7 @@ function expandQuery(query: string): string[] {
   
   // Generate contextual variations based on query type
   const variations = [query, query.toLowerCase()];
-  
+
   // Add technology-specific variations
   if (q.includes('cap') || q.includes('cds')) {
     variations.push('CAP', 'cds', 'Core Data Services', 'service', 'entity');
@@ -557,10 +557,12 @@ function expandQuery(query: string): string[] {
   if (q.includes('wdi5') || q.includes('test') || q.includes('testing') || q.includes('e2e')) {
     variations.push('wdi5', 'testing', 'e2e', 'webdriver', 'ui5 testing', 'wdio', 'pageobject', 'selector', 'locator');
   }
-  if (q.includes('ui5') || q.includes('sap.')) {
+  if ((q.includes('ui5') || q.includes('sap.')) && !q.includes('web components') && !q.includes('web component')) {
     variations.push('UI5', 'SAPUI5', 'OpenUI5', 'control', 'Fiori');
   }
-  
+  if (q.includes('web components') || q.includes('ui5-') || q.includes('@ui5/') || q.includes('web component')) {
+    variations.push('UI5 Web Components', 'Web Components', 'Web Component', 'component');
+  }
   // Add common variations
   variations.push(
     query.charAt(0).toUpperCase() + query.slice(1).toLowerCase(),
@@ -705,11 +707,18 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   const ui5Score = ui5Indicators.filter(term => 
     allQueries.some(query => query.includes(term))
   ).length;
+
+  // UI5 Web Components context indicators
+  const ui5WebComponentsIndicators = ['ui5', 'ui5-', '@ui5/', 'web-component', 'web-components', 'component', 'web'];
+  const ui5WebComponentsScore = ui5WebComponentsIndicators.filter(term => 
+    allQueries.some(query => query.includes(term))
+  ).length;
   
   // Return strongest context
-  if (capScore > 0 && capScore >= wdi5Score && capScore >= ui5Score) return 'CAP';
-  if (wdi5Score > 0 && wdi5Score >= capScore && wdi5Score >= ui5Score) return 'wdi5';
-  if (ui5Score > 0) return 'UI5';
+  if (capScore > 0 && capScore >= wdi5Score && capScore >= ui5Score && capScore >= ui5WebComponentsScore) return 'CAP';
+  if (wdi5Score > 0 && wdi5Score >= capScore && wdi5Score >= ui5Score && wdi5Score >= ui5WebComponentsScore) return 'wdi5';
+  if (ui5Score > 0 && ui5Score >= ui5WebComponentsScore) return 'UI5';
+  if (ui5WebComponentsScore > 0) return 'UI5 Web Components';
   
   return 'MIXED'; // No clear context
 }
@@ -1040,6 +1049,14 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
             const ui5TestingTerms = ['sap.ui.test', 'ui5 test', 'control selector', 'byId', 'byProperty'];
             if (ui5TestingTerms.some(term => q.includes(term))) score += 12;
           }
+
+          // UI5 Web Components specific boosts
+          if (lib.id === '/ui5-webcomponents') {
+            const ui5WebComponentsTerms = ['component', 'web', 'web-component', 'web-components'];
+            if (ui5WebComponentsTerms.some(term => q.includes(term))) score += 15;
+            // Boost for conceptual queries
+            if (q.includes('guide') || q.includes('tutorial') || q.includes('how')) score += 6;
+          }
           
           // Apply context-aware penalties to reduce off-topic results
           score = applyContextPenalties(score, lib.id, queryContext, q);
@@ -1144,7 +1161,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   // Group results by library for presentation (but maintain score order)
   const apiDocs = topResults.filter(r => r.libraryId === '/openui5-api');
   const samples = topResults.filter(r => r.libraryId === '/openui5-samples');
-  const guides = topResults.filter(r => r.libraryId === '/sapui5' || r.libraryId === '/cap' || r.libraryId === '/wdi5');
+  const guides = topResults.filter(r => r.libraryId === '/sapui5' || r.libraryId === '/cap' || r.libraryId === '/wdi5' || r.libraryId === '/ui5-webcomponents');
 
   if (!topResults.length) {
     // User feedback loop: suggest alternatives
@@ -1161,6 +1178,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     'CAP': '🏗️',
     'wdi5': '🧪', 
     'UI5': '🎨',
+    'UI5 Web Components': '🕹️',
     'MIXED': '🔀'
   };
   
@@ -1173,6 +1191,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     const capGuides = guides.filter(r => r.libraryId === '/cap');
     const wdi5Guides = guides.filter(r => r.libraryId === '/wdi5');
     const sapui5Guides = guides.filter(r => r.libraryId === '/sapui5');
+    const ui5WebComponentsGuides = guides.filter(r => r.libraryId === '/ui5-webcomponents');
     
     if (capGuides.length > 0) {
       response += `🏗️ **CAP Documentation:**\n`;
@@ -1191,6 +1210,13 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     if (sapui5Guides.length > 0) {
       response += `📖 **SAPUI5 Guides:**\n`;
       for (const r of sapui5Guides) {
+        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+      }
+    }
+
+    if (ui5WebComponentsGuides.length > 0) {
+      response += `🕹️ **UI5 Web Components Guides:**\n`;
+      for (const r of ui5WebComponentsGuides) {
         response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
       }
     }
