@@ -1230,6 +1230,10 @@ export async function fetchLibraryDocumentation(
           sourcePath = "cloud-sdk/docs-js";
         } else if (lib.id === "/cloud-sdk-java") {
           sourcePath = "cloud-sdk/docs-java";
+        } else if (lib.id === "/cloud-sdk-ai-js") {
+          sourcePath = "cloud-sdk-ai/docs-js";
+        } else if (lib.id === "/cloud-sdk-ai-java") {
+          sourcePath = "cloud-sdk-ai/docs-java";
         } else {
           throw new Error(`Unknown library ID: ${lib.id}`);
         }
@@ -1307,6 +1311,10 @@ ${content}
       sourcePath = "cloud-sdk/docs-js";
     } else if (lib.id === "/cloud-sdk-java") {
       sourcePath = "cloud-sdk/docs-java";
+    } else if (lib.id === "/cloud-sdk-ai-js") {
+      sourcePath = "cloud-sdk-ai/docs-js";
+    } else if (lib.id === "/cloud-sdk-ai-java") {
+      sourcePath = "cloud-sdk-ai/docs-java";
     } else {
       throw new Error(`Unknown library ID: ${lib.id}`);
     }

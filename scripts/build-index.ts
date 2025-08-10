@@ -130,6 +130,24 @@ const SOURCES: SourceConfig[] = [
     description: "Cloud SDK (Java) documentation",
     filePattern: "**/*.mdx",
     type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk-ai",
+    absDir: join("sources", "cloud-sdk-ai", "docs-js"),
+    id: "/cloud-sdk-ai-js",
+    name: "Cloud SDK AI (JavaScript)",
+    description: "Cloud SDK AI (JavaScript) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk-ai",
+    absDir: join("sources", "cloud-sdk-ai", "docs-java"),
+    id: "/cloud-sdk-ai-java",
+    name: "Cloud SDK AI (Java)",
+    description: "Cloud SDK AI (Java) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
   }
 ];
 

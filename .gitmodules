@@ -30,3 +30,7 @@
 	path = sources/cloud-sdk
 	url = https://github.com/SAP/cloud-sdk.git
 	branch = main
+[submodule "sources/cloud-sdk-ai"]
+	path = sources/cloud-sdk-ai
+	url = https://github.com/SAP/ai-sdk.git
+	branch = main
