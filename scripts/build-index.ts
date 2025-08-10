@@ -103,6 +103,15 @@ const SOURCES: SourceConfig[] = [
     description: "Cloud MTA Build Tool documentation",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "ui5-webcomponents",
+    absDir: join("sources", "ui5-webcomponents", "docs"),
+    id: "/ui5-webcomponents",
+    name: "UI5 Web Components",
+    description: "UI5 Web Components documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
   }
 ];
 

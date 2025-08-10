@@ -338,6 +338,7 @@ node <absolute-path>/dist/src/server.js
 - **Real-time community content** - Live posts with engagement filtering
 - **UI5 Tooling docs** - UI5 Tooling documentation
 - **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
+- **UI5 Web Components docs** - UI5 Web Components documentation
 
 ### 🌐 SAP Community Integration
 - **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
@@ -369,6 +370,7 @@ node <absolute-path>/dist/src/server.js
 - **wdi5 Documentation** (`/wdi5`) - End-to-end test framework documentation
 - **UI5 Tooling Documentation** (`/ui5-tooling`) - UI5 Tooling documentation
 - **Cloud MTA Build Tool Documentation** (`/cloud-mta-build-tool`) - Cloud MTA Build Tool documentation
+- **UI5 Web Components Documentation** (`/ui5-webcomponents`) - UI5 Web Components documentation
 
 ### Community Content (Full Content Included)
 - **Complete Blog Posts** - Full technical tutorials and deep-dives with complete content

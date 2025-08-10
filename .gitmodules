@@ -22,3 +22,7 @@
 	path = sources/cloud-mta-build-tool
 	url = https://github.com/SAP/cloud-mta-build-tool.git
 	branch = master
+[submodule "sources/ui5-webcomponents"]
+	path = sources/ui5-webcomponents
+	url = https://github.com/SAP/ui5-webcomponents.git
+	branch = main
