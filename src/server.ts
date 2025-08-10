@@ -94,7 +94,7 @@ function createServer() {
             properties: {
               query: {
                 type: "string",
-                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', or any SAP development concept. Can be UI5 control names, technical concepts, testing topics, or general topics."
+                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', 'UI5 Tooling', 'Cloud MTA Build Tool', 'MTA' or any SAP development concept. Can be UI5 control names, technical concepts, testing topics, or general topics."
               }
             },
             required: ["query"]

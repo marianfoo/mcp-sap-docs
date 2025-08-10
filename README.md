@@ -336,6 +336,8 @@ node <absolute-path>/dist/src/server.js
 - **2,000+ sample files** - Working examples from `demokit/sample` directories
 - **wdi5 E2E test framework docs** - End-to-end testing documentation
 - **Real-time community content** - Live posts with engagement filtering
+- **UI5 Tooling docs** - UI5 Tooling documentation
+- **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
 
 ### 🌐 SAP Community Integration
 - **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
@@ -365,6 +367,8 @@ node <absolute-path>/dist/src/server.js
 - **OpenUI5 API Documentation** (`/openui5-api`) - 500+ control APIs with detailed JSDoc
 - **OpenUI5 Sample Code** (`/openui5-samples`) - 2,000+ working examples
 - **wdi5 Documentation** (`/wdi5`) - End-to-end test framework documentation
+- **UI5 Tooling Documentation** (`/ui5-tooling`) - UI5 Tooling documentation
+- **Cloud MTA Build Tool Documentation** (`/cloud-mta-build-tool`) - Cloud MTA Build Tool documentation
 
 ### Community Content (Full Content Included)
 - **Complete Blog Posts** - Full technical tutorials and deep-dives with complete content
