@@ -12,7 +12,9 @@
     "start:http": "node dist/src/http-server.js",
     "start:streamable": "node dist/src/streamable-http-server.js",
     "test:community": "npm run build:tsc && node test/community-search.ts",
-    "test:streamable": "node test/streamable-health.js",
+
+    "test": "npm run build && node test/tools/run-all.js",
+    "test:tools": "node test/tools/run-all.js",
     "setup": "bash setup.sh",
     "setup:submodules": "git submodule sync --recursive && git submodule update --init"
   },

@@ -50,6 +50,11 @@ function toMatchQuery(userQuery: string): string {
   // Convert user input into FTS syntax with prefix matching:
   // keep quoted phrases as-is, append * to bare terms for prefix matching
   const terms = userQuery.match(/"[^"]+"|\S+/g) ?? [];
+  // Very common stopwords that hurt FTS when ANDed together
+  const stopwords = new Set([
+    "a","an","the","to","in","on","for","and","or","of","with","from",
+    "how","what","why","when","where","which","who","whom","does","do","is","are"
+  ]);
   return terms.map(t => {
     if (t.startsWith('"') && t.endsWith('"')) return t; // phrase query
     
@@ -59,8 +64,9 @@ function toMatchQuery(userQuery: string): string {
     }
     
     // Sanitize and add prefix matching for simple terms
-    const clean = t.replace(/[^\w]/g, ""); // Remove all special chars for simple prefix matching
-    return clean ? `${clean}*` : "";
+    const clean = t.replace(/[^\w]/g, "").toLowerCase();
+    if (!clean || stopwords.has(clean)) return "";
+    return `${clean}*`;
   }).filter(Boolean).join(" ");
 }
 

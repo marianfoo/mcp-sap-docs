@@ -1,69 +1,70 @@
 # Test Suite
 
-This directory contains the test suite for the SAP Community Search functionality.
+This directory contains test suites for the MCP SAP Documentation server.
 
-## Main Test File
+## Test Structure
 
-### `community-search.ts`
-Comprehensive TypeScript test suite that covers all aspects of the SAP Community search implementation:
+### Tool Tests (`test/tools/`)
+Automated tests for MCP tools using a unified test harness:
 
-- **HTML Search Scraping**: Tests the search functionality using SAP Community's "Best Match" algorithm
-- **LiQL API Batch Retrieval**: Tests efficient bulk post content retrieval
-- **Single Post Retrieval**: Tests individual post fetching
-- **Convenience Functions**: Tests the `searchAndGetTopPosts()` one-stop solution
-- **Direct API Testing**: Tests raw LiQL API calls
-- **Real Post Validation**: Tests with known live posts
+- **`run-all.js`**: Main test runner that starts one HTTP server and runs all test cases
+- **`sap_docs_search/`**: Test cases for the `sap_docs_search` tool organized by documentation source
+
+#### Current Test Files:
+- `search-cloud-sdk-js.js`: Tests for SAP Cloud SDK (JavaScript) documentation
+- `search-cloud-sdk-ai.js`: Tests for SAP Cloud SDK for AI documentation
+
+Each test file exports an array of test cases with:
+```javascript
+export default [
+  {
+    name: 'Test description',
+    tool: 'sap_docs_search', 
+    query: 'search query',
+    expectIncludes: ['/expected/path/in/results.mdx']
+  }
+];
+```
+
+### Community Search Tests
+- **`community-search.ts`**: Comprehensive tests for SAP Community search functionality
+- **`test-updated-search.ts`**: Additional community search validation
+
+### Utilities (`test/_utils/`)
+- **`httpClient.js`**: Simple HTTP client for testing via the `/mcp` endpoint
 
 ## Running Tests
 
 ```bash
-# Run via npm script (recommended)
+# Run all tool tests (recommended)
+npm run test:tools
+
+# Run community search tests  
 npm run test:community
 
-# Run directly with Node.js (TypeScript support)
-node test/community-search.ts
+# Run all tests (builds first, then runs tools)
+npm test
 ```
+
+## How It Works
+
+1. **Single Server**: `run-all.js` starts one HTTP server instance for all tests
+2. **Simple Protocol**: Tests use the `/mcp` POST endpoint (simpler than full MCP protocol)
+3. **Modular Cases**: Each source has its own test file with multiple test cases
+4. **Fast Execution**: No server restart between test cases
+
+## Adding New Tests
+
+To add tests for a new documentation source:
+
+1. Create `test/tools/sap_docs_search/search-[source-name].js`
+2. Export an array of test cases following the format above
+3. Run `npm run test:tools` to verify
 
 ## Test Coverage
 
-The test suite validates:
-
-1. **Search Functionality**
-   - HTML parsing accuracy
-   - Post ID extraction from `data-lia-message-uid` attributes
-   - Metadata extraction (author, likes, tags, snippets)
-   - Search result ranking and relevance
-
-2. **Content Retrieval**
-   - Batch retrieval using LiQL API with post IDs
-   - Single post retrieval efficiency
-   - Content formatting and structure
-   - Error handling and fallbacks
-
-3. **Integration Testing**
-   - End-to-end workflow from search to content retrieval
-   - API response validation
-   - Real-time data accuracy
-
-4. **Performance & Reliability**
-   - Rate limiting and respectful API usage
-   - Error handling and graceful failures
-   - Network timeout handling
-
-## Example Output
-
-The test suite provides detailed output including:
-- ✅ Success indicators for each test
-- 📦 Batch retrieval results with post previews
-- 🔍 Search result validation
-- 📋 Usage examples and code snippets
-- ⚠️ Warnings for any issues encountered
-
-## Test Data
-
-Tests use a combination of:
-- **Live data** from SAP Community (real search results)
-- **Known post IDs** for validation (e.g., `13961398` - FIORI Cache Maintenance)
-- **Multiple search queries** to test different scenarios
-
-This ensures the tests validate against current, real-world SAP Community content and structure.
+The tool tests validate:
+- **Search Accuracy**: Expected documents appear in search results
+- **Source Coverage**: All documentation sources return relevant results  
+- **Query Handling**: Various query types and formats work correctly
+- **Result Quality**: Search scoring and ranking produce expected results
