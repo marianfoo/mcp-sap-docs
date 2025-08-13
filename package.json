@@ -14,7 +14,7 @@
     "test:community": "npm run build:tsc && node test/community-search.ts",
     "test:streamable": "node test/streamable-health.js",
     "setup": "bash setup.sh",
-    "setup:submodules": "git submodule update --init --recursive --remote --depth 1"
+    "setup:submodules": "git submodule sync --recursive && git submodule update --init"
   },
   "ts-node": {
     "esm": true
