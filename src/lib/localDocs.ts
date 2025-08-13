@@ -517,9 +517,13 @@ function expandQuery(query: string): string[] {
   
   for (const [key, values] of Object.entries(synonyms)) {
     // Check if query contains this key term
-    if (q.includes(key) || values.some(v => q.includes(v.toLowerCase()))) {
+    const keyLower = key.toLowerCase();
+    // Avoid substring false-positives for certain keys (e.g., 'form' in 'information')
+    const wholeWordMatch = keyLower === 'form' ? /\bforms?\b/.test(q) : q.includes(keyLower);
+    if (wholeWordMatch || values.some(v => q.includes(v.toLowerCase()))) {
       // If the key term is a major word in the query, prioritize it
-      if (queryTerms.includes(key) || queryTerms.some(term => term.length > 3 && key.includes(term))) {
+      const isMajorWord = queryTerms.includes(keyLower) || queryTerms.some(term => term.length > 3 && keyLower.includes(term));
+      if (isMajorWord) {
         importantMatches.unshift(...values);
         hasSpecificMatch = true;
       } else {
@@ -723,7 +727,7 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   contextScores.push({ context: 'UI5', score: ui5Score });
 
   // UI5 Web Components context indicators
-  const ui5WebComponentsIndicators = ['ui5', 'ui5-', '@ui5/', 'web-component', 'web-components', 'component', 'web'];
+  const ui5WebComponentsIndicators = ['ui5 web components','web components','ui5-', '@ui5/', 'web-component', 'web-components', 'component'];
   const ui5WebComponentsScore = ui5WebComponentsIndicators.filter(term => 
     allQueries.some(query => query.includes(term))
   ).length;
@@ -762,6 +766,60 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   if (ui5WebComponentsScore > 0) return 'UI5 Web Components';
   
   return 'MIXED'; // No clear context*/
+}
+
+// Soft priors per library to bias scores by detected intent without hard-filtering
+function computeLibraryPriors(queryContext: string): Record<string, number> {
+  // Baseline priors so nothing is zeroed out
+  const priors: Record<string, number> = {
+    '/sapui5': 0.05,
+    '/cap': 0.05,
+    '/openui5-api': 0.05,
+    '/openui5-samples': 0.05,
+    '/wdi5': 0.05,
+    '/ui5-tooling': 0.05,
+    '/cloud-mta-build-tool': 0.05,
+    '/ui5-webcomponents': 0.05,
+    '/cloud-sdk-js': 0.05,
+    '/cloud-sdk-java': 0.05,
+    '/cloud-sdk-ai-js': 0.05,
+    '/cloud-sdk-ai-java': 0.05
+  };
+
+  const boost = (ids: string[], v: number) => ids.forEach(id => { priors[id] = Math.max(priors[id] || 0, v); });
+
+  switch (queryContext) {
+    case 'SAP Cloud SDK':
+      boost(['/cloud-sdk-ai-js','/cloud-sdk-ai-java'], 1.0);
+      boost(['/cloud-sdk-js','/cloud-sdk-java'], 0.8);
+      boost(['/cap'], 0.2);
+      break;
+    case 'UI5':
+      boost(['/sapui5','/openui5-api','/openui5-samples'], 0.9);
+      break;
+    case 'wdi5':
+      boost(['/wdi5'], 1.0);
+      boost(['/openui5-api','/openui5-samples','/sapui5'], 0.4);
+      break;
+    case 'UI5 Web Components':
+      boost(['/ui5-webcomponents'], 1.0);
+      break;
+    case 'UI5 Tooling':
+      boost(['/ui5-tooling'], 1.0);
+      break;
+    case 'Cloud MTA Build Tool':
+      boost(['/cloud-mta-build-tool'], 1.0);
+      break;
+    case 'CAP':
+      boost(['/cap'], 1.0);
+      boost(['/sapui5'], 0.2);
+      break;
+    default:
+      // MIXED/unknown: keep low priors to allow diversity
+      break;
+  }
+
+  return priors;
 }
 
 // Apply context-aware penalties/boosts
@@ -839,13 +897,30 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   let usedFTS = false;
   
   try {
+    // Prefer relevant libraries based on detected context
+    const preferredLibs: string[] = [];
+    if (queryContext === 'SAP Cloud SDK') {
+      preferredLibs.push('/cloud-sdk-js','/cloud-sdk-java','/cloud-sdk-ai-js','/cloud-sdk-ai-java');
+    } else if (queryContext === 'UI5') {
+      preferredLibs.push('/sapui5','/openui5-api','/openui5-samples');
+    } else if (queryContext === 'wdi5') {
+      preferredLibs.push('/wdi5');
+    } else if (queryContext === 'UI5 Web Components') {
+      preferredLibs.push('/ui5-webcomponents');
+    } else if (queryContext === 'UI5 Tooling') {
+      preferredLibs.push('/ui5-tooling');
+    } else if (queryContext === 'Cloud MTA Build Tool') {
+      preferredLibs.push('/cloud-mta-build-tool');
+    } else if (queryContext === 'CAP') {
+      preferredLibs.push('/cap');
+    }
     // Get FTS candidates with smart prioritization
     for (let i = 0; i < queries.length; i++) {
       const q = queries[i];
       // Higher limit for original/important queries, lower for supplementary
       const limit = i < 3 ? 150 : 50; // First 3 queries get more candidates
       
-      const ftsResults = getFTSCandidateIds(q, {}, limit);
+      const ftsResults = getFTSCandidateIds(q, { libraries: preferredLibs.length ? preferredLibs : undefined }, limit);
       
       if (ftsResults.length > 0) {
         // For original query (first), add all candidates
@@ -1125,9 +1200,26 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           
           // Apply context-aware penalties to reduce off-topic results
           score = applyContextPenalties(score, lib.id, queryContext, q);
-          
+
+          // Intent-weighted library priors (soft bias)
+          const priors = computeLibraryPriors(queryContext);
+          const prior = priors[lib.id] ?? 0;
+          const alpha = 0.25; // strength of prior influence (moderate)
+          let finalScore = score * (1 + alpha * prior);
+
+          // Topic-specific additive bonus: error-handling intent for SDK/AI docs
+          const oq = originalQuery.toLowerCase();
+          const errorIntent = oq.includes('error handling') || oq.includes('error information') || (/\berror\b/.test(oq) && (oq.includes('sdk') || oq.includes('ai')));
+          if (errorIntent) {
+            const titleL = (doc.title || '').toLowerCase();
+            const relL = String((doc as any).relFile || '').toLowerCase();
+            if (lib.id.startsWith('/cloud-sdk') && (titleL.includes('error') || relL.includes('error'))) {
+              finalScore += 15;
+            }
+          }
+
           allMatches.push({
-            score: Math.min(200, Math.max(0, score)), // Cap at 200 to allow exact matches, floor at 0
+            score: Math.max(0, finalScore), // floor at 0, no hard cap to preserve ordering
             libraryId: lib.id,
             libraryName: lib.name,
             docId: doc.id,
@@ -1206,6 +1298,13 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     if (b.score !== a.score) return b.score - a.score;
     return a.docTitle.localeCompare(b.docTitle);
   }
+  // Deduplicate by docId (keep highest-score variant)
+  const byId = new Map<string, any>();
+  for (const m of allMatches) {
+    const prev = byId.get(m.docId);
+    if (!prev || m.score > prev.score) byId.set(m.docId, m);
+  }
+  allMatches = Array.from(byId.values());
   allMatches.sort(sortByScore);
 
   // Take top results regardless of library, but ensure diversity
