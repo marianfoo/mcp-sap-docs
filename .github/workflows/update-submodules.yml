@@ -29,8 +29,18 @@ jobs:
             # Configure git for HTTPS
             git config --global url."https://github.com/".insteadOf git@github.com:
             
-            # Update submodules to latest remote commits
-            git submodule update --init --recursive --remote --depth 1
+            # Update top-level submodules to latest remote commits (avoid recursive nested submodules)
+            git submodule sync --recursive
+            git submodule update --init --remote --depth 1 \
+              sources/sapui5-docs \
+              sources/cap-docs \
+              sources/openui5 \
+              sources/wdi5 \
+              sources/ui5-tooling \
+              sources/cloud-mta-build-tool \
+              sources/ui5-webcomponents \
+              sources/cloud-sdk \
+              sources/cloud-sdk-ai
             
             # Rebuild everything with updated documentation
             npm ci

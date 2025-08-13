@@ -13,14 +13,15 @@ echo "📚 Initializing documentation submodules..."
 # Initialize submodules if not already done
 if [ ! -d "./sources/sapui5-docs" ]; then
     echo "  → Initializing git submodules..."
-    git submodule update --init --recursive --depth 1
+    git submodule update --init
 else
     echo "  ✓ Submodules already initialized"
 fi
 
 # Update submodules to latest
 echo "  → Updating submodules to latest..."
-git submodule update --init --recursive --remote --depth 1
+git submodule sync --recursive
+git submodule update --init
 
 # Build the search index
 echo "🔍 Building search index..."

@@ -48,13 +48,15 @@ jobs:
               git config --global url."https://github.com/".insteadOf git@github.com:
               git fetch --prune
               git reset --hard origin/main
-              git submodule update --init --recursive --remote --depth 1
+              git submodule sync --recursive
+              git submodule update --init
             else
               cd /opt/mcp-sap
               git config --global url."https://github.com/".insteadOf git@github.com:
-              git clone --recursive --depth 1 https://github.com/marianfoo/mcp-sap-docs.git
+               git clone https://github.com/marianfoo/mcp-sap-docs.git
               cd mcp-sap-docs
-              git submodule update --init --recursive --remote --depth 1
+               git submodule sync --recursive
+               git submodule update --init
             fi
 
             echo "==> Build everything (TypeScript + indexes)"

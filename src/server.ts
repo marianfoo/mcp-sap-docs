@@ -88,13 +88,13 @@ function createServer() {
       tools: [
         {
           name: "sap_docs_search",
-          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, wdi5 testing framework, and OpenUI5 control APIs. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), testing topics (like wdi5, e2e testing, browser automation), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
+          description: "Search across SAP documentation and UI5 control APIs. Searches through SAPUI5 documentation, CAP documentation, wdi5 testing framework, OpenUI5 control APIs, Cloud MTA Build Tool documentation, UI5 Tooling documentation, UI5 Web Components documentation, SAP Cloud SDK documentation and SAP Cloud SDK AI documentation. Use this to find specific controls (like Button, Table, Wizard), concepts (like annotations, routing, authentication), testing topics (like wdi5, e2e testing, browser automation), or any SAP development topic. Returns a ranked list of matching documentation and controls with their IDs for use in sap_docs_get.",
           inputSchema: {
             type: "object",
             properties: {
               query: {
                 type: "string",
-                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', or any SAP development concept. Can be UI5 control names, technical concepts, testing topics, or general topics."
+                description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', 'UI5 Tooling', 'Cloud MTA Build Tool', 'MTA', 'UI5 Web Components', 'SAP Cloud SDK', 'SAP Cloud SDK AI' or any SAP development concept. Can be UI5 control names, technical concepts, testing topics, or general topics."
               }
             },
             required: ["query"]
@@ -122,7 +122,7 @@ function createServer() {
             properties: {
               library_id: {
                 type: "string",
-                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation, or '/wdi5/authentication' for testing docs. For community posts, use IDs like 'community-12345' from sap_community_search results."
+                description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api', '/cloud-mta-build-tool', '/ui5-tooling', '/ui5-webcomponents', '/cloud-sdk-js', '/cloud-sdk-java', '/cloud-sdk-ai-js', '/cloud-sdk-ai-java' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation, or '/wdi5/authentication' for testing docs. For community posts, use IDs like 'community-12345' from sap_community_search results."
               },
               topic: {
                 type: "string",

@@ -14,3 +14,23 @@
 	path = sources/wdi5
 	url = https://github.com/ui5-community/wdi5.git
 	branch = main
+[submodule "sources/ui5-tooling"]
+	path = sources/ui5-tooling
+	url = https://github.com/SAP/ui5-tooling.git
+	branch = main
+[submodule "sources/cloud-mta-build-tool"]
+	path = sources/cloud-mta-build-tool
+	url = https://github.com/SAP/cloud-mta-build-tool.git
+	branch = master
+[submodule "sources/ui5-webcomponents"]
+	path = sources/ui5-webcomponents
+	url = https://github.com/SAP/ui5-webcomponents.git
+	branch = main
+[submodule "sources/cloud-sdk"]
+	path = sources/cloud-sdk
+	url = https://github.com/SAP/cloud-sdk.git
+	branch = main
+[submodule "sources/cloud-sdk-ai"]
+	path = sources/cloud-sdk-ai
+	url = https://github.com/SAP/ai-sdk.git
+	branch = main

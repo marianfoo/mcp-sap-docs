@@ -85,6 +85,69 @@ const SOURCES: SourceConfig[] = [
     description: "wdi5 end-to-end test framework documentation",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "ui5-tooling",
+    absDir: join("sources", "ui5-tooling", "docs"),
+    id: "/ui5-tooling",
+    name: "UI5 Tooling ",
+    description: "UI5 Tooling documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-mta-build-tool",
+    absDir: join("sources", "cloud-mta-build-tool", "docs", "docs"),
+    id: "/cloud-mta-build-tool",
+    name: "Cloud MTA Build Tool",
+    description: "Cloud MTA Build Tool documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "ui5-webcomponents",
+    absDir: join("sources", "ui5-webcomponents", "docs"),
+    id: "/ui5-webcomponents",
+    name: "UI5 Web Components",
+    description: "UI5 Web Components documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk",
+    absDir: join("sources", "cloud-sdk", "docs-js"),
+    id: "/cloud-sdk-js",
+    name: "Cloud SDK (JavaScript)",
+    description: "Cloud SDK (JavaScript) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk",
+    absDir: join("sources", "cloud-sdk", "docs-java"),
+    id: "/cloud-sdk-java",
+    name: "Cloud SDK (Java)",
+    description: "Cloud SDK (Java) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk-ai",
+    absDir: join("sources", "cloud-sdk-ai", "docs-js"),
+    id: "/cloud-sdk-ai-js",
+    name: "Cloud SDK AI (JavaScript)",
+    description: "Cloud SDK AI (JavaScript) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk-ai",
+    absDir: join("sources", "cloud-sdk-ai", "docs-java"),
+    id: "/cloud-sdk-ai-java",
+    name: "Cloud SDK AI (Java)",
+    description: "Cloud SDK AI (Java) documentation",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
   }
 ];
 
