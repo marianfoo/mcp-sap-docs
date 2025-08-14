@@ -106,6 +106,21 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return json(res, 200, { ok: true });
 
+  // Serve HTML on root URL
+  if (req.method === "GET" && req.url === "/") {
+    try {
+      const htmlPath = join(__dirname, "./static/index.html");
+      const htmlContent = readFileSync(htmlPath, "utf8");
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.end(htmlContent);
+      return;
+    } catch (error) {
+      console.error("Error serving HTML:", error);
+      return json(res, 500, { error: "Internal Server Error", message: "Could not load HTML page" });
+    }
+  }
+
   // healthz/readyz: cheap checks for PM2/K8s or manual curl
   if (req.method === "GET" && (req.url === "/healthz" || req.url === "/readyz")) {
     return json(res, 200, { status: "ok", ts: new Date().toISOString() });

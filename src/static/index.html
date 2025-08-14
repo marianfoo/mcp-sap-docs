@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAP Documentation MCP Server</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        h1 {
+            color: #0366d6;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #24292e;
+            margin-top: 30px;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 5px;
+        }
+        .highlight {
+            background-color: #f1f8ff;
+            border: 1px solid #c8e1ff;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .server-url {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background-color: #f6f8fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background-color: #f6f8fa;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #0366d6;
+        }
+        .feature-card h3 {
+            margin-top: 0;
+            color: #0366d6;
+        }
+        code {
+            background-color: rgba(27,31,35,0.05);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+        }
+        .status-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .status-link {
+            background-color: #0366d6;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .status-link:hover {
+            background-color: #0256cc;
+        }
+        .coverage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            background-color: #f1f8ff;
+            border-radius: 6px;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0366d6;
+            display: block;
+        }
+        .tools-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .tools-list li {
+            background-color: #f6f8fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+        }
+        .example-section {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .example-section h3 {
+            margin-top: 0;
+            color: #24292e;
+        }
+        .example-queries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .query-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+        }
+        .query-card strong {
+            color: #0366d6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SAP Documentation MCP Server</h1>
+        
+        <div class="highlight">
+            <strong>Welcome!</strong> This server provides unified access to official SAP documentation, community content, and help portal resources through the Model Context Protocol (MCP).
+        </div>
+
+        <div class="status-links">
+            <a href="/status" class="status-link">📊 Server Status</a>
+            <a href="/healthz" class="status-link">🏥 Health Check</a>
+            <a href="https://mcp-sap-docs.marianzeis.de/sse" class="status-link">🌐 Public SSE Endpoint</a>
+        </div>
+
+        <h2>🔗 Quick Start</h2>
+        <p>Connect your MCP client to this server using one of these methods:</p>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🌐 Remote Connection (Recommended)</h3>
+                <p>Use the public SSE endpoint:</p>
+                <div class="server-url">https://mcp-sap-docs.marianzeis.de/sse</div>
+                <p>Perfect for Claude Desktop, VS Code, Cursor, and other MCP clients.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>💻 Local STDIO</h3>
+                <p>Run locally with:</p>
+                <code>node dist/src/server.js</code>
+                <p>For development and local testing.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🔄 Streamable HTTP</h3>
+                <p>Latest MCP protocol support:</p>
+                <code>http://127.0.0.1:3122/mcp</code>
+                <p>Enhanced session management and resumability.</p>
+            </div>
+        </div>
+
+        <h2>🛠️ Available Tools</h2>
+        <ul class="tools-list">
+            <li><strong>sap_docs_search</strong> - Unified search across SAPUI5/CAP/OpenUI5 APIs & samples, wdi5, and more</li>
+            <li><strong>sap_community_search</strong> - Real-time SAP Community posts with full content of top 3 results</li>
+            <li><strong>sap_help_search</strong> - Comprehensive search across all SAP Help Portal documentation</li>
+            <li><strong>sap_docs_get</strong> - Fetches full documents/snippets with smart formatting</li>
+            <li><strong>sap_help_get</strong> - Retrieves complete SAP Help pages with metadata</li>
+        </ul>
+
+        <h2>📚 Documentation Coverage</h2>
+        <div class="coverage-stats">
+            <div class="stat-card">
+                <span class="stat-number">1,485+</span>
+                SAPUI5 Documentation Files
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">195+</span>
+                CAP Documentation Files
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">500+</span>
+                OpenUI5 API Controls
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">2,000+</span>
+                Sample Code Files
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">Real-time</span>
+                Community Content
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">Complete</span>
+                SAP Help Portal
+            </div>
+        </div>
+
+        <div class="example-section">
+            <h3>💡 Example Queries</h3>
+            <div class="example-queries">
+                <div class="query-card">
+                    <strong>Official Documentation:</strong><br>
+                    "How do I implement authentication in SAPUI5?"<br>
+                    "Show me wdi5 testing examples for forms"<br>
+                    "Find OpenUI5 button control examples"
+                </div>
+                <div class="query-card">
+                    <strong>Community Knowledge:</strong><br>
+                    "Latest CAP authentication best practices from community"<br>
+                    "Community examples of OData batch operations"<br>
+                    "Temporal data handling in CAP solutions"
+                </div>
+                <div class="query-card">
+                    <strong>SAP Help Portal:</strong><br>
+                    "How to configure S/4HANA Fiori Launchpad?"<br>
+                    "BTP integration documentation for Analytics Cloud"<br>
+                    "ABAP development best practices in S/4HANA"
+                </div>
+            </div>
+        </div>
+
+        <h2>🏛️ Architecture</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🧠 MCP Server</h3>
+                <p>Node.js/TypeScript server exposing SAP documentation resources and tools</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔄 Streamable HTTP</h3>
+                <p>Latest MCP spec (2025-03-26) with session management and resumability</p>
+            </div>
+            <div class="feature-card">
+                <h3>🌊 SSE Proxy</h3>
+                <p>Python proxy bridging STDIO to URL for remote clients</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔍 Search Engine</h3>
+                <p>SQLite FTS5 + JSON indices for fast local search</p>
+            </div>
+            <div class="feature-card">
+                <h3>👥 Community Integration</h3>
+                <p>HTML scraping + LiQL API for full content retrieval</p>
+            </div>
+            <div class="feature-card">
+                <h3>📖 SAP Help Integration</h3>
+                <p>Private API access to help.sap.com content</p>
+            </div>
+        </div>
+
+        <h2>🔧 For Developers</h2>
+        <div class="highlight">
+            <h3>Build Commands:</h3>
+            <code>npm run build</code> - Compile TypeScript<br>
+            <code>npm run build:index</code> - Build search index<br>
+            <code>npm run build:fts</code> - Build FTS5 database<br><br>
+            
+            <h3>Server Commands:</h3>
+            <code>npm start</code> - Start STDIO MCP server<br>
+            <code>npm run start:http</code> - Start HTTP status server (port 3001)<br>
+            <code>npm run start:streamable</code> - Start Streamable HTTP MCP server (port 3122)<br>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e1e4e8; text-align: center; color: #6a737d;">
+            <p>📊 <strong>Total Coverage:</strong> 4,180+ documentation files + real-time community & help portal content</p>
+            <p>🔗 <a href="https://github.com/marianfoo/mcp-sap-docs" style="color: #0366d6;">View on GitHub</a> | 
+               📄 <a href="https://github.com/marianfoo/mcp-sap-docs/blob/main/README.md" style="color: #0366d6;">Full Documentation</a></p>
+        </div>
+    </div>
+</body>
+</html>
