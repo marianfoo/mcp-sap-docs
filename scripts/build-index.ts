@@ -424,9 +424,31 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
       continue;
     }
     
-    // Generate description from first few sentences of section content
+    // Generate description from section content, including code blocks for better searchability
     const contentLines = section.content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
-    const description = contentLines.slice(0, 3).join(' ').trim() || section.title;
+    
+    // Extract code blocks content for technical terms
+    const codeBlocks = section.content.match(/```[\s\S]*?```/g) || [];
+    const codeContent = codeBlocks
+      .map(block => block.replace(/```[\w]*\n?/g, '').replace(/```/g, ''))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Combine description with code content for better indexing
+    let description = contentLines.slice(0, 3).join(' ').trim() || section.title;
+    
+    // Include important technical terms from code blocks (like annotation qualifiers)
+    if (codeContent) {
+      // Extract meaningful technical terms (identifiers, annotation qualifiers, etc.)
+      const technicalTerms = (codeContent.match(/[@#]?\w+(?:\.\w+)*(?:#\w+)?/g) || [])
+        .filter((term: string) => term.length > 3 && !['true', 'false', 'null', 'undefined', 'function', 'return'].includes(term.toLowerCase()))
+        .slice(0, 10); // Limit to prevent bloating
+      
+      if (technicalTerms.length > 0) {
+        description += ' ' + technicalTerms.join(' ');
+      }
+    }
     
     // Count code snippets in this section
     const snippetCount = (section.content.match(/```/g)?.length || 0) / 2;

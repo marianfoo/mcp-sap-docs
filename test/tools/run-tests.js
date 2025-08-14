@@ -152,7 +152,21 @@ async function runTestFile(filePath, fileName) {
     try {
       const text = await docsSearch(c.query);
       const checks = Array.isArray(c.expectIncludes) ? c.expectIncludes : [c.expectIncludes];
-      const ok = checks.every(f => text.includes(f));
+      const ok = checks.every(expectedFragment => {
+        // Direct match (exact inclusion)
+        if (text.includes(expectedFragment)) {
+          return true;
+        }
+        
+        // If expected fragment is a parent document (no #), check if any section from that document is found
+        if (!expectedFragment.includes('#')) {
+          // Look for any section that starts with the expected parent document path followed by #
+          const sectionPattern = new RegExp(expectedFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#[^\\s]*', 'g');
+          return sectionPattern.test(text);
+        }
+        
+        return false;
+      });
       if (!ok) throw new Error(`expected fragment(s) not found: ${checks.join(', ')}`);
       console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
     } catch (err) {

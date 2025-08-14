@@ -55,7 +55,8 @@ function toMatchQuery(userQuery: string): string {
     "a","an","the","to","in","on","for","and","or","of","with","from",
     "how","what","why","when","where","which","who","whom","does","do","is","are"
   ]);
-  return terms.map(t => {
+  
+  const cleanTerms = terms.map(t => {
     if (t.startsWith('"') && t.endsWith('"')) return t; // phrase query
     
     // For terms with dots (like sap.m.Button), quote them as phrases
@@ -63,11 +64,30 @@ function toMatchQuery(userQuery: string): string {
       return `"${t}"`;
     }
     
+    // Handle annotation qualifiers with # (like #SpecificationWidthColumnChart)
+    if (t.startsWith('#') && t.length > 1) {
+      // Keep the # and treat as exact phrase for better matching
+      return `"${t}"`;
+    }
+    
+    // Handle compound terms with # (like UI.Chart#Something)
+    if (t.includes('#') && !t.startsWith('#')) {
+      // Split on # and treat as phrase to preserve structure
+      return `"${t}"`;
+    }
+    
     // Sanitize and add prefix matching for simple terms
     const clean = t.replace(/[^\w]/g, "").toLowerCase();
     if (!clean || stopwords.has(clean)) return "";
     return `${clean}*`;
-  }).filter(Boolean).join(" ");
+  }).filter(Boolean);
+  
+  // If we have more than 3 terms, use OR for better recall, otherwise use AND for precision
+  if (cleanTerms.length > 3) {
+    return cleanTerms.join(" OR ");
+  }
+  
+  return cleanTerms.join(" ");
 }
 
 /**

@@ -705,6 +705,10 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   const allQueries = [originalQuery, ...expandedQueries].map(s => s.toLowerCase());
   const contextScores: { context: string, score: number }[] = [];
   
+  // Check for UI5 annotation qualifiers (e.g., "UI.Chart #SpecificationWidthColumnChart")
+  // These should be treated as UI5/SAPUI5 context, not wdi5/testing context
+  const isAnnotationQualifier = /UI\.\w+\s*#\w+|@UI\.\w+|UI\s+\w+\s*#|annotation.*#/.test(originalQuery);
+  
   // CAP context indicators
   const capIndicators = ['cds', 'cap', 'entity', 'service', 'aspect', 'annotation', 'odata', 'hana'];
   const capScore = capIndicators.filter(term => 
@@ -712,18 +716,26 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
   ).length;
   contextScores.push({ context: 'CAP', score: capScore });
   
-  // wdi5 context indicators  
+  // wdi5 context indicators - but reduce weight if this looks like an annotation qualifier
   const wdi5Indicators = ['wdi5', 'test', 'testing', 'e2e', 'browser', 'webdriver', 'selenium', 'automation', 'wdio', 'pageobject', 'selector', 'locator', 'assertion', 'fe-testlib'];
-  const wdi5Score = wdi5Indicators.filter(term => 
+  let wdi5Score = wdi5Indicators.filter(term => 
     allQueries.some(query => query.includes(term))
   ).length;
+  // Reduce wdi5 score if this looks like an annotation qualifier
+  if (isAnnotationQualifier) {
+    wdi5Score = Math.max(0, wdi5Score - 2); // Reduce by 2 to counter false positives from 'selector'
+  }
   contextScores.push({ context: 'wdi5', score: wdi5Score });
 
-  // UI5 context indicators
-  const ui5Indicators = ['sap.m', 'sap.ui', 'sap.f', 'control', 'wizard', 'button', 'table', 'fiori', 'ui5'];
-  const ui5Score = ui5Indicators.filter(term => 
+  // UI5 context indicators - boost score if this looks like an annotation qualifier
+  const ui5Indicators = ['sap.m', 'sap.ui', 'sap.f', 'control', 'wizard', 'button', 'table', 'fiori', 'ui5', 'sapui5', 'chart', 'micro'];
+  let ui5Score = ui5Indicators.filter(term => 
     allQueries.some(query => query.includes(term))
   ).length;
+  // Boost UI5 score for annotation qualifiers since they're typically UI5/Fiori Elements
+  if (isAnnotationQualifier) {
+    ui5Score += 2;
+  }
   contextScores.push({ context: 'UI5', score: ui5Score });
 
   // UI5 Web Components context indicators
@@ -917,8 +929,8 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     // Get FTS candidates with smart prioritization
     for (let i = 0; i < queries.length; i++) {
       const q = queries[i];
-      // Higher limit for original/important queries, lower for supplementary
-      const limit = i < 3 ? 150 : 50; // First 3 queries get more candidates
+              // Higher limit for original/important queries, lower for supplementary
+        const limit = i < 3 ? 200 : 80; // First 3 queries get more candidates
       
       const ftsResults = getFTSCandidateIds(q, { libraries: preferredLibs.length ? preferredLibs : undefined }, limit);
       
@@ -932,7 +944,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
           // Add new candidates, but don't overwhelm
           let added = 0;
           for (const id of ftsResults) {
-            if (!candidateDocIds.has(id) && added < 30) {
+            if (!candidateDocIds.has(id) && added < 50) {
               candidateDocIds.add(id);
               added++;
             }
@@ -980,7 +992,13 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
       for (const doc of lib.docs) {
         // If we're using FTS filtering, only process documents that are in the candidate set
         if (usedFTS && !candidateDocIds.has(doc.id)) {
-          continue;
+          // Also check if any section of this document is in the candidate set
+          const hasSectionCandidate = Array.from(candidateDocIds).some(candidateId => 
+            candidateId.startsWith(doc.id + '#')
+          );
+          if (!hasSectionCandidate) {
+            continue;
+          }
         }
         let score = 0;
         let matchType = '';
