@@ -159,7 +159,7 @@ async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
   try {
     const hits: BestMatchHit[] = await searchCommunityBestMatch(query, {
       includeBlogs: true,
-      limit: 10,
+      limit: 20,
       userAgent: 'SAP-Docs-MCP/1.0'
     });
 
@@ -1313,7 +1313,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   const maxPerLibrary = queryContext === 'MIXED' ? 3 : 5; // More diversity for mixed queries
   
   for (const result of allMatches) {
-    if (topResults.length >= 10) break; // Limit total results
+    if (topResults.length >= 20) break; // Limit total results
     
     const libraryCount = topResults.filter(r => r.libraryId === result.libraryId).length;
     if (libraryCount < maxPerLibrary) {
@@ -1415,14 +1415,14 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   
   if (apiDocs.length > 0) {
     response += `🔹 **UI5 API Documentation:**\n`;
-    for (const r of apiDocs.slice(0, 3)) {
+    for (const r of apiDocs.slice(0, 8)) {
       response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
     }
   }
   
   if (samples.length > 0) {
     response += `🔸 **UI5 Samples:**\n`;
-    for (const r of samples.slice(0, 3)) {
+    for (const r of samples.slice(0, 8)) {
       response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
     }
   }
