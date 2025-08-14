@@ -7,7 +7,7 @@ This directory contains test suites for the MCP SAP Documentation server.
 ### Tool Tests (`test/tools/`)
 Automated tests for MCP tools using a unified test harness:
 
-- **`run-all.js`**: Main test runner that starts one HTTP server and runs all test cases
+- **`run-tests.js`**: Unified test runner that supports both running all tests and specific test files using `--spec` parameter
 - **`sap_docs_search/`**: Test cases for the `sap_docs_search` tool organized by documentation source
 
 #### Current Test Files:
@@ -39,6 +39,14 @@ export default [
 # Run all tool tests (recommended)
 npm run test:tools
 
+# Run a specific test file using --spec parameter
+npm run test:tools -- --spec test/tools/sap_docs_search/search-cap-docs.js
+npm run test:tools -- --spec sap_docs_search/search-cap-docs.js
+npm run test:tools -- --spec search-cap-docs.js
+
+# Show help and list available test files
+npm run test:tools -- --help
+
 # Run community search tests  
 npm run test:community
 
@@ -48,10 +56,11 @@ npm test
 
 ## How It Works
 
-1. **Single Server**: `run-all.js` starts one HTTP server instance for all tests
+1. **Single Server**: `run-tests.js` starts one HTTP server instance for all tests
 2. **Simple Protocol**: Tests use the `/mcp` POST endpoint (simpler than full MCP protocol)
-3. **Modular Cases**: Each source has its own test file with multiple test cases
-4. **Fast Execution**: No server restart between test cases
+3. **Flexible Execution**: Run all tests or specify individual files using `--spec` parameter
+4. **Modular Cases**: Each source has its own test file with multiple test cases
+5. **Fast Execution**: No server restart between test cases
 
 ## Adding New Tests
 
