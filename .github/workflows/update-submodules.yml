@@ -29,24 +29,10 @@ jobs:
             # Configure git for HTTPS
             git config --global url."https://github.com/".insteadOf git@github.com:
             
-            # Update top-level submodules to latest remote commits (avoid recursive nested submodules)
-            git submodule sync --recursive
-            git submodule update --init --remote --depth 1 \
-              sources/sapui5-docs \
-              sources/cap-docs \
-              sources/openui5 \
-              sources/wdi5 \
-              sources/ui5-tooling \
-              sources/cloud-mta-build-tool \
-              sources/ui5-webcomponents \
-              sources/cloud-sdk \
-              sources/cloud-sdk-ai
-            
-            # Rebuild everything with updated documentation
-            npm ci
-            npm run build
-            
-            # Restart services to pick up new content
+            # Reuse setup.sh to ensure shallow, single-branch submodules and build
+            SKIP_NESTED_SUBMODULES=1 bash setup.sh
+
+            # Restart services to pick up new content (HTTP status)
             pm2 restart mcp-sap-http || true
             pm2 save
 
