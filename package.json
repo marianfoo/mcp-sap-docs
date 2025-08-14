@@ -5,10 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "build:tsc": "tsc",
-    "build:static": "cp -r src/static dist/src/ || echo 'No static files to copy'",
-    "build:index": "npm run build:tsc && npm run build:static && node dist/scripts/build-index.js",
-    "build:fts": "npm run build:tsc && npm run build:static && node dist/scripts/build-fts.js",
-    "build": "npm run build:tsc && npm run build:static && npm run build:index && npm run build:fts",
+    "build:index": "npm run build:tsc && node dist/scripts/build-index.js",
+    "build:fts": "npm run build:tsc && node dist/scripts/build-fts.js",
+    "build": "npm run build:tsc && npm run build:index && npm run build:fts",
     "start": "node dist/src/server.js",
     "start:http": "node dist/src/http-server.js",
     "start:streamable": "node dist/src/streamable-http-server.js",
