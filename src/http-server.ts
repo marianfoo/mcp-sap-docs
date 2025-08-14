@@ -4,6 +4,9 @@ import { fileURLToPath } from "url";
 import { dirname, join, resolve } from "path";
 import { execSync } from "child_process";
 import { searchLibraries } from "./lib/localDocs.js";
+import { search } from "./lib/search.js";
+import { CONFIG } from "./lib/config.js";
+import { loadMetadata } from "./lib/metadata.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,21 +77,45 @@ function readGitMeta(repoPath: string) {
   }
 }
 
+// Format results to be MCP-tool compatible, keep legacy formatting
 async function handleMCPRequest(content: string) {
   try {
-    const searchResult = await searchLibraries(content);
-    if (searchResult.results.length > 0) {
-      return { role: "assistant", content: searchResult.results[0].description };
+    // Use simple BM25 search with centralized config
+    const results = await search(content, { 
+      k: CONFIG.RETURN_K 
+    });
+    
+    if (results.length === 0) {
+      return {
+        role: "assistant",
+        content: `No results found for "${content}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication'.`
+      };
     }
-    return {
-      role: "assistant",
-      content:
-        searchResult.error ||
-        `No results for "${content}". Try 'button', 'table', 'wizard', 'routing', 'annotation', 'authentication', 'cds entity', 'wdi5 testing'.`,
-    };
+    
+    // Format results  
+    const formattedResults = results.map((r, index) => {
+      return `⭐️ **${r.id}** (Score: ${r.finalScore.toFixed(2)})\n   ${(r.text || '').substring(0, 120)}\n   Use in sap_docs_get\n`;
+    }).join('\n');
+    
+    const summary = `Found ${results.length} results for '${content}':\n\n${formattedResults}`;
+    
+    return { role: "assistant", content: summary };
   } catch (error) {
-    console.error("Search error:", error);
-    return { role: "assistant", content: `Error searching for "${content}". Try a different query.` };
+    console.error('Hybrid search failed, falling back to original search:', error);
+    // Fallback to original search
+    try {
+      const searchResult = await searchLibraries(content);
+      if (searchResult.results.length > 0) {
+        return { role: "assistant", content: searchResult.results[0].description };
+      }
+      return {
+        role: "assistant", 
+        content: searchResult.error || `No results for "${content}". Try 'button', 'table', 'wizard', 'routing', 'annotation', 'authentication', 'cds entity', 'wdi5 testing'.`,
+      };
+    } catch (fallbackError) {
+      console.error("Search error:", error);
+      return { role: "assistant", content: `Error searching for "${content}". Try a different query.` };
+    }
   }
 }
 
@@ -250,8 +277,21 @@ const server = createServer(async (req, res) => {
   return json(res, 404, { error: "Not Found", path: req.url, method: req.method });
 });
 
-const PORT = Number(process.env.PORT || 3001);
-// Bind to 127.0.0.1 to keep local-only
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
-});
+// Initialize search system with metadata
+(async () => {
+  console.log('🔧 Initializing BM25 search system...');
+  try {
+    loadMetadata();
+    console.log('✅ Search system ready with metadata');
+  } catch (error) {
+    console.warn('⚠️ Metadata loading failed, using defaults');
+    console.log('✅ Search system ready');
+  }
+  
+  // Start server
+  const PORT = Number(process.env.PORT || 3001);
+  // Bind to 127.0.0.1 to keep local-only
+  server.listen(PORT, "127.0.0.1", () => {
+    console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
+  });
+})();

@@ -1,13 +1,14 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { existsSync, statSync } from "fs";
+import { CONFIG } from "./config.js";
 
 let db: Database.Database | null = null;
 
 export function openDb(dbPath?: string): Database.Database {
   if (!db) {
-    // Default path relative to project root
-    const defaultPath = path.join(process.cwd(), "dist", "data", "docs.sqlite");
+    // Use centralized config path
+    const defaultPath = path.join(process.cwd(), CONFIG.DB_PATH);
     const finalPath = dbPath || defaultPath;
     
     if (!existsSync(finalPath)) {
@@ -46,7 +47,7 @@ export type FTSResult = {
   highlight: string;
 };
 
-function toMatchQuery(userQuery: string): string {
+export function toMatchQuery(userQuery: string): string {
   // Convert user input into FTS syntax with prefix matching:
   // keep quoted phrases as-is, append * to bare terms for prefix matching
   const terms = userQuery.match(/"[^"]+"|\S+/g) ?? [];
@@ -82,8 +83,9 @@ function toMatchQuery(userQuery: string): string {
     return `${clean}*`;
   }).filter(Boolean);
   
-  // If we have more than 3 terms, use OR for better recall, otherwise use AND for precision
-  if (cleanTerms.length > 3) {
+  // Use OR logic for better recall in BM25-only mode (configurable)
+  // FTS5 will still rank documents with more matching terms higher
+  if (CONFIG.USE_OR_LOGIC || cleanTerms.length > 3) {
     return cleanTerms.join(" OR ");
   }
   
@@ -205,7 +207,7 @@ export function getFTSStats(): { rowCount: number; dbSize: number; mtime: string
     const database = openDb();
     const rowCount = database.prepare("SELECT count(*) as n FROM docs").get() as { n: number };
     
-    const dbPath = path.join(process.cwd(), "data", "docs.sqlite");
+    const dbPath = path.join(process.cwd(), CONFIG.DB_PATH);
     const stats = statSync(dbPath);
     
     return {

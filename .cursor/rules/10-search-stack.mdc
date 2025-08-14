@@ -1,0 +1,37 @@
+# Search & Indexing (Rule)
+
+When modifying search behavior, ranking, or index builds.
+
+## Search Architecture (BM25-Only)
+- **Index Build**: `scripts/build-index.ts` → `dist/data/index.json`
+- **FTS Database**: `scripts/build-fts.ts` → `dist/data/docs.sqlite`
+- **Search Logic**: Pure BM25 via `src/lib/search.ts` using metadata APIs
+- **Query Processing**: `toMatchQuery()` in `src/lib/searchDb.ts`
+- **Configuration**: All source settings in `src/metadata.json`
+
+## Metadata-Driven Configuration
+- **Source Boosts**: Context-aware scoring via `getContextBoosts()`
+- **Library Mappings**: ID resolution via `getAllLibraryMappings()`
+- **URL Generation**: Documentation links via `getDocUrlConfig()`
+- **Source Paths**: File system paths via `getSourcePath()`
+
+## Key Search Features
+- **OR Logic**: Better recall for multi-term queries
+- **Prefix Matching**: Terms get `*` suffix for broader matching
+- **Phrase Queries**: Dotted terms (sap.m.Button) quoted for exact match
+- **Context Awareness**: UI5/CAP/wdi5 context detection and scoring
+
+## Performance
+- **FTS5**: SQLite full-text search for sub-second response times
+- **Centralized Config**: Single metadata load at startup
+- **Efficient APIs**: Type-safe configuration access
+
+@file scripts/build-index.ts
+@file scripts/build-fts.ts
+@file src/lib/searchDb.ts
+@file src/lib/search.ts
+@file src/lib/metadata.ts
+@file src/metadata.json
+@file src/lib/localDocs.ts
+@file docs/ARCHITECTURE.md
+@file docs/DEV.md

@@ -1,3 +1,4 @@
+// Build pipeline step 2: Compiles dist/data/index.json into dist/data/docs.sqlite/FTS5 for fast search
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";

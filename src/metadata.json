@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "updated_at": "2025-01-14",
+  "description": "Centralized configuration for SAP Docs MCP search system",
+  
+  "sources": [
+    {
+      "id": "sapui5",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["ui5", "frontend", "javascript"],
+      "description": "SAPUI5 framework documentation",
+      "libraryId": "/sapui5",
+      "sourcePath": "sapui5-docs/docs",
+      "baseUrl": "https://ui5.sap.com",
+      "pathPattern": "/#/topic/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "cap",
+      "type": "documentation", 
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["backend", "nodejs", "java", "cds"],
+      "description": "SAP Cloud Application Programming model",
+      "libraryId": "/cap",
+      "sourcePath": "cap-docs",
+      "baseUrl": "https://cap.cloud.sap",
+      "pathPattern": "/docs/{file}",
+      "anchorStyle": "docsify"
+    },
+    {
+      "id": "openui5-api",
+      "type": "api",
+      "lang": "en", 
+      "boost": 0.1,
+      "tags": ["api", "controls", "ui5"],
+      "description": "OpenUI5 API documentation",
+      "libraryId": "/openui5-api",
+      "sourcePath": "openui5/src",
+      "baseUrl": "https://ui5.sap.com",
+      "pathPattern": "/#/api/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "openui5-samples",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["samples", "examples", "ui5"],
+      "description": "OpenUI5 code samples",
+      "libraryId": "/openui5-samples",
+      "sourcePath": "openui5/src"
+    },
+    {
+      "id": "wdi5",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["testing", "e2e", "webdriver"],
+      "description": "wdi5 testing framework",
+      "libraryId": "/wdi5",
+      "sourcePath": "wdi5/docs",
+      "baseUrl": "https://ui5-community.github.io/wdi5",
+      "pathPattern": "#{file}",
+      "anchorStyle": "docsify"
+    },
+    {
+      "id": "ui5-tooling",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.0,
+      "tags": ["tooling", "build", "cli"],
+      "description": "UI5 Tooling documentation",
+      "libraryId": "/ui5-tooling",
+      "sourcePath": "ui5-tooling/docs",
+      "baseUrl": "https://sap.github.io/ui5-tooling/stable",
+      "pathPattern": "/pages/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-mta-build-tool", 
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.0,
+      "tags": ["mta", "build", "deployment"],
+      "description": "Cloud MTA Build Tool",
+      "libraryId": "/cloud-mta-build-tool",
+      "sourcePath": "cloud-mta-build-tool/docs/docs",
+      "baseUrl": "https://sap.github.io/cloud-mta-build-tool",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "ui5-webcomponents",
+      "type": "documentation", 
+      "lang": "en",
+      "boost": 0.0,
+      "tags": ["webcomponents", "ui5"],
+      "description": "UI5 Web Components",
+      "libraryId": "/ui5-webcomponents",
+      "sourcePath": "ui5-webcomponents/docs",
+      "baseUrl": "https://sap.github.io/ui5-webcomponents/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-js",
+      "type": "documentation",
+      "lang": "en", 
+      "boost": 0.05,
+      "tags": ["sdk", "javascript", "cloud"],
+      "description": "SAP Cloud SDK for JavaScript",
+      "libraryId": "/cloud-sdk-js",
+      "sourcePath": "cloud-sdk/docs-js",
+      "baseUrl": "https://sap.github.io/cloud-sdk/docs/js",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-java",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["sdk", "java", "cloud"],
+      "description": "SAP Cloud SDK for Java",
+      "libraryId": "/cloud-sdk-java",
+      "sourcePath": "cloud-sdk/docs-java",
+      "baseUrl": "https://sap.github.io/cloud-sdk/docs/java",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-ai-js",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.05, 
+      "tags": ["ai", "sdk", "javascript"],
+      "description": "SAP Cloud SDK AI for JavaScript",
+      "libraryId": "/cloud-sdk-ai-js",
+      "sourcePath": "cloud-sdk-ai/docs-js",
+      "baseUrl": "https://sap.github.io/ai-sdk/docs/js",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-ai-java",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["ai", "sdk", "java"],
+      "description": "SAP Cloud SDK AI for Java",
+      "libraryId": "/cloud-sdk-ai-java",
+      "sourcePath": "cloud-sdk-ai/docs-java",
+      "baseUrl": "https://sap.github.io/ai-sdk/docs/java",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    }
+  ],
+  
+  "synonyms": [
+    { "from": "ui5", "to": ["sapui5", "openui5"] },
+    { "from": "button", "to": ["btn", "sap.m.Button"] },
+    { "from": "table", "to": ["sap.m.Table", "sap.ui.table.Table"] },
+    { "from": "wizard", "to": ["sap.m.Wizard"] },
+    { "from": "testing", "to": ["wdi5", "e2e", "automation"] },
+    { "from": "cds", "to": ["cap", "cloud application programming"] },
+    { "from": "odata", "to": ["rest", "api", "service"] }
+  ],
+  
+  "acronyms": {
+    "CAP": ["Cloud Application Programming", "cds"],
+    "CDS": ["Core Data Services", "cap"],
+    "UI5": ["sapui5", "openui5"],
+    "BTP": ["Business Technology Platform", "cloud"],
+    "MTA": ["Multi-Target Application"],
+    "CQL": ["CDS Query Language", "query"],
+    "OData": ["Open Data Protocol", "rest", "api"]
+  },
+
+  "contextBoosts": {
+    "SAP Cloud SDK": {
+      "/cloud-sdk-ai-js": 1.0,
+      "/cloud-sdk-ai-java": 1.0,
+      "/cloud-sdk-js": 0.8,
+      "/cloud-sdk-java": 0.8,
+      "/cap": 0.2
+    },
+    "UI5": {
+      "/sapui5": 0.9,
+      "/openui5-api": 0.9,
+      "/openui5-samples": 0.9
+    },
+    "wdi5": {
+      "/wdi5": 1.0,
+      "/openui5-api": 0.4,
+      "/openui5-samples": 0.4,
+      "/sapui5": 0.4
+    },
+    "UI5 Web Components": {
+      "/ui5-webcomponents": 1.0
+    },
+    "UI5 Tooling": {
+      "/ui5-tooling": 1.0
+    },
+    "Cloud MTA Build Tool": {
+      "/cloud-mta-build-tool": 1.0
+    },
+    "CAP": {
+      "/cap": 1.0,
+      "/sapui5": 0.2
+    }
+  },
+
+  "libraryMappings": {
+    "sapui5": "sapui5",
+    "cap": "cap",
+    "cloud-sdk-js": "cloud-sdk-js",
+    "cloud-sdk-ai-js": "cloud-sdk-ai-js",
+    "openui5-api": "sapui5",
+    "openui5-samples": "sapui5",
+    "wdi5": "wdi5",
+    "ui5-tooling": "ui5-tooling",
+    "cloud-mta-build-tool": "cloud-mta-build-tool",
+    "ui5-webcomponents": "ui5-webcomponents",
+    "cloud-sdk-java": "cloud-sdk-java",
+    "cloud-sdk-ai-java": "cloud-sdk-ai-java"
+  },
+
+  "contextEmojis": {
+    "CAP": "🏗️",
+    "wdi5": "🧪", 
+    "UI5": "🎨",
+    "UI5 Web Components": "🕹️",
+    "SAP Cloud SDK": "🌐",
+    "UI5 Tooling": "🔧",
+    "Cloud MTA Build Tool": "🚢",
+    "MIXED": "🔀"
+  }
+}

@@ -55,10 +55,14 @@ jobs:
               cd mcp-sap-docs
             fi
 
+            echo "==> Configure BM25 search environment"
+            # Ensure metadata file exists for centralized configuration
+            [ -f /opt/mcp-sap/mcp-sap-docs/data/metadata.json ] || echo "Metadata file will be created during build"
+            
             echo "==> Run setup (shallow, single-branch submodules + build)"
             SKIP_NESTED_SUBMODULES=1 bash setup.sh
 
-            echo "==> (Re)start PM2 processes"
+            echo "==> (Re)start PM2 processes with BM25 search support"
             # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001; Streamable HTTP on 127.0.0.1:3122
             pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-proxy      || pm2 restart mcp-sap-proxy
             pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http       || pm2 restart mcp-sap-http

@@ -1,0 +1,54 @@
+# Tests & Expected Output (Rule)
+
+When changing output formatting or test stability.
+
+## Test Architecture
+- **Test Runner**: `test/tools/run-tests.js` - Unified test execution
+- **HTTP Client**: `test/_utils/httpClient.js` - Server interaction utilities
+- **Result Parser**: `test/_utils/parseResults.js` - Output format validation
+- **Smoke Tests**: `test/tools/search.smoke.js` - Quick functionality validation
+
+## Expected Output Format (BM25-Only)
+```
+⭐️ **<document-id>** (Score: <final-score>)
+   <description-preview>
+   Use in sap_docs_get
+```
+
+## Test Categories
+- **Search Tests**: Verify query results and context detection
+- **Retrieval Tests**: Document fetching and formatting
+- **Integration Tests**: End-to-end MCP tool functionality
+- **Performance Tests**: Response time and resource usage
+
+## Test Data Structure
+```javascript
+{
+  name: 'Test Name',
+  tool: 'sap_docs_search',
+  query: 'search term',
+  expectIncludes: ['/expected/document/id'],
+  validate: (results) => { /* custom validation */ }
+}
+```
+
+## Output Validation
+- **Score Format**: Numeric scores with 2 decimal places
+- **Context Indicators**: Emoji-based context detection (🎨🏗️🧪)
+- **Source Attribution**: Clear library identification
+- **Result Limits**: Configurable via `CONFIG.RETURN_K` (default: 25)
+
+## Test Execution
+- **Fast Tests**: `npm run test:fast` - Skip build, use existing artifacts
+- **Full Tests**: `npm run test` - Build + test complete pipeline
+- **Smoke Tests**: `npm run test:smoke` - Quick validation only
+
+@file test/tools/run-tests.js
+@file test/_utils/parseResults.js
+@file test/_utils/httpClient.js
+@file test/tools/search.smoke.js
+@file test/tools/sap_docs_search/search-cap-docs.js
+@file test/tools/sap_docs_search/search-cloud-sdk-js.js
+@file test/tools/sap_docs_search/search-sapui5-docs.js
+@file docs/TESTS.md
+@file docs/DEV.md

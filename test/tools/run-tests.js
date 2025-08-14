@@ -61,14 +61,14 @@ function showHelp() {
   console.log(colorize('MCP SAP Docs Test Runner', 'cyan'));
   console.log('');
   console.log(colorize('Usage:', 'yellow'));
-  console.log('  npm run test:tools                                    Run all test files');
-  console.log('  npm run test:tools -- --spec <file-path>             Run specific test file');
+  console.log('  npm run test                                          Run all test files');
+  console.log('  npm run test -- --spec <file-path>                   Run specific test file');
   console.log('');
   console.log(colorize('Examples:', 'yellow'));
-  console.log('  npm run test:tools');
-  console.log('  npm run test:tools -- --spec test/tools/sap_docs_search/search-cap-docs.js');
-  console.log('  npm run test:tools -- --spec sap_docs_search/search-cap-docs.js');
-  console.log('  npm run test:tools -- --spec search-cap-docs.js');
+  console.log('  npm run test');
+  console.log('  npm run test:fast                                    Skip build step');
+  console.log('  npm run test -- --spec search-cap-docs.js');
+  console.log('  npm run test:smoke                                   Quick smoke test');
   console.log('');
   console.log(colorize('Available test files:', 'yellow'));
   
@@ -150,25 +150,37 @@ async function runTestFile(filePath, fileName) {
   for (const c of cases) {
     fileTests++;
     try {
-      const text = await docsSearch(c.query);
-      const checks = Array.isArray(c.expectIncludes) ? c.expectIncludes : [c.expectIncludes];
-      const ok = checks.every(expectedFragment => {
-        // Direct match (exact inclusion)
-        if (text.includes(expectedFragment)) {
-          return true;
+      if (typeof c.validate === 'function') {
+        // New path: custom validator gets helpers, uses existing server
+        const res = await c.validate({ docsSearch });
+        const passed = typeof res === 'object' ? !!res.passed : !!res;
+        if (!passed) {
+          const msg = (res && res.message) ? ` - ${res.message}` : '';
+          throw new Error(`custom validator failed${msg}`);
         }
-        
-        // If expected fragment is a parent document (no #), check if any section from that document is found
-        if (!expectedFragment.includes('#')) {
-          // Look for any section that starts with the expected parent document path followed by #
-          const sectionPattern = new RegExp(expectedFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#[^\\s]*', 'g');
-          return sectionPattern.test(text);
-        }
-        
-        return false;
-      });
-      if (!ok) throw new Error(`expected fragment(s) not found: ${checks.join(', ')}`);
-      console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
+        console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
+      } else {
+                  // Legacy path: expectIncludes (kept for existing tests)
+          const text = await docsSearch(c.query);
+          const checks = Array.isArray(c.expectIncludes) ? c.expectIncludes : [c.expectIncludes];
+        const ok = checks.every(expectedFragment => {
+          // Direct match (exact inclusion)
+          if (text.includes(expectedFragment)) {
+            return true;
+          }
+          
+          // If expected fragment is a parent document (no #), check if any section from that document is found
+          if (!expectedFragment.includes('#')) {
+            // Look for any section that starts with the expected parent document path followed by #
+            const sectionPattern = new RegExp(expectedFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#[^\\s]*', 'g');
+            return sectionPattern.test(text);
+          }
+          
+          return false;
+        });
+        if (!ok) throw new Error(`expected fragment(s) not found: ${checks.join(', ')}`);
+        console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
+      }
     } catch (err) {
       fileFailures++;
       console.log(`  ${colorize('❌', 'red')} ${colorize(c.name, 'white')}: ${colorize(err?.message || err, 'red')}`);
@@ -178,6 +190,8 @@ async function runTestFile(filePath, fileName) {
   return { tests: fileTests, failures: fileFailures };
 }
 
+
+
 async function runTests() {
   const config = parseArgs();
   
@@ -185,6 +199,8 @@ async function runTests() {
     showHelp();
     process.exit(0);
   }
+  
+
   
   let testFiles = [];
   
@@ -198,7 +214,13 @@ async function runTests() {
     // Run all test files
     console.log(colorize('🚀 Starting MCP SAP Docs test suite...', 'cyan'));
     testFiles = listJsFiles(TOOLS_DIR)
-      .filter(p => !p.endsWith('run-all.js') && !p.endsWith('run-single.js') && !p.endsWith('run-tests.js'))
+      .filter(p => {
+        const fileName = p.split('/').pop();
+        // Skip runner scripts and utility files
+        return !fileName.startsWith('run-') && 
+               !fileName.includes('test-with-reranker') &&
+               fileName.endsWith('.js');
+      })
       .sort();
   }
   
@@ -229,6 +251,7 @@ async function runTests() {
   }
   
   console.log(colorize('\n' + '═'.repeat(60), 'dim'));
+  
   if (totalFailures) {
     console.log(`${colorize('❌ Test Results:', 'red')} ${colorize(`${totalFailures}/${totalTests} tests failed`, 'red')}`);
     process.exit(1);

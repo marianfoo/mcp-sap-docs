@@ -1,0 +1,55 @@
+# Metadata & Configuration (Rule)
+
+For centralized configuration management and metadata-driven features.
+
+## Metadata System Architecture
+- **Central Config**: `src/metadata.json` - Single source of truth
+- **Type-Safe APIs**: `src/lib/metadata.ts` - 12 comprehensive functions
+- **Core Settings**: `src/lib/config.ts` - System-level configuration only
+- **Runtime Loading**: Metadata loaded once at startup with fallbacks
+
+## Configuration Structure
+```json
+{
+  "sources": [/* 12 documentation sources with full metadata */],
+  "contextBoosts": {/* Context-specific scoring boosts */},
+  "libraryMappings": {/* Source ID to library ID mappings */},
+  "contextEmojis": {/* UI presentation emojis */},
+  "synonyms": [/* Query expansion synonyms */],
+  "acronyms": {/* Acronym expansions */}
+}
+```
+
+## Metadata APIs (12 functions)
+- **URL Configuration**: `getDocUrlConfig()`, `getAllDocUrlConfigs()`
+- **Source Paths**: `getSourcePath()`, `getAllSourcePaths()`
+- **Context Boosts**: `getContextBoosts()`, `getAllContextBoosts()`
+- **Library Mappings**: `getLibraryMapping()`, `getAllLibraryMappings()`
+- **UI Elements**: `getContextEmoji()`, `getAllContextEmojis()`
+- **Source Lookup**: `getSourceByLibraryId()`, `getSourceById()`
+
+## Adding New Sources
+1. Add source definition to `src/metadata.json`
+2. Include: id, libraryId, sourcePath, baseUrl, pathPattern, anchorStyle, boost, tags
+3. Add to contextBoosts if context-specific scoring needed
+4. Add to libraryMappings if ID mapping required
+5. No code changes needed - APIs handle automatically
+
+## Configuration Best Practices
+- **Single Source**: All source configs in metadata.json only
+- **Type Safety**: Use metadata APIs, never direct JSON access
+- **Fallbacks**: APIs return sensible defaults for missing data
+- **Validation**: Metadata loading includes error handling
+- **Environment**: Core settings can be overridden via env vars
+
+## Migration from Hardcoded Config
+- **Before**: Scattered configs in multiple files (~250+ lines)
+- **After**: Centralized metadata with type-safe access
+- **Benefits**: Maintainable, extensible, no code changes for new sources
+
+@file src/metadata.json
+@file src/lib/metadata.ts
+@file src/lib/config.ts
+@file docs/METADATA-CONSOLIDATION.md
+@file docs/ARCHITECTURE.md
+@file docs/DEV.md

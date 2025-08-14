@@ -7,74 +7,20 @@ import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
 import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, getCommunityPostsByIds, searchAndGetTopPosts, BestMatchHit } from "./communityBestMatch.js";
 
-// Documentation URL configuration for different libraries
-interface DocUrlConfig {
-  baseUrl: string;
-  pathPattern: string; // How to construct the path: {file} or {file}#{anchor}
-  anchorStyle: 'docsify' | 'github' | 'custom'; // How anchors are formatted
-}
-
-const DOC_URL_CONFIGS: Record<string, DocUrlConfig> = {
-  '/wdi5': {
-    baseUrl: 'https://ui5-community.github.io/wdi5',
-    pathPattern: '#{file}',
-    anchorStyle: 'docsify'
-  },
-  '/cap': {
-    baseUrl: 'https://cap.cloud.sap',
-    pathPattern: '/docs/{file}',
-    anchorStyle: 'docsify'
-  },
-  '/sapui5': {
-    baseUrl: 'https://ui5.sap.com',
-    pathPattern: '/#/topic/{file}',
-    anchorStyle: 'custom'
-  },
-  '/openui5-api': {
-    baseUrl: 'https://ui5.sap.com',
-    pathPattern: '/#/api/{file}',
-    anchorStyle: 'custom'
-  },
-  '/ui5-tooling': {
-    baseUrl: 'https://sap.github.io/ui5-tooling/stable',
-    pathPattern: '/pages/{file}',
-    anchorStyle: 'github'
-  },
-  '/cloud-mta-build-tool': {
-    baseUrl: 'https://sap.github.io/cloud-mta-build-tool',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  },
-  '/ui5-webcomponents': {
-    baseUrl: 'https://sap.github.io/ui5-webcomponents/docs',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  },
-  '/cloud-sdk-js': {
-    baseUrl: 'https://sap.github.io/cloud-sdk/docs/js',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  },
-  '/cloud-sdk-java': {
-    baseUrl: 'https://sap.github.io/cloud-sdk/docs/java',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  },
-  '/cloud-sdk-ai-js': {
-    baseUrl: 'https://sap.github.io/ai-sdk/docs/js',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  },
-  '/cloud-sdk-ai-java': {
-    baseUrl: 'https://sap.github.io/ai-sdk/docs/java',
-    pathPattern: '/{file}',
-    anchorStyle: 'github'
-  }
-};
+import { 
+  getDocUrlConfig, 
+  getAllDocUrlConfigs, 
+  getSourcePath, 
+  getAllContextBoosts, 
+  getContextBoosts, 
+  getAllContextEmojis,
+  getContextEmoji,
+  type DocUrlConfig 
+} from "./metadata.js";
 
 // Generic function to generate documentation URLs
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
-  const config = DOC_URL_CONFIGS[libraryId];
+  const config = getDocUrlConfig(libraryId);
   if (!config) {
     return null;
   }
@@ -782,54 +728,27 @@ function determineQueryContext(originalQuery: string, expandedQueries: string[])
 
 // Soft priors per library to bias scores by detected intent without hard-filtering
 function computeLibraryPriors(queryContext: string): Record<string, number> {
-  // Baseline priors so nothing is zeroed out
-  const priors: Record<string, number> = {
-    '/sapui5': 0.05,
-    '/cap': 0.05,
-    '/openui5-api': 0.05,
-    '/openui5-samples': 0.05,
-    '/wdi5': 0.05,
-    '/ui5-tooling': 0.05,
-    '/cloud-mta-build-tool': 0.05,
-    '/ui5-webcomponents': 0.05,
-    '/cloud-sdk-js': 0.05,
-    '/cloud-sdk-java': 0.05,
-    '/cloud-sdk-ai-js': 0.05,
-    '/cloud-sdk-ai-java': 0.05
-  };
+  // Get baseline priors from metadata (all sources get 0.05 baseline)
+  const allContextBoosts = getAllContextBoosts();
+  const priors: Record<string, number> = {};
+  
+  // Initialize baseline priors for all known library IDs
+  const allBoosts = allContextBoosts;
+  const allLibraryIds = new Set<string>();
+  Object.values(allBoosts).forEach(contextBoosts => {
+    Object.keys(contextBoosts).forEach(libId => allLibraryIds.add(libId));
+  });
+  
+  // Set baseline priors
+  allLibraryIds.forEach(libId => {
+    priors[libId] = 0.05;
+  });
 
-  const boost = (ids: string[], v: number) => ids.forEach(id => { priors[id] = Math.max(priors[id] || 0, v); });
-
-  switch (queryContext) {
-    case 'SAP Cloud SDK':
-      boost(['/cloud-sdk-ai-js','/cloud-sdk-ai-java'], 1.0);
-      boost(['/cloud-sdk-js','/cloud-sdk-java'], 0.8);
-      boost(['/cap'], 0.2);
-      break;
-    case 'UI5':
-      boost(['/sapui5','/openui5-api','/openui5-samples'], 0.9);
-      break;
-    case 'wdi5':
-      boost(['/wdi5'], 1.0);
-      boost(['/openui5-api','/openui5-samples','/sapui5'], 0.4);
-      break;
-    case 'UI5 Web Components':
-      boost(['/ui5-webcomponents'], 1.0);
-      break;
-    case 'UI5 Tooling':
-      boost(['/ui5-tooling'], 1.0);
-      break;
-    case 'Cloud MTA Build Tool':
-      boost(['/cloud-mta-build-tool'], 1.0);
-      break;
-    case 'CAP':
-      boost(['/cap'], 1.0);
-      boost(['/sapui5'], 0.2);
-      break;
-    default:
-      // MIXED/unknown: keep low priors to allow diversity
-      break;
-  }
+  // Apply context-specific boosts from metadata
+  const contextBoosts = getContextBoosts(queryContext);
+  Object.entries(contextBoosts).forEach(([libId, boost]) => {
+    priors[libId] = Math.max(priors[libId] || 0, boost);
+  });
 
   return priors;
 }
@@ -1356,20 +1275,11 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   }
 
   // Group results for presentation with context awareness
-  const contextEmoji: Record<string, string> = {
-    'CAP': '🏗️',
-    'wdi5': '🧪', 
-    'UI5': '🎨',
-    'UI5 Web Components': '🕹️',
-    'SAP Cloud SDK': '🌐',
-    'UI5 Tooling': '🔧',
-    'Cloud MTA Build Tool': '🚢',
-    'MIXED': '🔀'
-  };
+  const contextEmojis = getAllContextEmojis();
   
   // Add FTS info to response for transparency
   const ftsInfo = usedFTS ? ` (🚀 FTS-filtered from ${candidateDocIds.size} candidates)` : ' (🔍 Full search)';
-  let response = `Found ${topResults.length} results for '${query}' ${contextEmoji[queryContext] || '🔍'} **${queryContext} Context**${ftsInfo}:\n\n`;
+  let response = `Found ${topResults.length} results for '${query}' ${getContextEmoji(queryContext)} **${queryContext} Context**${ftsInfo}:\n\n`;
   
   // Show results in score order, grouped by type
   if (guides.length > 0) {
@@ -1478,33 +1388,8 @@ export async function fetchLibraryDocumentation(
       allDocs.push({ lib, doc });
       // If this matches a specific document ID, return just that document
       if (doc.id === libraryIdOrDocId) {
-        let sourcePath: string;
-        
-        if (lib.id === "/sapui5") {
-          sourcePath = "sapui5-docs/docs";
-        } else if (lib.id === "/cap") {
-          sourcePath = "cap-docs";
-        } else if (lib.id === "/openui5-api") {
-          sourcePath = "openui5/src";
-        } else if (lib.id === "/openui5-samples") {
-          sourcePath = "openui5/src";
-        } else if (lib.id === "/wdi5") {
-          sourcePath = "wdi5/docs";
-        } else if (lib.id === "/ui5-tooling") {
-          sourcePath = "ui5-tooling/docs";
-        } else if (lib.id === "/cloud-mta-build-tool") {
-          sourcePath = "cloud-mta-build-tool/docs/docs";
-        } else if (lib.id === "/ui5-webcomponents") {
-          sourcePath = "ui5-webcomponents/docs";
-        } else if (lib.id === "/cloud-sdk-js") {
-          sourcePath = "cloud-sdk/docs-js";
-        } else if (lib.id === "/cloud-sdk-java") {
-          sourcePath = "cloud-sdk/docs-java";
-        } else if (lib.id === "/cloud-sdk-ai-js") {
-          sourcePath = "cloud-sdk-ai/docs-js";
-        } else if (lib.id === "/cloud-sdk-ai-java") {
-          sourcePath = "cloud-sdk-ai/docs-java";
-        } else {
+        const sourcePath = getSourcePath(lib.id);
+        if (!sourcePath) {
           throw new Error(`Unknown library ID: ${lib.id}`);
         }
         
@@ -1520,7 +1405,7 @@ export async function fetchLibraryDocumentation(
           return formatSampleContent(content, doc.relFile, doc.title || '');
         }
         // For documented libraries, add URL context
-        else if (DOC_URL_CONFIGS[lib.id]) {
+        else if (getDocUrlConfig(lib.id)) {
           const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
           const libName = lib.id.replace('/', '').toUpperCase();
           
@@ -1559,33 +1444,8 @@ ${content}
 
   const parts: string[] = [];
   for (const doc of targets) {
-    let sourcePath: string;
-    
-    if (lib.id === "/sapui5") {
-      sourcePath = "sapui5-docs/docs";
-    } else if (lib.id === "/cap") {
-      sourcePath = "cap-docs";
-    } else if (lib.id === "/openui5-api") {
-      sourcePath = "openui5/src";
-    } else if (lib.id === "/openui5-samples") {
-      sourcePath = "openui5/src";
-    } else if (lib.id === "/wdi5") {
-      sourcePath = "wdi5/docs";
-    } else if (lib.id === "/ui5-tooling") {
-      sourcePath = "ui5-tooling/docs";
-    } else if (lib.id === "/cloud-mta-build-tool") {
-      sourcePath = "cloud-mta-build-tool/docs/docs";
-    } else if (lib.id === "/ui5-webcomponents") {
-      sourcePath = "ui5-webcomponents/docs";
-    } else if (lib.id === "/cloud-sdk-js") {
-      sourcePath = "cloud-sdk/docs-js";
-    } else if (lib.id === "/cloud-sdk-java") {
-      sourcePath = "cloud-sdk/docs-java";
-    } else if (lib.id === "/cloud-sdk-ai-js") {
-      sourcePath = "cloud-sdk-ai/docs-js";
-    } else if (lib.id === "/cloud-sdk-ai-java") {
-      sourcePath = "cloud-sdk-ai/docs-java";
-    } else {
+    const sourcePath = getSourcePath(lib.id);
+    if (!sourcePath) {
       throw new Error(`Unknown library ID: ${lib.id}`);
     }
     
@@ -1603,7 +1463,7 @@ ${content}
       parts.push(formattedContent);
     }
     // For documented libraries, add URL context
-    else if (DOC_URL_CONFIGS[lib.id]) {
+    else if (getDocUrlConfig(lib.id)) {
       const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
       const libName = lib.id.replace('/', '').toUpperCase();
       
@@ -1750,35 +1610,10 @@ export async function readDocumentationResource(uri: string) {
     throw new Error(`Document not found: ${filePath}`);
   }
 
-  let sourcePath: string;
-  
-      if (libraryId === "/sapui5") {
-      sourcePath = "sapui5-docs/docs";
-    } else if (libraryId === "/cap") {
-      sourcePath = "cap-docs";
-    } else if (libraryId === "/openui5-api") {
-      sourcePath = "openui5/src";
-    } else if (libraryId === "/openui5-samples") {
-      sourcePath = "openui5/src";
-    } else if (libraryId === "/wdi5") {
-      sourcePath = "wdi5/docs";
-    } else if (lib.id === "/ui5-tooling") {
-      sourcePath = "ui5-tooling/docs";
-    } else if (lib.id === "/cloud-mta-build-tool") {
-      sourcePath = "cloud-mta-build-tool/docs/docs";
-    } else if (lib.id === "/ui5-webcomponents") {
-      sourcePath = "ui5-webcomponents/docs";
-    } else if (lib.id === "/cloud-sdk-js") {
-      sourcePath = "cloud-sdk/docs-js";
-    } else if (lib.id === "/cloud-sdk-java") {
-      sourcePath = "cloud-sdk/docs-java";
-    } else if (lib.id === "/cloud-sdk-ai-js") {
-      sourcePath = "cloud-sdk-ai/docs-js";
-    } else if (lib.id === "/cloud-sdk-ai-java") {
-      sourcePath = "cloud-sdk-ai/docs-java";
-    } else {
-      throw new Error(`Unknown library ID: ${libraryId}`);
-    }
+  const sourcePath = getSourcePath(libraryId);
+  if (!sourcePath) {
+    throw new Error(`Unknown library ID: ${libraryId}`);
+  }
   
   const absPath = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
 
@@ -1791,7 +1626,7 @@ export async function readDocumentationResource(uri: string) {
       formattedContent = formatJSDocContent(content, doc.title || '');
     } else if (libraryId === '/openui5-samples') {
       formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
-    } else if (DOC_URL_CONFIGS[libraryId]) {
+    } else if (getDocUrlConfig(libraryId)) {
       const documentationUrl = generateDocumentationUrl(libraryId, doc.relFile, content);
       const libName = libraryId.replace('/', '').toUpperCase();
       

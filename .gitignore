@@ -3,3 +3,6 @@ node_modules
 dist
 data
 sources
+.cache
+src_context.txt
+test_context.txt

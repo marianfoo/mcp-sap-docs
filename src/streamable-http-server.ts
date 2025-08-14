@@ -21,6 +21,10 @@ import {
 import { searchSapHelp, getSapHelpContent } from "./lib/sapHelp.js";
 import { SearchResponse } from "./lib/types.js";
 import { logger } from "./lib/logger.js";
+import { search } from "./lib/search.js";
+import { CONFIG } from "./lib/config.js";
+import { loadMetadata } from "./lib/metadata.js";
+
 
 // Simple in-memory event store for resumability
 class InMemoryEventStore {
@@ -221,28 +225,65 @@ function createServer() {
       // Log the search request with client metadata
       logger.logRequest(name, query, clientMetadata);
       
-      const res: SearchResponse = await searchLibraries(query);
-      
-      if (!res.results.length) {
+      try {
+        // Use simple BM25 search
+        const results = await search(query, { 
+          k: CONFIG.RETURN_K 
+        });
+        
+        const topResults = results;
+        
+        if (topResults.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication'.`
+              }
+            ]
+          };
+        }
+        
+        // Format results similar to original response
+        const formattedResults = topResults.map((r, index) => {
+          return `⭐️ **${r.id}** (Score: ${r.finalScore.toFixed(2)})\n   ${(r.text || '').substring(0, 120)}\n   Use in sap_docs_get\n`;
+        }).join('\n');
+        
+        const summary = `Found ${topResults.length} results for '${query}':\n\n${formattedResults}`;
+        
         return {
           content: [
             {
               type: "text",
-              text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication'.`
+              text: summary
+            }
+          ]
+        };
+      } catch (error) {
+        logger.error('Hybrid search failed, falling back to original search:', { error: String(error) });
+        // Fallback to original search
+        const res: SearchResponse = await searchLibraries(query);
+        
+        if (!res.results.length) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication'.`
+              }
+            ]
+          };
+        }
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: res.results[0].description
             }
           ]
         };
       }
-      
-      // Use the new formatted response from the improved search
-      return {
-        content: [
-          {
-            type: "text",
-            text: res.results[0].description
-          }
-        ]
-      };
     }
 
     if (name === "sap_community_search") {
@@ -364,6 +405,16 @@ function createServer() {
 }
 
 async function main() {
+  // Initialize search system with metadata
+  logger.info('Initializing BM25 search system...');
+  try {
+    loadMetadata();
+    logger.info('Search system ready with metadata');
+  } catch (error) {
+    logger.warn('Metadata loading failed, using defaults', { error: String(error) });
+    logger.info('Search system ready');
+  }
+
   const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 3122;
   
   // Create Express application

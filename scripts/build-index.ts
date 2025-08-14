@@ -1,3 +1,4 @@
+// Build pipeline step 1: Creates dist/data/index.json (bundle of all docs from submodules)
 import fg from "fast-glob";
 import fs from "fs/promises";
 import path, { join } from "path";
