@@ -15,7 +15,7 @@ export interface BestMatchHit {
 
 type Options = {
   includeBlogs?: boolean; // default true
-  limit?: number;         // default 10
+  limit?: number;         // default 20
   userAgent?: string;     // optional UA override
 };
 
@@ -72,7 +72,7 @@ async function fetchText(url: string, userAgent?: string) {
   return res.text();
 }
 
-function parseHitsFromHtml(html: string, limit = 10): BestMatchHit[] {
+function parseHitsFromHtml(html: string, limit = 20): BestMatchHit[] {
   const results: BestMatchHit[] = [];
 
   // Find all message wrapper divs with data-lia-message-uid
@@ -146,7 +146,7 @@ export async function searchCommunityBestMatch(
   query: string,
   opts: Options = {}
 ): Promise<BestMatchHit[]> {
-  const { includeBlogs = true, limit = 10, userAgent } = opts;
+  const { includeBlogs = true, limit = 20, userAgent } = opts;
   const url = buildSearchUrl(query, includeBlogs);
   const html = await fetchText(url, userAgent);
   return parseHitsFromHtml(html, limit);
@@ -159,7 +159,7 @@ export async function searchAndGetTopPosts(
   opts: Options = {}
 ): Promise<{ search: BestMatchHit[], posts: { [id: string]: string } }> {
   // First, search for posts
-  const searchResults = await searchCommunityBestMatch(query, { ...opts, limit: Math.max(topN, opts.limit || 10) });
+  const searchResults = await searchCommunityBestMatch(query, { ...opts, limit: Math.max(topN, opts.limit || 20) });
   
   // Extract post IDs from top N results
   const topResults = searchResults.slice(0, topN);

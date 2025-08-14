@@ -99,7 +99,7 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
     });
 
     // Format response similar to other search functions
-    const formattedResults = searchResults.slice(0, 10).map((result, i) => 
+    const formattedResults = searchResults.slice(0, 20).map((result, i) => 
       `[${i}] **${result.title}**\n   ID: \`${result.id}\`\n   URL: ${result.url}\n   ${result.description}\n`
     ).join('\n');
 
