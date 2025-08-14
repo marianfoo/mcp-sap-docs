@@ -1,0 +1,32 @@
+# SAP Docs MCP – High-level Overview (Rule)
+
+Use this when asked about "how it works", "where to change X", or "what runs in prod".
+
+## System Architecture
+- **MCP Server**: Stdio-based server for Claude/LLM integration
+- **HTTP Servers**: Test server (port 3001) and streamable HTTP server (port 3122)
+- **Search Pipeline**: BM25-only (FTS5) → metadata-driven configuration → formatted results
+- **Metadata-Driven**: All source configurations centralized in `src/metadata.json`
+
+## Key Components
+- **Search**: Pure BM25 using SQLite FTS5 for fast, reliable search
+- **Configuration**: Centralized metadata system with type-safe APIs
+- **Sources**: 12 documentation sources (SAPUI5, CAP, wdi5, Cloud SDK, etc.)
+- **Tools**: 5 MCP tools for search, retrieval, and community integration
+
+## Production Setup
+- **PM2**: 3 processes (proxy, http, streamable) via `ecosystem.config.cjs`
+- **Deployment**: GitHub Actions → SSH → `setup.sh` → PM2 restart
+- **Health**: Multiple endpoints for monitoring and status checks
+
+@file package.json
+@file src/metadata.json
+@file src/lib/config.ts
+@file src/lib/metadata.ts
+@file src/lib/search.ts
+@file src/server.ts
+@file src/http-server.ts
+@file src/streamable-http-server.ts
+@file ecosystem.config.cjs
+@file docs/ARCHITECTURE.md
+@file docs/DEV.md

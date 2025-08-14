@@ -15,7 +15,7 @@ export default [
   {
     name: 'Cloud SDK JS upgrade guide',
     tool: 'sap_docs_search',
-    query: 'cloud sdk javascript getting started tutorial',
+    query: 'cloud sdk javascript upgrade version 4',
     expectIncludes: ['/cloud-sdk-js/guides/upgrade-to-version-4.mdx']
   }
 ];

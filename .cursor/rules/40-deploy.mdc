@@ -1,0 +1,57 @@
+# Deploy & Ops (Rule)
+
+For PM2 processes, GitHub Actions, health checks, and production operations.
+
+## Deployment Pipeline
+- **GitHub Action**: "Deploy MCP stack" workflow
+- **Trigger**: Push to main branch or manual dispatch
+- **Process**: SSH → git pull → `setup.sh` → PM2 restart
+- **Health Checks**: Automated validation of all endpoints
+
+## PM2 Configuration (`ecosystem.config.cjs`)
+- **mcp-sap-proxy**: MCP proxy server (127.0.0.1:18080)
+- **mcp-sap-http**: HTTP status server (127.0.0.1:3001)
+- **mcp-sap-streamable**: Streamable HTTP MCP (127.0.0.1:3122)
+
+## Environment Configuration (BM25-Only)
+```javascript
+env: {
+  NODE_ENV: "production",
+  LOG_LEVEL: "INFO",
+  LOG_FORMAT: "json",
+  RETURN_K: "25"  // Centralized result limit
+}
+```
+
+## Health Endpoints
+- **HTTP Server**: `/status`, `/healthz`, `/readyz`
+- **Streamable Server**: `/health`
+- **Proxy Server**: `/status` (via mcp-proxy)
+
+## Monitoring & Logging
+- **Structured Logging**: JSON format in production
+- **Performance Metrics**: Search timing and result counts
+- **Error Tracking**: Graceful fallbacks with error logging
+- **Resource Usage**: PM2 process monitoring
+
+## Build Process
+1. **Index Build**: `npm run build:index` → `dist/data/index.json`
+2. **FTS Build**: `npm run build:fts` → `dist/data/docs.sqlite`
+3. **TypeScript**: `npm run build:tsc` → `dist/src/`
+4. **Full Build**: `npm run build` → Complete pipeline
+
+## Production Checklist
+- [ ] All health endpoints responding
+- [ ] Search functionality working
+- [ ] Metadata loaded successfully
+- [ ] PM2 processes stable
+- [ ] Log levels appropriate
+- [ ] Resource usage normal
+
+@file .github/workflows/deploy-mcp-sap-docs.yml
+@file ecosystem.config.cjs
+@file setup.sh
+@file src/http-server.ts
+@file src/streamable-http-server.ts
+@file docs/ARCHITECTURE.md
+@file docs/DEV.md

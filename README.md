@@ -1,9 +1,10 @@
 # SAP Documentation MCP Server
 
-An MCP server that unifies official SAP docs (SAPUI5, CAP, OpenUI5 APIs & samples, wdi5) with real-time SAP Community content.
+A fast, lightweight MCP server that provides unified access to official SAP documentation (SAPUI5, CAP, OpenUI5 APIs & samples, wdi5) using efficient BM25 full-text search.
 Use it remotely (hosted URL) or run it locally and point your client to STDIO.
 
-**Public server**: https://mcp-sap-docs.marianzeis.de/sse  
+**Public server STDIO**: https://mcp-sap-docs.marianzeis.de/sse  
+**Public server Streamable HTTP**: https://mcp-sap-docs.marianzeis.de/mcp
 **Streamable HTTP (default: 3122, configurable via MCP_PORT)**: http://127.0.0.1:3122/mcp  
 _(by default, both local and deployment use port 3122; override with MCP_PORT as needed)_  
 **Local HTTP status**: http://127.0.0.1:3001/status  
@@ -20,6 +21,12 @@ Point your MCP client to the SSE URL:
 
 ```
 https://mcp-sap-docs.marianzeis.de/sse
+```
+
+or the Streamable HTTP URL:
+
+```
+https://mcp-sap-docs.marianzeis.de/mcp
 ```
 
 Verify from a shell:
@@ -40,20 +47,15 @@ curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | 
 ```bash
 # From repo root
 npm ci
-npm run build:index
+./setup.sh # execute this script to clone the github documentation submodules
 npm run build
 
 # Start the MCP server (STDIO)
 node dist/src/server.js
 
-# OR start the Streamable HTTP server (latest MCP spec)
+# OR start the Streamable HTTP server
 npm run start:streamable
 ```
-
-The companion HTTP status server runs (via PM2 in your setup) on 127.0.0.1:3001.
-The Streamable HTTP server runs on 127.0.0.1:3122 by default and supports the latest MCP protocol (2025-03-26).
-In the deployment, it is configured via MCP_PORT to 127.0.0.1:3122.
-The SSE proxy runs on 127.0.0.1:18080 and is what remote clients use.
 
 **Local health checks**
 
@@ -73,17 +75,17 @@ curl -sS http://127.0.0.1:3122/health | jq .
 ---
 
 ## What you get
-- **sap_docs_search** – unified search across SAPUI5/CAP/OpenUI5 APIs & samples, wdi5, and more
+- **sap_docs_search** – unified search across multiple SAP documentation sources
+- **sap_docs_get** – fetches full documents/snippets with smart formatting
 - **sap_community_search** – real-time SAP Community posts with **full content** of top 3 results
 - **sap_help_search** – comprehensive search across all SAP Help Portal documentation  
-- **sap_docs_get** – fetches full documents/snippets with smart formatting
 - **sap_help_get** – retrieves complete SAP Help pages with metadata
 
 ---
 
 ## Connect from your MCP client
 
-✅ **Remote URL**: use the public SSE endpoint  
+✅ **Remote URL**: use the public SSE endpoint or Streamable HTTP endpoint
 ✅ **Local/STDIO**: run `node dist/src/server.js` and point the client to a command + args  
 ✅ **Local/Streamable HTTP**: run `npm run start:streamable` and point the client to `http://127.0.0.1:3122/mcp`
 
@@ -162,8 +164,6 @@ Create or edit `~/.cursor/mcp.json`:
   }
 }
 ```
-
-Restart Cursor.
 
 </details>
 
@@ -625,29 +625,14 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 - **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs, community & help portal
 - **Streamable HTTP Transport** (Latest MCP spec 2025-03-26) - HTTP-based transport with session management and resumability
 - **SSE Proxy** (Python) - Bridges STDIO → URL for remote clients  
-- **Reverse Proxy** (Caddy) - TLS termination and routing
-- **Search Engine** - SQLite FTS5 + JSON indices for fast local search
-- **Community Integration** - HTML scraping + LiQL API for full content retrieval
-- **SAP Help Integration** - Private API access to help.sap.com content
+- **BM25 Search Engine** - SQLite FTS5 with optimized OR-logic queries for fast, relevant results
 
----
+### Search Implementation
 
-## Project Statistics
+The server uses a **BM25-only approach** for optimal performance:
 
-- **Total Files**: 4,180+ documentation files + real-time community & help portal content
-- **SAPUI5 Docs**: 1,485 markdown files
-- **CAP Docs**: 195 markdown files  
-- **OpenUI5 APIs**: 500+ JavaScript control definitions
-- **Sample Code**: 2,000+ implementation examples
-- **Community Posts**: Real-time access with full content delivery (top 3 results)
-- **SAP Help Portal**: Comprehensive access to all SAP product documentation
-- **Search Database**: 8+ MB FTS5 database with 14,822+ indexed documents
-- **Search Coverage**: Official docs + community + help portal = complete SAP ecosystem
-
----
-
-## License
-
-MIT
-
----
+- **SQLite FTS5** - Full-text search with prefix matching and OR logic
+- **Query Processing** - Automatic stopword filtering and phrase detection  
+- **Fast Response Times** - ~15ms average query time
+- **High Recall** - OR logic ensures comprehensive results
+- **Lightweight** - No external dependencies or ML models required
