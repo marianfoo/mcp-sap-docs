@@ -23,6 +23,8 @@ import { SearchResponse } from "./lib/types.js";
 import { logger } from "./lib/logger.js";
 import { search } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
+import { getDocUrlConfig } from "./lib/metadata.js";
+import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
 import { loadMetadata } from "./lib/metadata.js";
 
 
@@ -246,7 +248,10 @@ function createServer() {
         
         // Format results similar to original response
         const formattedResults = topResults.map((r, index) => {
-          return `⭐️ **${r.id}** (Score: ${r.finalScore.toFixed(2)})\n   ${(r.text || '').substring(0, 120)}\n   Use in sap_docs_get\n`;
+          return formatSearchResult(r, CONFIG.EXCERPT_LENGTH_MAIN, {
+            generateDocumentationUrl,
+            getDocUrlConfig
+          });
         }).join('\n');
         
         const summary = `Found ${topResults.length} results for '${query}':\n\n${formattedResults}`;

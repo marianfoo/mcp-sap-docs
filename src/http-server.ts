@@ -6,7 +6,8 @@ import { execSync } from "child_process";
 import { searchLibraries } from "./lib/localDocs.js";
 import { search } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
-import { loadMetadata } from "./lib/metadata.js";
+import { loadMetadata, getDocUrlConfig } from "./lib/metadata.js";
+import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -92,9 +93,12 @@ async function handleMCPRequest(content: string) {
       };
     }
     
-    // Format results  
+    // Format results with URL generation
     const formattedResults = results.map((r, index) => {
-      return `⭐️ **${r.id}** (Score: ${r.finalScore.toFixed(2)})\n   ${(r.text || '').substring(0, 120)}\n   Use in sap_docs_get\n`;
+      return formatSearchResult(r, CONFIG.EXCERPT_LENGTH_MAIN, {
+        generateDocumentationUrl,
+        getDocUrlConfig
+      });
     }).join('\n');
     
     const summary = `Found ${results.length} results for '${content}':\n\n${formattedResults}`;

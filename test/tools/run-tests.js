@@ -160,25 +160,74 @@ async function runTestFile(filePath, fileName) {
         }
         console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
       } else {
-                  // Legacy path: expectIncludes (kept for existing tests)
-          const text = await docsSearch(c.query);
+        // Legacy path: expectIncludes (kept for existing tests)
+        const text = await docsSearch(c.query);
+        
+        // Check expectIncludes
+        if (c.expectIncludes) {
           const checks = Array.isArray(c.expectIncludes) ? c.expectIncludes : [c.expectIncludes];
-        const ok = checks.every(expectedFragment => {
-          // Direct match (exact inclusion)
-          if (text.includes(expectedFragment)) {
-            return true;
+          const ok = checks.every(expectedFragment => {
+            // Direct match (exact inclusion)
+            if (text.includes(expectedFragment)) {
+              return true;
+            }
+            
+            // If expected fragment is a parent document (no #), check if any section from that document is found
+            if (!expectedFragment.includes('#')) {
+              // Look for any section that starts with the expected parent document path followed by #
+              const sectionPattern = new RegExp(expectedFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#[^\\s]*', 'g');
+              return sectionPattern.test(text);
+            }
+            
+            return false;
+          });
+          if (!ok) throw new Error(`expected fragment(s) not found: ${checks.join(', ')}`);
+        }
+        
+        // Check expectContains (for URL verification)
+        if (c.expectContains) {
+          const containsChecks = Array.isArray(c.expectContains) ? c.expectContains : [c.expectContains];
+          const containsOk = containsChecks.every(expectedContent => {
+            return text.includes(expectedContent);
+          });
+          if (!containsOk) throw new Error(`expected content not found: ${containsChecks.join(', ')}`);
+        }
+        
+        // Check expectUrlPattern (for URL format verification)
+        if (c.expectUrlPattern) {
+          // Extract URLs from the response using the 🔗 emoji
+          const urlRegex = /🔗\s+(https?:\/\/[^\s\n]+)/g;
+          const urls = [];
+          let match;
+          while ((match = urlRegex.exec(text)) !== null) {
+            urls.push(match[1]);
           }
           
-          // If expected fragment is a parent document (no #), check if any section from that document is found
-          if (!expectedFragment.includes('#')) {
-            // Look for any section that starts with the expected parent document path followed by #
-            const sectionPattern = new RegExp(expectedFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#[^\\s]*', 'g');
-            return sectionPattern.test(text);
+          if (urls.length === 0) {
+            throw new Error('no URLs found in response (expected URL pattern)');
           }
           
-          return false;
-        });
-        if (!ok) throw new Error(`expected fragment(s) not found: ${checks.join(', ')}`);
+          const urlPattern = c.expectUrlPattern;
+          const matchingUrl = urls.some(url => {
+            if (typeof urlPattern === 'string') {
+              return url.includes(urlPattern) || new RegExp(urlPattern).test(url);
+            }
+            return urlPattern.test(url);
+          });
+          
+          if (!matchingUrl) {
+            throw new Error(`no URL matching pattern "${urlPattern}" found. URLs found: ${urls.join(', ')}`);
+          }
+        }
+        
+        // Check expectPattern (for general regex pattern matching)
+        if (c.expectPattern) {
+          const pattern = c.expectPattern;
+          if (!pattern.test(text)) {
+            throw new Error(`text does not match expected pattern: ${pattern}`);
+          }
+        }
+        
         console.log(`  ${colorize('✅', 'green')} ${colorize(c.name, 'white')}`);
       }
     } catch (err) {

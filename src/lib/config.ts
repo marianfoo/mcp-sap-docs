@@ -9,4 +9,8 @@ export const CONFIG = {
   
   // Search behavior
   USE_OR_LOGIC: true, // Use OR logic for better recall in BM25-only mode
+  
+  // Excerpt lengths for different search types
+  EXCERPT_LENGTH_MAIN: 200,    // Main search results excerpt length
+  EXCERPT_LENGTH_COMMUNITY: 400, // Community search results excerpt length
 };

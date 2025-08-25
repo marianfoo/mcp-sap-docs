@@ -154,3 +154,63 @@ export function buildUrl(baseUrl: string, ...pathSegments: string[]): string {
   return `${cleanBase}/${cleanSegments.join('/')}`;
 }
 
+/**
+ * Extract library ID from document ID path
+ * Used for search result URL generation
+ */
+export function extractLibraryIdFromPath(docId: string): string {
+  if (docId.startsWith('/')) {
+    const parts = docId.split('/');
+    return parts.length > 1 ? `/${parts[1]}` : docId;
+  }
+  return docId;
+}
+
+/**
+ * Extract relative file path from document ID
+ * Used for search result URL generation
+ */
+export function extractRelativeFileFromPath(docId: string): string {
+  if (docId.includes('/')) {
+    const parts = docId.split('/');
+    return parts.length > 2 ? parts.slice(2).join('/') : '';
+  }
+  return '';
+}
+
+/**
+ * Format a single search result with URL generation and excerpt truncation
+ * Shared utility for consistent search result formatting across servers
+ */
+export function formatSearchResult(
+  result: any,
+  excerptLength: number,
+  urlGenerator?: {
+    generateDocumentationUrl: (libraryId: string, relFile: string, content: string, config: any) => string | null;
+    getDocUrlConfig: (libraryId: string) => any;
+  }
+): string {
+  // Extract library ID and relative file path to generate URL
+  const libraryId = result.sourceId ? `/${result.sourceId}` : extractLibraryIdFromPath(result.id);
+  const relFile = extractRelativeFileFromPath(result.id);
+  
+  // Try to generate documentation URL
+  let urlInfo = '';
+  if (urlGenerator) {
+    try {
+      const config = urlGenerator.getDocUrlConfig && urlGenerator.getDocUrlConfig(libraryId);
+      if (config && urlGenerator.generateDocumentationUrl) {
+        const docUrl = urlGenerator.generateDocumentationUrl(libraryId, relFile, result.text || '', config);
+        if (docUrl) {
+          urlInfo = `\n   🔗 ${docUrl}`;
+        }
+      }
+    } catch (error) {
+      // Silently fail URL generation
+      console.warn(`URL generation failed for ${libraryId}/${relFile}:`, error);
+    }
+  }
+  
+  return `⭐️ **${result.id}** (Score: ${result.finalScore.toFixed(2)})\n   ${(result.text || '').substring(0, excerptLength)}${urlInfo}\n   Use in sap_docs_get\n`;
+}
+

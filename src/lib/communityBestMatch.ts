@@ -2,6 +2,8 @@
 // Scrape SAP Community search "Best Match" results directly from the HTML page.
 // No external dependencies; best-effort selectors based on current Khoros layout.
 
+import { CONFIG } from "./config.js";
+
 export interface BestMatchHit {
   title: string;
   url: string;
@@ -119,7 +121,7 @@ function parseHitsFromHtml(html: string, limit = 20): BestMatchHit[] {
     const snippetMatch = seg.match(
       /<div[^>]*class="[^"]*lia-truncated-body-container[^"]*"[^>]*>([\s\S]*?)<\/div>/i
     );
-    const snippet = snippetMatch ? stripTags(snippetMatch[1]).slice(0, 280) : undefined;
+    const snippet = snippetMatch ? stripTags(snippetMatch[1]).slice(0, CONFIG.EXCERPT_LENGTH_COMMUNITY) : undefined;
 
     // Tags
     const tagSectionMatch = seg.match(
