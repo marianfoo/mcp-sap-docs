@@ -39,7 +39,7 @@
       "description": "OpenUI5 API documentation",
       "libraryId": "/openui5-api",
       "sourcePath": "openui5/src",
-      "baseUrl": "https://ui5.sap.com",
+      "baseUrl": "https://sdk.openui5.org",
       "pathPattern": "/#/api/{file}",
       "anchorStyle": "custom"
     },
@@ -51,7 +51,10 @@
       "tags": ["samples", "examples", "ui5"],
       "description": "OpenUI5 code samples",
       "libraryId": "/openui5-samples",
-      "sourcePath": "openui5/src"
+      "sourcePath": "openui5/src",
+      "baseUrl": "https://sdk.openui5.org",
+      "pathPattern": "/entity/{file}",
+      "anchorStyle": "custom"
     },
     {
       "id": "wdi5",
@@ -75,7 +78,7 @@
       "description": "UI5 Tooling documentation",
       "libraryId": "/ui5-tooling",
       "sourcePath": "ui5-tooling/docs",
-      "baseUrl": "https://sap.github.io/ui5-tooling/stable",
+      "baseUrl": "https://sap.github.io/ui5-tooling/v4",
       "pathPattern": "/pages/{file}",
       "anchorStyle": "github"
     },
