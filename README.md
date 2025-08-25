@@ -6,7 +6,6 @@ Use it remotely (hosted URL) or run it locally and point your client to STDIO.
 **Public server STDIO**: https://mcp-sap-docs.marianzeis.de/sse  
 **Public server Streamable HTTP**: https://mcp-sap-docs.marianzeis.de/mcp
 **Streamable HTTP (default: 3122, configurable via MCP_PORT)**: http://127.0.0.1:3122/mcp  
-_(by default, both local and deployment use port 3122; override with MCP_PORT as needed)_  
 **Local HTTP status**: http://127.0.0.1:3001/status  
 **Proxy status (SSE gateway)**: http://127.0.0.1:18080/status  
 
@@ -183,7 +182,6 @@ Create or edit `~/.cursor/mcp.json`:
 }
 ```
 
-Restart Cursor.
 
 </details>
 
@@ -192,133 +190,80 @@ Restart Cursor.
 ## VS Code (GitHub Copilot Chat)
 
 <details>
-<summary><b>Add an MCP server</b></summary>
+<summary><b>Remote (recommended) — no setup required</b></summary>
 
-Open Copilot Chat → gear icon → MCP Servers → Add.
-You can add by command (local/STDIO), by URL (remote HTTP/SSE), or by local Streamable HTTP using the built-in wizard.
-Microsoft's ["Add an MCP server"](https://code.visualstudio.com/docs/copilot/copilot-mcp) doc walks through this flow.
+**Prerequisites**: VS Code 1.102+ with MCP support enabled (enabled by default).
 
-**Remote (URL)**:
-```
-https://mcp-sap-docs.marianzeis.de/sse
+### Quick Setup
+Create `.vscode/mcp.json` in your workspace:
+
+```json
+{
+  "servers": {
+    "sap-docs": {
+      "type": "http",
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
+    }
+  }
+}
 ```
 
-**Local (command)**:
-```
-command: node
-args: ["<absolute-path>/dist/src/server.js"]
-```
+**Alternative (SSE)**: Use `"type": "sse"` with `"url": "https://mcp-sap-docs.marianzeis.de/sse"` if HTTP doesn't work.
 
-**Local (Streamable HTTP)** - latest MCP protocol:
-```
-http://127.0.0.1:3122/mcp
-```
-(Start with `npm run start:streamable` first)
+### Using the Remote Server
+1. Save the `.vscode/mcp.json` file in your workspace
+2. VS Code will automatically detect and start the MCP server
+3. Open Chat view and select **Agent mode**
+4. Click **Tools** button to see available SAP documentation tools
+5. Ask questions like "How do I implement authentication in SAPUI5?"
+
+**Benefits**: 
+- ✅ No local installation required
+- ✅ Always up-to-date documentation  
+- ✅ Automatic updates and maintenance
+- ✅ Works across all your projects
+
+**Note**: You'll be prompted to trust the remote MCP server when connecting for the first time.
 
 </details>
-
----
-
-## Zed Editor
 
 <details>
-<summary><b>Remote (URL server) & Local (Program server)</b></summary>
+<summary><b>Local setup — for offline use</b></summary>
 
-- **URL Server** → add the SSE URL:
-```
-https://mcp-sap-docs.marianzeis.de/sse
+### Local STDIO Server
+```json
+{
+  "servers": {
+    "sap-docs-local": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["<absolute-path>/dist/src/server.js"]
+    }
+  }
+}
 ```
 
-- **Program Server** → point to:
+### Local HTTP Server
+```json
+{
+  "servers": {
+    "sap-docs-http": {
+      "type": "http", 
+      "url": "http://127.0.0.1:3122/mcp"
+    }
+  }
+}
 ```
-command: node
-args: ["<absolute-path>/dist/src/server.js"]
-```
+(Start local server with `npm run start:streamable` first)
 
-Zed's docs show how to add URL or Program MCP servers from Project → Settings → MCP Servers.
+### Alternative Setup Methods
+- **Command Palette**: Run `MCP: Add Server` → choose server type → provide details → select scope
+- **User Configuration**: Run `MCP: Open User Configuration` for global setup across all workspaces
+
+See Microsoft's ["Use MCP servers in VS Code"](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for complete documentation.
 
 </details>
 
----
-
-## Windsurf
-
-<details>
-<summary><b>Remote & Local</b></summary>
-
-- **Remote URL (SSE)**:
-```
-https://mcp-sap-docs.marianzeis.de/sse
-```
-
-- **Local command**:
-```
-node <absolute-path>/dist/src/server.js
-```
-
-Open Settings → Cascade → MCP and add a server (URL or Command).
-
-</details>
-
----
-
-## LM Studio
-
-<details>
-<summary><b>Remote (URL) & Local (command)</b></summary>
-
-- **Remote URL (SSE)**:
-```
-https://mcp-sap-docs.marianzeis.de/sse
-```
-
-- **Local command**:
-```
-node <absolute-path>/dist/src/server.js
-```
-
-In LM Studio, go to Program → Install → Edit mcp.json (or use their Add MCP Server flow).
-Then add either a url entry (remote) or command/args (local).
-
-</details>
-
----
-
-## Goose (desktop & CLI)
-
-<details>
-<summary><b>Remote (SSE)</b></summary>
-
-In Goose Settings → Extensions → Add custom extension:
-- Type: Remote Extension (SSE)
-- Endpoint:
-```
-https://mcp-sap-docs.marianzeis.de/sse
-```
-
-(Goose docs show similar steps for adding remote MCP endpoints as "Remote Extension".)
-
-</details>
-
----
-
-## Gemini CLI
-
-<details>
-<summary><b>Remote & Local</b></summary>
-
-Add an MCP entry in your Gemini CLI settings (see their MCP guide), using either:
-- **Remote URL**:
-```
-https://mcp-sap-docs.marianzeis.de/sse
-```
-
-- **Local command**:
-```
-node <absolute-path>/dist/src/server.js
-```
-
-</details>
 
 ---
 
@@ -552,26 +497,26 @@ curl -fsS http://127.0.0.1:18080/status | jq .
 
 ### Build Commands
 ```bash
-npm run build        # Compile TypeScript
-npm run build:index  # Build search index from sources
-npm run build:fts    # Build FTS5 database
-npm run test:community # Test community search functionality
+npm run build:tsc       # Compile TypeScript
+npm run build:index     # Build search index from sources
+npm run build:fts       # Build FTS5 database  
+npm run build           # Complete build pipeline (tsc + index + fts)
+npm run setup           # Complete setup (submodules + build)
 ```
 
 ### Server Commands
 ```bash
-npm start                  # Start STDIO MCP server
-npm run start:http         # Start HTTP status server (port 3001)
-npm run start:streamable   # Start Streamable HTTP MCP server (port 3122)
+npm start                    # Start STDIO MCP server
+npm run start:http           # Start HTTP status server (port 3001)
+npm run start:streamable     # Start Streamable HTTP MCP server (port 3122)
 ```
 
-### Local Setup
+### Local Setup  
 ```bash
 git clone https://github.com/marianfoo/mcp-sap-docs.git
 cd mcp-sap-docs
-./setup.sh           # Clone/update sources and build FTS
-npm run build:index  # Build index.json
-npm run build        # Compile TypeScript
+npm ci               # Install dependencies
+npm run setup        # Enhanced setup (optimized submodules + complete build)
 ```
 
 The build process creates optimized search indices for fast offline access while maintaining real-time connectivity to the SAP Community API.
@@ -605,14 +550,14 @@ curl -sS http://127.0.0.1:18080/status | jq .
 ### Automated Workflows
 This project includes dual automated workflows:
 
-1. **Main Deployment** (on push to `main`)
-   - SSH into server and pull latest code + submodules
-   - Update documentation sources and rebuild indices
-   - Restart services with health checks
+1. **Main Deployment** (on push to `main` or manual trigger)
+   - SSH into server and pull latest code
+   - Run enhanced setup with optimized submodule handling
+   - Restart all PM2 processes (proxy, http, streamable) with health checks
 
 2. **Daily Documentation Updates** (4 AM UTC)
    - Update all documentation submodules to latest versions
-   - Rebuild search indices with fresh content
+   - Rebuild search indices with fresh content using enhanced setup
    - Restart services automatically
 
 ### Manual Updates
@@ -623,9 +568,10 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 ## Architecture
 
 - **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs, community & help portal
-- **Streamable HTTP Transport** (Latest MCP spec 2025-03-26) - HTTP-based transport with session management and resumability
+- **Streamable HTTP Transport** (Latest MCP spec) - HTTP-based transport with session management and resumability
 - **SSE Proxy** (Python) - Bridges STDIO → URL for remote clients  
 - **BM25 Search Engine** - SQLite FTS5 with optimized OR-logic queries for fast, relevant results
+- **Optimized Submodules** - Shallow, single-branch clones with blob filtering for minimal bandwidth
 
 ### Search Implementation
 

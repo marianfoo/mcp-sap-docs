@@ -48,7 +48,7 @@ Documentation Sources → Build Scripts → Search Artifacts → Runtime Search
 
 ### 🖥️ **Three Server Modes**
 1. **Stdio MCP** (`src/server.ts`): Main server for Claude/LLM integration
-2. **HTTP Server** (`src/http-server.ts`): Development and testing (port 3001)
+2. **HTTP Server** (`src/http-server.ts`): Development and status monitoring (port 3001)
 3. **Streamable HTTP** (`src/streamable-http-server.ts`): Production HTTP MCP (port 3122)
 
 ### 🔧 **MCP Tools (5 total)**
@@ -103,13 +103,26 @@ Documentation Sources → Build Scripts → Search Artifacts → Runtime Search
 
 ## Build Process
 
-### 🔨 **Index Generation**
+### 🔨 **Enhanced Build Pipeline**
 ```bash
+npm run build:tsc    # TypeScript compilation → dist/src/
 npm run build:index  # Sources → dist/data/index.json
 npm run build:fts    # Index → dist/data/docs.sqlite  
-npm run build:tsc    # TypeScript → dist/src/
-npm run build        # Complete pipeline
+npm run build        # Complete pipeline (tsc + index + fts)
 ```
+
+### 📦 **Submodule Management**
+```bash
+npm run setup        # Complete setup with enhanced submodule handling
+npm run setup:submodules  # Submodule sync and update only
+```
+
+The enhanced setup script provides:
+- **Shallow Clones**: `--depth 1` with `--filter=blob:none` for minimal size
+- **Single Branch**: Only fetch the target branch (main/master)
+- **Repository Compaction**: Aggressive GC and storage optimization  
+- **Fallback Handling**: Auto-retry with master if branch fails
+- **Skip Nested**: `SKIP_NESTED_SUBMODULES=1` for deployment speed
 
 ### 📦 **Deployment Artifacts**
 - `dist/data/index.json`: Structured documentation index

@@ -23,9 +23,11 @@ test/
 
 ### 🚀 **Quick Testing**
 ```bash
-npm run test:smoke    # Fast validation (30 seconds)
-npm run test:fast     # Skip build, test only (2 minutes)
-npm run test          # Full build + test (5 minutes)
+npm run test:smoke      # Fast validation (30 seconds)
+npm run test:fast       # Skip build, test only (2 minutes)
+npm run test            # Full build + test (5 minutes)
+npm run test:community  # SAP Community functionality (1 minute)
+npm run inspect         # MCP protocol inspector (interactive)
 ```
 
 ### 🎯 **Specific Tests**

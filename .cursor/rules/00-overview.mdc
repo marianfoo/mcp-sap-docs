@@ -4,20 +4,23 @@ Use this when asked about "how it works", "where to change X", or "what runs in 
 
 ## System Architecture
 - **MCP Server**: Stdio-based server for Claude/LLM integration
-- **HTTP Servers**: Test server (port 3001) and streamable HTTP server (port 3122)
+- **HTTP Servers**: Development server (port 3001) and streamable HTTP server (port 3122)
 - **Search Pipeline**: BM25-only (FTS5) → metadata-driven configuration → formatted results
 - **Metadata-Driven**: All source configurations centralized in `src/metadata.json`
+- **Submodule Management**: Shallow, single-branch clones with blob filtering for performance
 
 ## Key Components
 - **Search**: Pure BM25 using SQLite FTS5 for fast, reliable search
 - **Configuration**: Centralized metadata system with type-safe APIs
 - **Sources**: 12 documentation sources (SAPUI5, CAP, wdi5, Cloud SDK, etc.)
 - **Tools**: 5 MCP tools for search, retrieval, and community integration
+- **Build Process**: TypeScript compilation → Index building → FTS database creation
 
 ## Production Setup
 - **PM2**: 3 processes (proxy, http, streamable) via `ecosystem.config.cjs`
-- **Deployment**: GitHub Actions → SSH → `setup.sh` → PM2 restart
-- **Health**: Multiple endpoints for monitoring and status checks
+- **Deployment**: GitHub Actions → SSH → enhanced `setup.sh` → PM2 restart
+- **Health**: Multiple endpoints (/status, /health, /healthz, /readyz)
+- **Submodules**: Optimized shallow clones with partial clone filtering
 
 @file package.json
 @file src/metadata.json
