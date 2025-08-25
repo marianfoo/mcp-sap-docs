@@ -17,61 +17,16 @@ import {
   getContextEmoji,
   type DocUrlConfig 
 } from "./metadata.js";
+import { generateDocumentationUrl as generateUrl } from "./url-generation/index.js";
 
-// Generic function to generate documentation URLs
+// Use the new URL generation system
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
   const config = getDocUrlConfig(libraryId);
   if (!config) {
     return null;
   }
 
-  // Convert file path to URL path
-  const fileName = relFile.replace(/\.md$/, '').replace(/\.mdx$/, '');
-  let urlPath = config.pathPattern.replace('{file}', fileName);
-  
-  // Try to detect the most relevant section in the content for anchor
-  const anchor = detectContentSection(content, config.anchorStyle);
-  if (anchor) {
-    const separator = config.anchorStyle === 'docsify' ? '?id=' : '#';
-    urlPath += separator + anchor;
-  }
-  
-  return config.baseUrl + urlPath;
-}
-
-// Detect the main section/topic from content
-function detectContentSection(content: string, anchorStyle: 'docsify' | 'github' | 'custom'): string | null {
-  // Find the first major heading (## or #) that gives context about the content
-  const headingMatch = content.match(/^#{1,2}\s+(.+)$/m);
-  if (!headingMatch) {
-    return null;
-  }
-  
-  const heading = headingMatch[1].trim();
-  
-  // Convert heading to anchor format based on style
-  switch (anchorStyle) {
-    case 'docsify':
-      // Docsify format: lowercase, spaces to hyphens, remove special chars
-      return heading
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-        .replace(/\s+/g, '-')     // Spaces to hyphens
-        .replace(/-+/g, '-')      // Multiple hyphens to single
-        .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
-        
-    case 'github':
-      // GitHub format: lowercase, spaces to hyphens, keep some special chars
-      return heading
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-');
-        
-    case 'custom':
-    default:
-      // Return as-is for custom handling
-      return heading;
-  }
+  return generateUrl(libraryId, relFile, content, config);
 }
 
 // Get the directory of this script and find the project root
