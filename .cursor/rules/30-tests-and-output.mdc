@@ -40,8 +40,10 @@ When changing output formatting or test stability.
 
 ## Test Execution
 - **Fast Tests**: `npm run test:fast` - Skip build, use existing artifacts
-- **Full Tests**: `npm run test` - Build + test complete pipeline
+- **Full Tests**: `npm run test` - Build + test complete pipeline  
 - **Smoke Tests**: `npm run test:smoke` - Quick validation only
+- **Community Tests**: `npm run test:community` - SAP Community search functionality
+- **MCP Inspector**: `npm run inspect` - Debug MCP protocol interactions
 
 @file test/tools/run-tests.js
 @file test/_utils/parseResults.js

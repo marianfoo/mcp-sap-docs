@@ -3,21 +3,28 @@
 For PM2 processes, GitHub Actions, health checks, and production operations.
 
 ## Deployment Pipeline
-- **GitHub Action**: "Deploy MCP stack" workflow
-- **Trigger**: Push to main branch or manual dispatch
-- **Process**: SSH → git pull → `setup.sh` → PM2 restart
-- **Health Checks**: Automated validation of all endpoints
+- **GitHub Action**: "Deploy MCP stack" workflow  
+- **Trigger**: Push to main branch or manual dispatch via workflow_dispatch
+- **Process**: SSH → git pull → enhanced `setup.sh` → PM2 restart
+- **Health Checks**: Automated validation of all endpoints (proxy, http, streamable)
+
+## Enhanced Setup Script (`setup.sh`)
+- **Shallow Submodules**: Single-branch, depth-1 clones with blob filtering
+- **Partial Clone**: Uses `--filter=blob:none` for minimal bandwidth
+- **Branch Fallback**: Tries specified branch, falls back to master
+- **Repository Compaction**: Aggressive GC and reflog cleanup
+- **Skip Nested**: `SKIP_NESTED_SUBMODULES=1` for deployment optimization
 
 ## PM2 Configuration (`ecosystem.config.cjs`)
 - **mcp-sap-proxy**: MCP proxy server (127.0.0.1:18080)
-- **mcp-sap-http**: HTTP status server (127.0.0.1:3001)
+- **mcp-sap-http**: HTTP status server (127.0.0.1:3001)  
 - **mcp-sap-streamable**: Streamable HTTP MCP (127.0.0.1:3122)
 
 ## Environment Configuration (BM25-Only)
 ```javascript
 env: {
   NODE_ENV: "production",
-  LOG_LEVEL: "INFO",
+  LOG_LEVEL: "INFO", 
   LOG_FORMAT: "json",
   RETURN_K: "25"  // Centralized result limit
 }
@@ -27,6 +34,12 @@ env: {
 - **HTTP Server**: `/status`, `/healthz`, `/readyz`
 - **Streamable Server**: `/health`
 - **Proxy Server**: `/status` (via mcp-proxy)
+
+## Build Process
+1. **TypeScript**: `npm run build:tsc` → `dist/src/`
+2. **Index Build**: `npm run build:index` → `dist/data/index.json`
+3. **FTS Build**: `npm run build:fts` → `dist/data/docs.sqlite`
+4. **Full Build**: `npm run build` → Complete pipeline
 
 ## Monitoring & Logging
 - **Structured Logging**: JSON format in production

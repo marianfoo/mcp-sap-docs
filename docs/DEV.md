@@ -9,8 +9,8 @@ git clone <repo-url>
 cd sap-docs-mcp
 npm install
 
-# Build search artifacts
-npm run build:all
+# Run enhanced setup (submodules + build)
+npm run setup
 
 # Start development server
 npm run start:http
@@ -27,25 +27,26 @@ npm run test          # Full build + test
 
 ### 📦 **Build Commands**
 ```bash
-npm run build:index     # Build documentation index
-npm run build:fts       # Build FTS5 search database
 npm run build:tsc       # Compile TypeScript
-npm run build:all       # Complete build pipeline
-npm run build           # Build + compile (production)
+npm run build:index     # Build documentation index
+npm run build:fts       # Build FTS5 search database  
+npm run build           # Complete build pipeline (tsc + index + fts)
 ```
 
 ### 🖥️ **Server Commands**
 ```bash
-npm run start:stdio     # MCP stdio server (for Claude)
-npm run start:http      # HTTP development server (port 3001)
-npm run start:stream    # Streamable HTTP server (port 3122)
+npm start                    # MCP stdio server (for Claude)
+npm run start:http           # HTTP development server (port 3001)
+npm run start:streamable     # Streamable HTTP server (port 3122)
 ```
 
-### 🧪 **Test Commands**
+### 🧪 **Test Commands**  
 ```bash
 npm run test:smoke      # Quick smoke tests
 npm run test:fast       # Test without rebuild
 npm run test            # Full test suite
+npm run test:community  # SAP Community search tests
+npm run inspect         # MCP protocol inspector
 ```
 
 ## Environment Variables
@@ -87,7 +88,7 @@ npm run start:http
 
 ### 🔄 **3. Streamable HTTP Server**
 ```bash
-npm run start:stream  
+npm run start:streamable  
 # Access: http://localhost:3122
 # Endpoints: /mcp, /health
 ```
