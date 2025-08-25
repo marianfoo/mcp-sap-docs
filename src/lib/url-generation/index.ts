@@ -99,7 +99,7 @@ export function generateDocumentationUrl(
 }
 
 // Re-export utilities and generator classes for external use
-export { parseFrontmatter, detectContentSection, extractSectionFromPath, buildUrl } from './utils.js';
+export { parseFrontmatter, detectContentSection, extractSectionFromPath, buildUrl, extractLibraryIdFromPath, extractRelativeFileFromPath, formatSearchResult } from './utils.js';
 export { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
 
 // Re-export generator classes
