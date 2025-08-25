@@ -27,6 +27,9 @@ import { getDocUrlConfig } from "./lib/metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
 import { loadMetadata } from "./lib/metadata.js";
 
+// Version will be updated by deployment script
+const VERSION = "0.2.0";
+
 
 // Simple in-memory event store for resumability
 class InMemoryEventStore {
@@ -102,7 +105,7 @@ function createServer() {
     name: "SAP Docs Streamable HTTP",
     description:
       "SAP documentation server with Streamable HTTP transport - supports SAPUI5, CAP, wdi5, SAP Community and SAP Help Portal integration",
-    version: "0.2.0"
+    version: VERSION
   }, {
     capabilities: { 
       resources: {},  // Enable resources capability
@@ -509,7 +512,7 @@ async function main() {
     res.json({
       status: 'healthy',
       service: 'mcp-sap-docs-streamable',
-      version: '0.2.0',
+      version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',
       protocol: '2025-03-26'

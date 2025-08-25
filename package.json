@@ -21,6 +21,7 @@
     "test:smoke": "node test/tools/search.smoke.js",
     "test:community": "npm run build:tsc && node test/community-search.ts",
     "test:urls:status": "npm run build:tsc && npx tsx test/url-status.ts",
+    "check-version": "node scripts/check-version.js",
     "setup": "bash setup.sh",
     "setup:submodules": "bash -lc 'git submodule sync --recursive && git submodule update --init --recursive --depth 1 && git submodule status --recursive'"
   },

@@ -29,12 +29,50 @@ jobs:
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Auto-increment version
+        run: |
+          # Get current version and increment patch
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Extract major.minor.patch
+          IFS='.' read -ra PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${PARTS[0]}
+          MINOR=${PARTS[1]}
+          PATCH=${PARTS[2]}
+          
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version
+          
+      - name: Update hardcoded version in streamable server
+        run: |
+          # Update the hardcoded version in streamable-http-server.ts
+          sed -i 's/const VERSION = "[0-9]*\.[0-9]*\.[0-9]*";/const VERSION = "'${{ env.NEW_VERSION }}'";/g' src/streamable-http-server.ts
+          
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json package-lock.json src/streamable-http-server.ts
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]" || exit 0
+          git push
+
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          NEW_VERSION: ${{ env.NEW_VERSION }}
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NEW_VERSION
           script: |
             set -Eeuo pipefail
 
@@ -54,6 +92,8 @@ jobs:
                git clone https://github.com/marianfoo/mcp-sap-docs.git
               cd mcp-sap-docs
             fi
+            
+            echo "==> Deploying version: $NEW_VERSION"
 
             echo "==> Configure BM25 search environment"
             # Ensure metadata file exists for centralized configuration
