@@ -1,0 +1,81 @@
+name: New Documentation Source Request
+description: Suggest a new SAP-related documentation source to be indexed by the MCP server
+title: "[NEW SOURCE]: "
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new documentation source! This helps expand our search coverage.
+        
+        **Prerequisites:**
+        - The source must be SAP-related documentation
+        - **MANDATORY**: The source must be available on GitHub
+        - The documentation should be publicly accessible
+        - The content should be searchable and indexable
+
+  - type: input
+    id: github-repository
+    attributes:
+      label: GitHub Repository URL
+      description: "**REQUIRED**: Provide the full GitHub repository URL"
+      placeholder: "https://github.com/SAP/some-documentation-repo"
+    validations:
+      required: true
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Why should this source be added?
+      description: Explain the value this documentation would provide to SAP developers
+      placeholder: |
+        This documentation covers important SAP functionality that developers frequently need:
+        - Key use cases it addresses
+        - How it complements existing sources
+        - Developer pain points it would solve
+    validations:
+      required: true
+
+  - type: input
+    id: source-name
+    attributes:
+      label: Source Display Name
+      description: What should this source be called in search results?
+      placeholder: "SAP Business Application Studio"
+    validations:
+      required: true
+
+  - type: input
+    id: source-id
+    attributes:
+      label: Source ID (suggested)
+      description: Unique identifier for this source (lowercase, kebab-case, starts with /)
+      placeholder: "/business-application-studio"
+    validations:
+      required: false
+
+  - type: textarea
+    id: source-description
+    attributes:
+      label: Source Description
+      description: Brief description of what this documentation covers
+      placeholder: "Official documentation for SAP Business Application Studio development tools and features"
+    validations:
+      required: true
+
+  - type: input
+    id: documentation-path
+    attributes:
+      label: Documentation Directory Path
+      description: Path within the repository where documentation files are located
+      placeholder: "docs/ or documentation/ or README.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any other relevant details about this documentation source
+    validations:
+      required: false

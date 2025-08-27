@@ -1,0 +1,156 @@
+name: Missing Documentation Search Result
+description: Report when expected SAP documentation cannot be found through MCP server searches
+title: "[MISSING DOC]: "
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a missing documentation issue! This helps us improve our search coverage and indexing.
+        
+        Please provide as much detail as possible to help us locate and index the missing content.
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: Describe what you were trying to find and why the current search results are insufficient
+      placeholder: "I was looking for information about... but the search results didn't include..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: llm-search-query
+    attributes:
+      label: Search Query Used in LLM
+      description: What did you ask the LLM? Include the exact prompt or question you used
+      placeholder: "How do I configure authentication in SAP CAP applications?"
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: mcp-tool-used
+    attributes:
+      label: MCP Tools Called
+      description: Which MCP tools were used for the search? (Select all that apply)
+      options:
+        - label: "sap_docs_search"
+        - label: "sap_community_search"
+        - label: "sap_help_search"
+        - label: "sap_note_search"
+        - label: "Not sure/Unknown"
+
+  - type: textarea
+    id: search-parameters
+    attributes:
+      label: Search Parameters
+      description: What parameters were passed to the MCP server? (query, filters, etc.)
+      placeholder: |
+        Query: "authentication CAP"
+        Library: "/cap"
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: mcp-response
+    attributes:
+      label: MCP Server Response
+      description: What results did the MCP server return? Include relevant excerpts or "No results found"
+      placeholder: "The server returned 3 results about basic authentication but none covered the specific JWT configuration I needed"
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: expected-source
+    attributes:
+      label: Expected Documentation Sources
+      description: Which SAP documentation sources should contain this information? (Select all that apply)
+      options:
+        - label: "SAP CAP Documentation"
+        - label: "SAPUI5 Documentation"
+        - label: "OpenUI5 API Reference"
+        - label: "SAP Community (Blog/Discussion)"
+        - label: "SAP Help Portal"
+        - label: "SAP Notes/KBA"
+        - label: "wdi5 Testing Documentation"
+        - label: "UI5 Tooling Documentation"
+        - label: "Cloud MTA Build Tool Documentation"
+        - label: "UI5 Web Components Documentation"
+        - label: "SAP Cloud SDK Documentation"
+        - label: "SAP Cloud SDK AI Documentation"
+        - label: "Not sure"
+        - label: "Other (please specify in Expected Document)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-document
+    attributes:
+      label: Expected Document/Page
+      description: Provide details about the specific document, page, or section you expected to find
+      placeholder: |
+        - Document Title: "Authentication and Authorization in CAP"
+        - URL (if known): https://cap.cloud.sap/docs/guides/security/
+        - Section: JWT Configuration
+        - Last seen: 2024-01-15
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: sap-product-area
+    attributes:
+      label: SAP Product/Technology Areas
+      description: Which SAP technology areas does this relate to? (Select all that apply)
+      options:
+        - label: "SAP CAP (Cloud Application Programming)"
+        - label: "SAPUI5/OpenUI5"
+        - label: "SAP Fiori"
+        - label: "SAP BTP (Business Technology Platform)"
+        - label: "SAP S/4HANA"
+        - label: "SAP Analytics Cloud"
+        - label: "SAP Integration Suite"
+        - label: "SAP Mobile Development"
+        - label: "SAP Testing (wdi5, etc.)"
+        - label: "SAP Build"
+        - label: "Cross-platform/General"
+        - label: "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative-searches
+    attributes:
+      label: Alternative Search Terms Tried
+      description: What other search terms or variations did you try?
+      placeholder: |
+        - "JWT authentication CAP"
+        - "token based auth SAP"
+        - "security configuration"
+        - "OAuth2 CAP"
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: document-reference
+    attributes:
+      label: Document Reference/URL
+      description: If you have a direct link to the document that should be indexed, please provide it
+      placeholder: "https://help.sap.com/docs/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might help us locate and index the missing content
+      placeholder: |
+        - When did you last see this documentation?
+        - Is this a new feature that might not be indexed yet?
+        - Are there related documents that were found correctly?
+    validations:
+      required: false
