@@ -157,7 +157,7 @@ function createServer() {
         },
         {
           name: "sap_community_search",
-          description: "Search the SAP Community for blog posts, discussions, and solutions related to SAPUI5 and CAP development. Returns real-time results from the SAP Community with links to the original content and IDs for retrieving full posts. This tool searches across high-quality community content (posts with kudos > 5) to find practical, real-world solutions and best practices from SAP developers.",
+          description: "Search the SAP Community for blog posts, discussions, and solutions related to SAPUI5 and CAP development. Returns real-time results from the SAP Community with links to the original content and IDs for retrieving full posts. Results include engagement data (kudos) when available and follow SAP Community's 'Best Match' ranking.",
           inputSchema: {
             type: "object",
             properties: {

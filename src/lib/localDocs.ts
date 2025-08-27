@@ -1506,7 +1506,7 @@ export async function readDocumentationResource(uri: string) {
       `- **Best Practices**: Community-tested approaches`,
       `- **Code Examples**: Real-world implementations`,
       ``,
-      `Community content is filtered to include posts with high engagement (kudos > 5) from SAPUI5 and CAP product areas.`,
+      `Community content includes engagement data (kudos) when available and follows SAP Community's Best Match ranking.`,
       ``,
       `*Note: Community content is fetched in real-time from the SAP Community API.*`
     ].join('\n');

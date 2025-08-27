@@ -68,7 +68,7 @@ Ask Cursor a SAP-related question to verify the connection:
 
 ### Real-Time Community Content
 - **SAP Community Posts**: Latest blog posts and solutions
-- **High-Quality Content**: Only posts with kudos > 5
+- **High-Quality Content**: Engagement info (kudos) included when available; results follow SAP Community's Best Match ranking
 - **Code Examples**: Real-world implementations from developers
 - **Best Practices**: Community-tested approaches
 

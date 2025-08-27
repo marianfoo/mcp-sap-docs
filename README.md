@@ -324,7 +324,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 - **500+ OpenUI5 APIs** - Control APIs with detailed JSDoc
 - **2,000+ sample files** - Working examples from `demokit/sample` directories
 - **wdi5 E2E test framework docs** - End-to-end testing documentation
-- **Real-time community content** - Live posts with engagement filtering
+- **Real-time community content** - Live posts with engagement info
 - **UI5 Tooling docs** - UI5 Tooling documentation
 - **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
 - **UI5 Web Components docs** - UI5 Web Components documentation
@@ -334,7 +334,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 ### 🌐 SAP Community Integration
 - **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
 - **Full Content Delivery**: Automatic retrieval of complete blog post content for top 3 results
-- **Quality Filtering**: Only posts with kudos > 5 for high-quality content
+- **Engagement Info**: Includes kudos count when available (no hard kudos filtering)
 - **Efficient API Usage**: Batch content retrieval using LiQL API for fast response times
 - **Real-world Knowledge**: Live posts with practical developer insights and solutions
 
@@ -368,7 +368,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 - **Real-world Solutions** - Comprehensive answers to development problems with full context
 - **Best Practices** - Community-tested approaches with detailed explanations
 - **Code Examples** - Complete implementations with full source code and explanations
-- **Quality Assurance** - Only posts with kudos > 5, automatically ranked by relevance
+- **Engagement Info** - Displays kudos when available; results follow Best Match ranking
 - **Instant Access** - Top 3 results include full post content (no additional API calls needed)
 
 ### SAP Help Portal Content
