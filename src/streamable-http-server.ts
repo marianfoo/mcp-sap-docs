@@ -28,7 +28,7 @@ import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generati
 import { loadMetadata } from "./lib/metadata.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.2.2";
+const VERSION = "0.2.3";
 
 
 // Simple in-memory event store for resumability
