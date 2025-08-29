@@ -149,6 +149,24 @@ const SOURCES: SourceConfig[] = [
     description: "Cloud SDK AI (Java) documentation",
     filePattern: "**/*.mdx",
     type: "markdown" as const
+  },
+  {
+    repoName: "ui5-typescript",
+    absDir: join("sources", "ui5-typescript"),
+    id: "/ui5-typescript",
+    name: "UI5 TypeScript",
+    description: "Official entry point to anything TypeScript related for UI5",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "ui5-cc-spreadsheetimporter",
+    absDir: join("sources", "ui5-cc-spreadsheetimporter", "docs"),
+    id: "/ui5-cc-spreadsheetimporter",
+    name: "UI5 CC Spreadsheet Importer",
+    description: "UI5 Custom Control for importing spreadsheet data",
+    filePattern: "**/*.md",
+    type: "markdown" as const
   }
 ];
 

@@ -159,6 +159,32 @@
       "baseUrl": "https://sap.github.io/ai-sdk/docs/java",
       "pathPattern": "/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "ui5-typescript",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["ui5", "typescript", "types", "frontend"],
+      "description": "UI5 TypeScript",
+      "libraryId": "/ui5-typescript",
+      "sourcePath": "ui5-typescript",
+      "baseUrl": "https://github.com/UI5/typescript/blob/gh-pages",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "ui5-cc-spreadsheetimporter",
+      "type": "documentation", 
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["ui5", "spreadsheet", "importer", "custom-control"],
+      "description": "UI5 CC Spreadsheet Importer",
+      "libraryId": "/ui5-cc-spreadsheetimporter",
+      "sourcePath": "ui5-cc-spreadsheetimporter/docs",
+      "baseUrl": "https://docs.spreadsheet-importer.com",
+      "pathPattern": "/pages/{file}/",
+      "anchorStyle": "github"
     }
   ],
   
@@ -169,7 +195,9 @@
     { "from": "wizard", "to": ["sap.m.Wizard"] },
     { "from": "testing", "to": ["wdi5", "e2e", "automation"] },
     { "from": "cds", "to": ["cap", "cloud application programming"] },
-    { "from": "odata", "to": ["rest", "api", "service"] }
+    { "from": "odata", "to": ["rest", "api", "service"] },
+    { "from": "typescript", "to": ["ts", "types", "type definitions"] },
+    { "from": "spreadsheet", "to": ["excel", "csv", "import", "upload"] }
   ],
   
   "acronyms": {
@@ -179,7 +207,8 @@
     "BTP": ["Business Technology Platform", "cloud"],
     "MTA": ["Multi-Target Application"],
     "CQL": ["CDS Query Language", "query"],
-    "OData": ["Open Data Protocol", "rest", "api"]
+    "OData": ["Open Data Protocol", "rest", "api"],
+    "TS": ["TypeScript", "types"]
   },
 
   "contextBoosts": {
@@ -193,7 +222,8 @@
     "UI5": {
       "/sapui5": 0.9,
       "/openui5-api": 0.9,
-      "/openui5-samples": 0.9
+      "/openui5-samples": 0.9,
+      "/ui5-typescript": 0.8
     },
     "wdi5": {
       "/wdi5": 1.0,
@@ -213,6 +243,16 @@
     "CAP": {
       "/cap": 1.0,
       "/sapui5": 0.2
+    },
+    "TypeScript": {
+      "/ui5-typescript": 1.0,
+      "/sapui5": 0.4,
+      "/openui5-api": 0.4
+    },
+    "UI5 CC Spreadsheet Importer": {
+      "/ui5-cc-spreadsheetimporter": 1.0,
+      "/sapui5": 0.3,
+      "/openui5-api": 0.3
     }
   },
 
@@ -228,7 +268,9 @@
     "cloud-mta-build-tool": "cloud-mta-build-tool",
     "ui5-webcomponents": "ui5-webcomponents",
     "cloud-sdk-java": "cloud-sdk-java",
-    "cloud-sdk-ai-java": "cloud-sdk-ai-java"
+    "cloud-sdk-ai-java": "cloud-sdk-ai-java",
+    "ui5-typescript": "ui5-typescript",
+    "ui5-cc-spreadsheetimporter": "ui5-cc-spreadsheetimporter"
   },
 
   "contextEmojis": {
@@ -239,6 +281,8 @@
     "SAP Cloud SDK": "🌐",
     "UI5 Tooling": "🔧",
     "Cloud MTA Build Tool": "🚢",
+    "TypeScript": "📝",
+    "UI5 CC Spreadsheet Importer": "📊",
     "MIXED": "🔀"
   }
 }

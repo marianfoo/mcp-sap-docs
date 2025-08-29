@@ -44,6 +44,8 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/ui5-tooling': GenericUrlGenerator,
   '/cloud-mta-build-tool': GenericUrlGenerator,
   '/ui5-webcomponents': GenericUrlGenerator,
+  '/ui5-typescript': GenericUrlGenerator,
+  '/ui5-cc-spreadsheetimporter': GenericUrlGenerator,
 };
 
 /**
@@ -100,7 +102,8 @@ export function generateDocumentationUrl(
 
 // Re-export utilities and generator classes for external use
 export { parseFrontmatter, detectContentSection, extractSectionFromPath, buildUrl, extractLibraryIdFromPath, extractRelativeFileFromPath, formatSearchResult } from './utils.js';
-export { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
+export { BaseUrlGenerator } from './BaseUrlGenerator.js';
+export type { UrlGenerationContext } from './BaseUrlGenerator.js';
 
 // Re-export generator classes
 export { CloudSdkUrlGenerator } from './cloud-sdk.js';
