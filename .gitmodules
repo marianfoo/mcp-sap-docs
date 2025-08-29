@@ -34,3 +34,11 @@
 	path = sources/cloud-sdk-ai
 	url = https://github.com/SAP/ai-sdk.git
 	branch = main
+[submodule "sources/ui5-typescript"]
+	path = sources/ui5-typescript
+	url = https://github.com/UI5/typescript.git
+	branch = gh-pages
+[submodule "sources/ui5-cc-spreadsheetimporter"]
+	path = sources/ui5-cc-spreadsheetimporter
+	url = https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter.git
+	branch = main

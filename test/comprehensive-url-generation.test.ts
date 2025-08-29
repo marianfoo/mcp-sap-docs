@@ -80,7 +80,9 @@ describe('Comprehensive URL Generation System', () => {
       '/sapui5': { basePath: 'sources/sapui5-docs/docs' },
       '/ui5-tooling': { basePath: 'sources/ui5-tooling/docs' },
       '/ui5-webcomponents': { basePath: 'sources/ui5-webcomponents/docs' },
-      '/wdi5': { basePath: 'sources/wdi5/docs' }
+      '/wdi5': { basePath: 'sources/wdi5/docs' },
+      '/ui5-typescript': { basePath: 'sources/ui5-typescript' },
+      '/ui5-cc-spreadsheetimporter': { basePath: 'sources/ui5-cc-spreadsheetimporter/docs' }
     };
 
     const mapping = pathMappings[libraryId];
@@ -207,6 +209,22 @@ describe('Comprehensive URL Generation System', () => {
       expectedUrl: 'https://ui5-community.github.io/wdi5/#/locators',
       frontmatter: '---\nid: locators\ntitle: Locators\n---\n',
       content: '# Locators\n\nwdi5 provides various locators for UI5 controls...'
+    },
+    {
+      name: 'UI5 TypeScript - FAQ Documentation',
+      libraryId: '/ui5-typescript',
+      relFile: 'faq.md',
+      expectedUrl: 'https://github.com/UI5/typescript/blob/gh-pages/faq#faq---frequently-asked-questions-for-the-ui5-type-definitions',
+      frontmatter: '',
+      content: '# FAQ - Frequently Asked Questions for the UI5 Type Definitions\n\nWhile the [main page](README.md) answers the high-level questions...'
+    },
+    {
+      name: 'UI5 CC Spreadsheet Importer - Checks Documentation',
+      libraryId: '/ui5-cc-spreadsheetimporter',
+      relFile: 'pages/Checks.md',
+      expectedUrl: 'https://docs.spreadsheet-importer.com/pages/Checks/#error-types',
+      frontmatter: '',
+      content: '## Error Types\n\nThe following types of errors are handled by the UI5 Spreadsheet Upload Control...'
     }
     // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
     // or fallback to mock content if actual files don't exist in expected locations
