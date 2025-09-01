@@ -74,7 +74,7 @@ curl -sS http://127.0.0.1:3122/health | jq .
 ---
 
 ## What you get
-- **sap_docs_search** – **unified search** across all SAP documentation sources including **42,901+ ABAP files across 8 versions** with intelligent version auto-detection (e.g., "LOOP 7.57" searches ABAP 7.57, "SELECT latest" searches latest ABAP)
+- **sap_docs_search** – **unified search** across all SAP documentation sources including **40,761+ curated ABAP files across 8 versions** with intelligent version auto-detection and filtering. Shows latest ABAP by default; specific versions only when requested (e.g., "LOOP 7.57" shows only ABAP 7.57 + related sources)
 - **sap_docs_get** – fetches complete documents/snippets with smart formatting for all sources including ABAP
 - **sap_community_search** – real-time SAP Community posts with **full content** of top 3 results
 - **sap_help_search** – comprehensive search across all SAP Help Portal documentation  
@@ -242,11 +242,10 @@ Find wdi5 testing examples for OData services
 ```
 
 **Available Tools:**
-- `sap_docs_search` - General SAP development (UI5, CAP, testing)
-- `abap_search` - **Individual ABAP files** optimized for LLM consumption
-- `abap_get` - Retrieve focused ABAP documentation
-- `sap_community_search` - SAP Community integration
+- `sap_docs_search` - **Unified search** for all SAP development (UI5, CAP, ABAP, testing) with intelligent ABAP version filtering
+- `sap_community_search` - SAP Community integration  
 - `sap_help_search` - SAP Help Portal access
+- `sap_docs_get` - Retrieve complete documentation for any source
 
 </details>
 
@@ -404,7 +403,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 ## Features
 
 ### 🔍 Comprehensive Search System
-- **sap_docs_search**: **Unified search** across all SAP documentation including **42,901+ ABAP files across 8 versions** (7.52-7.58 + latest) with automatic version detection from queries
+- **sap_docs_search**: **Unified search** across all SAP documentation including **40,761+ curated ABAP files across 8 versions** (7.52-7.58 + latest) with intelligent version filtering - shows latest by default, specific versions only when requested
 - **sap_community_search**: Search real-time SAP Community content with **automatic full content retrieval** of top 3 posts
 - **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation across S/4HANA, BTP, Analytics Cloud, and more
 
@@ -413,7 +412,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 - **195+ CAP files** - Cloud Application Programming model  
 - **500+ OpenUI5 APIs** - Control APIs with detailed JSDoc
 - **2,000+ sample files** - Working examples from `demokit/sample` directories
-- **42,901+ ABAP individual files** - Official SAP ABAP keyword documentation across 8 versions (7.52, 7.53, 7.54, 7.55, 7.56, 7.57, 7.58, latest) with intelligent version auto-detection
+- **40,761+ curated ABAP files** - Official SAP ABAP keyword documentation across 8 versions with intelligent version filtering (latest by default, specific versions when requested)
 - **wdi5 E2E test framework docs** - End-to-end testing documentation
 - **UI5 TypeScript documentation** - Official TypeScript integration guides and type definitions
 - **ABAP best practices** - Clean ABAP guidelines, cheat sheets, and German community guidelines (DSAG)
