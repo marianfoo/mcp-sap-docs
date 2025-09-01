@@ -76,6 +76,8 @@ curl -sS http://127.0.0.1:3122/health | jq .
 ## What you get
 - **sap_docs_search** – unified search across multiple SAP documentation sources
 - **sap_docs_get** – fetches full documents/snippets with smart formatting
+- **abap_search** – **enhanced ABAP keyword documentation** with individual-files-first strategy (42,901+ files)
+- **abap_get** – retrieve focused ABAP documentation with complete source attribution
 - **sap_community_search** – real-time SAP Community posts with **full content** of top 3 results
 - **sap_help_search** – comprehensive search across all SAP Help Portal documentation  
 - **sap_help_get** – retrieves complete SAP Help pages with metadata
@@ -182,6 +184,89 @@ Create or edit `~/.cursor/mcp.json`:
 }
 ```
 
+
+</details>
+
+---
+
+## Eclipse (GitHub Copilot)
+
+<details>
+<summary><b>Remote (recommended) — hosted server</b></summary>
+
+### Prerequisites
+- **Eclipse Version**: 2024-09 or higher
+- **GitHub Copilot Extension**: Latest version from Eclipse Marketplace
+- **GitHub Account**: With Copilot access
+
+### Configuration Steps
+
+1. **Install GitHub Copilot Extension**
+   - Download from [Eclipse Marketplace](https://marketplace.eclipse.org/content/github-copilot)
+   - Follow the installation instructions
+
+2. **Open MCP Configuration**
+   - Click the Copilot icon (🤖) in the Eclipse status bar  
+   - Select "Edit preferences" from the menu
+   - Expand "Copilot Chat" in the left panel
+   - Click on "MCP"
+
+3. **Add SAP Docs MCP Server**
+   ```json
+   {
+     "name": "SAP Docs MCP",
+     "description": "Comprehensive SAP development documentation with ABAP keyword documentation",
+     "url": "https://mcp-sap-docs.marianzeis.de/sse"
+   }
+   ```
+
+4. **Verify Configuration**
+   - The server should appear in your MCP servers list
+   - Status should show as "Connected" when active
+
+### Using SAP Docs in Eclipse
+
+Once configured, you can use Copilot Chat in Eclipse with enhanced SAP documentation:
+
+**Example queries:**
+```
+How do I implement a Wizard control in UI5?
+What is the syntax for inline declarations in ABAP 7.58?
+Show me best practices for RAP development
+Find wdi5 testing examples for OData services
+```
+
+**Available Tools:**
+- `sap_docs_search` - General SAP development (UI5, CAP, testing)
+- `abap_search` - **Individual ABAP files** optimized for LLM consumption
+- `abap_get` - Retrieve focused ABAP documentation
+- `sap_community_search` - SAP Community integration
+- `sap_help_search` - SAP Help Portal access
+
+</details>
+
+<details>
+<summary><b>Local setup — for offline use</b></summary>
+
+### Local MCP Server Configuration
+
+```json
+{
+  "name": "SAP Docs MCP (Local)",
+  "description": "Local SAP documentation server",
+  "command": "npm", 
+  "args": ["start"],
+  "cwd": "/absolute/path/to/your/sap-docs-mcp",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+```
+
+**Prerequisites for local setup:**
+1. Clone and build this repository locally
+2. Run `npm run setup` to initialize all documentation sources
+3. Ensure the server starts correctly with `npm start`
 
 </details>
 
@@ -315,6 +400,8 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 
 ### 🔍 Comprehensive Search System
 - **sap_docs_search**: Search official SAP documentation, APIs, sample code, and wdi5 docs
+- **abap_search**: **Enhanced ABAP keyword documentation** with individual-files-first strategy (42,901+ files across 8 versions)
+- **abap_get**: Retrieve focused ABAP documentation with complete source attribution and LLM-optimized formatting
 - **sap_community_search**: Search real-time SAP Community content with **automatic full content retrieval** of top 3 posts
 - **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation across S/4HANA, BTP, Analytics Cloud, and more
 
@@ -323,11 +410,16 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 - **195+ CAP files** - Cloud Application Programming model  
 - **500+ OpenUI5 APIs** - Control APIs with detailed JSDoc
 - **2,000+ sample files** - Working examples from `demokit/sample` directories
+- **42,901+ ABAP individual files** - Official SAP ABAP keyword documentation (versions 7.52-7.58, latest)
 - **wdi5 E2E test framework docs** - End-to-end testing documentation
+- **UI5 TypeScript documentation** - Official TypeScript integration guides and type definitions
+- **ABAP best practices** - Clean ABAP guidelines, cheat sheets, and German community guidelines (DSAG)
+- **Fiori Elements showcases** - Comprehensive annotation references for both ABAP RAP and CAP
 - **Real-time community content** - Live posts with engagement info
 - **UI5 Tooling docs** - UI5 Tooling documentation
 - **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
 - **UI5 Web Components docs** - UI5 Web Components documentation
+- **UI5 Custom Controls** - Spreadsheet importer and other custom control documentation
 - **SAP Cloud SDK** - SAP Cloud SDK documentation (Javascript & Java)
 - **SAP Cloud SDK for AI** - SAP Cloud SDK for AI documentation (Javascript & Java)
 
@@ -431,11 +523,21 @@ Try these with any connected MCP client:
 - "How do I implement authentication in SAPUI5?"
 - "Show me wdi5 testing examples for forms"
 - "Find OpenUI5 button control examples with click handlers"
+- "What is Clean ABAP and how do I follow the style guide?"
+- "Show me TypeScript setup for UI5 development"
+
+**ABAP Keyword Documentation (Enhanced):**
+- "What is the syntax for inline declarations in ABAP 7.58?"
+- "How do I use SELECT statements with internal tables?"
+- "Show me exception handling with TRY-CATCH in ABAP"
+- "What are the differences between LOOP and WHILE in ABAP?"
+- "How do I define classes and methods in ABAP OOP?"
 
 **Community Knowledge (with full content):**
 - "What are the latest CAP authentication best practices from the community?"
 - "Find community examples of OData batch operations with complete implementation"
 - "Search for temporal data handling in CAP with real-world solutions"
+- "Find RAP development tips and tricks from the community"
 
 **SAP Help Portal:**
 - "How to configure S/4HANA Fiori Launchpad?"

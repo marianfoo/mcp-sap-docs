@@ -62,3 +62,7 @@
 	path = sources/cap-fiori-showcase
 	url = https://github.com/SAP-samples/fiori-elements-feature-showcase.git
 	branch = main
+[submodule "sources/abap-docs"]
+	path = sources/abap-docs
+	url = https://github.com/marianfoo/abap-docs.git
+	branch = main

@@ -1,0 +1,176 @@
+# SAP Docs MCP Tool Usage Guide (Rule)
+
+**Complete guide for understanding when to use which MCP tool in the SAP docs system.**
+
+## Tool Overview (7 Tools Available)
+
+The SAP docs MCP provides 7 specialized tools for different types of SAP documentation and content:
+
+### **General Documentation Tools**
+1. **`sap_docs_search`** - Multi-source documentation search
+2. **`sap_docs_get`** - Retrieve specific documentation
+
+### **Community & Help Tools**  
+3. **`sap_community_search`** - SAP Community blog posts and discussions
+4. **`sap_help_search`** - SAP Help Portal product documentation
+5. **`sap_help_get`** - Retrieve SAP Help content
+
+### **ABAP-Specific Tools**
+6. **`abap_search`** - Official ABAP Keyword Documentation 
+7. **`abap_get`** - Retrieve ABAP documentation bundles
+
+## When to Use Which Tool
+
+### **`sap_docs_search` - General SAP Development**
+**Use for:**
+- UI5 controls and components (Button, Table, Wizard)
+- CAP framework concepts (entities, services, annotations)
+- Development frameworks (wdi5 testing, UI5 Tooling)
+- Best practices and examples (ABAP cheat sheets, Clean ABAP)
+- Fiori Elements showcases and patterns
+- TypeScript integration and setup
+- Cloud SDK and deployment topics
+
+**Examples:**
+```
+sap_docs_search: "button properties"          # UI5 Button documentation
+sap_docs_search: "fiori elements annotations" # Fiori Elements patterns  
+sap_docs_search: "wdi5 testing"              # Testing framework
+sap_docs_search: "clean abap practices"      # Style guidelines
+sap_docs_search: "typescript setup"          # UI5 TypeScript
+```
+
+**Don't use for:** Detailed ABAP language syntax (use `abap_search` instead)
+
+### **`abap_search` - ABAP Language Syntax**
+**Use for:**
+- Official ABAP language constructs and syntax
+- Detailed statement documentation (SELECT, LOOP, IF)
+- Data type definitions and usage
+- Object-oriented programming concepts
+- Exception handling syntax
+- Function module and class definitions
+- ABAP SQL comprehensive documentation
+
+**Examples:**
+```
+abap_search: "SELECT statements"          # Official SQL syntax
+abap_search: "internal tables"           # Data structure documentation
+abap_search: "exception handling"        # TRY/CATCH official docs
+abap_search: "object orientation"        # Classes and interfaces
+abap_search: "function modules"          # Function definition syntax
+```
+
+**Don't use for:** Examples or best practices (use `sap_docs_search` instead)
+
+### **Tool Selection Matrix**
+
+| Query Type | Use This Tool | Reasoning |
+|------------|---------------|-----------|
+| "How do I create a Button?" | `sap_docs_search` | UI5 control examples and guides |
+| "SELECT statement syntax" | `abap_search` | Official ABAP language documentation |
+| "Fiori Elements annotations" | `sap_docs_search` | Cross-platform examples and showcases |
+| "TRY CATCH in ABAP" | `abap_search` | Official exception handling syntax |
+| "Clean ABAP practices" | `sap_docs_search` | Style guides and best practices |
+| "LOOP AT internal table" | `abap_search` | Official language construct syntax |
+| "wdi5 testing setup" | `sap_docs_search` | Testing framework documentation |
+| "CDS view annotations" | `sap_docs_search` | CAP and examples (unless pure syntax) |
+
+## Content Sources by Tool
+
+### **`sap_docs_search` Sources (19 total)**
+- **UI5**: SAPUI5, OpenUI5 API/Samples, TypeScript, Custom Controls
+- **CAP**: Framework docs, Fiori Elements showcase  
+- **ABAP Examples**: Cheat sheets, Style guides, German guidelines
+- **Testing**: wdi5 framework and examples
+- **Tools**: UI5 Tooling, Cloud MTA Build Tool, Web Components
+- **Cloud**: Cloud SDK (JS/Java), AI SDK
+- **Showcases**: ABAP/CAP Fiori Elements demonstrations
+
+### **`abap_search` Sources (1 focused)**
+- **ABAP Keyword Documentation**: Official SAP documentation
+- **Versions**: 7.52, 7.53, 7.54, 7.55, 7.56, 7.57, 7.58, latest
+- **Coverage**: ~185 bundled topics per version, ~6,000+ individual pages
+- **Content**: Complete language syntax, statements, constructs
+
+## Advanced Usage Patterns
+
+### **Progressive Discovery**
+1. **Start broad**: Use `sap_docs_search` for general concepts
+2. **Get specific**: Use `abap_search` for detailed syntax
+3. **Cross-reference**: Use `sap_community_search` for real-world examples
+
+### **Version-Specific Queries**
+```
+abap_search: 
+  query: "NEW operator"
+  version: "7.58"        # Check latest syntax
+  
+abap_search:
+  query: "NEW operator"  
+  version: "7.54"        # Check older compatibility
+```
+
+### **Comprehensive Coverage**
+```
+# For Fiori Elements development:
+sap_docs_search: "fiori elements annotations"    # Get examples and patterns
+abap_search: "RAP behavior definitions"          # Get syntax details
+sap_community_search: "fiori elements tips"     # Get community insights
+```
+
+## Tool Response Formats
+
+### **Search Tools** (`sap_docs_search`, `abap_search`, `sap_community_search`, `sap_help_search`)
+```
+Found X results for 'query':
+
+⭐️ **document-id** (Score: X.XX)
+   Title and description
+   Use in {corresponding_get_tool}
+```
+
+### **Get Tools** (`sap_docs_get`, `abap_get`, `sap_help_get`)
+```
+**Source:** Documentation Type
+**Content:** Full formatted documentation content
+```
+
+## Error Handling and Fallbacks
+
+### **No Results Found**
+- Each tool provides specific guidance on alternative search terms
+- `sap_docs_search`: Suggests UI5 controls, concepts, testing topics
+- `abap_search`: Suggests ABAP language constructs and statements
+
+### **Invalid IDs**
+- Get tools validate IDs and provide guidance on using search tools first
+- Version mismatches handled gracefully with defaults
+
+### **System Errors**
+- Graceful degradation with informative error messages
+- Logging for debugging and monitoring
+
+## Best Practices for LLMs
+
+### **Tool Selection Strategy**
+1. **Identify domain**: UI5/CAP/Testing → `sap_docs_search`, ABAP syntax → `abap_search`
+2. **Check scope**: Examples/guides → `sap_docs_search`, Official syntax → `abap_search`
+3. **Consider audience**: Developers → both tools, Language reference → `abap_search`
+
+### **Query Optimization**
+- **Specific terms**: Use exact control names, statement keywords
+- **Conceptual queries**: Use broader terms for discovery
+- **Multi-tool approach**: Use multiple tools for comprehensive coverage
+
+### **Response Enhancement**
+- **Cross-reference**: Suggest related tools when appropriate
+- **Version awareness**: Mention ABAP version relevance for syntax queries
+- **Context building**: Use multiple tools to build complete picture
+
+@file src/lib/BaseServerHandler.ts
+@file src/server.ts  
+@file src/streamable-http-server.ts
+@file src/lib/abapDocs.ts
+@file docs/ABAP-KEYWORD-DOCUMENTATION.md
+@file docs/ARCHITECTURE.md
