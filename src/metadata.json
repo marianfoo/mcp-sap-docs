@@ -185,6 +185,71 @@
       "baseUrl": "https://docs.spreadsheet-importer.com",
       "pathPattern": "/pages/{file}/",
       "anchorStyle": "github"
+    },
+    {
+      "id": "abap-cheat-sheets",
+      "type": "documentation",
+      "lang": "en", 
+      "boost": 0.05,
+      "tags": ["abap", "syntax", "cheat-sheets", "examples", "backend"],
+      "description": "ABAP Cheat Sheets",
+      "libraryId": "/abap-cheat-sheets",
+      "sourcePath": "abap-cheat-sheets",
+      "baseUrl": "https://github.com/SAP-samples/abap-cheat-sheets/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-styleguides",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.06,
+      "tags": ["abap", "clean-code", "style-guide", "best-practices", "code-review"],
+      "description": "SAP Style Guides",
+      "libraryId": "/sap-styleguides", 
+      "sourcePath": "sap-styleguides",
+      "baseUrl": "https://github.com/SAP/styleguides/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "dsag-abap-leitfaden",
+      "type": "documentation",
+      "lang": "de",
+      "boost": 0.05,
+      "tags": ["abap", "leitfaden", "best-practices", "german", "dsag", "clean-core"],
+      "description": "DSAG ABAP Leitfaden",
+      "libraryId": "/dsag-abap-leitfaden",
+      "sourcePath": "dsag-abap-leitfaden/docs",
+      "baseUrl": "https://1dsag.github.io/ABAP-Leitfaden",
+      "pathPattern": "/{file}/",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "abap-fiori-showcase",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.08,
+      "tags": ["fiori-elements", "abap", "rap", "annotations", "odata-v4", "showcase"],
+      "description": "ABAP Platform Fiori Feature Showcase",
+      "libraryId": "/abap-fiori-showcase",
+      "sourcePath": "abap-fiori-showcase",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-fiori-feature-showcase/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cap-fiori-showcase",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.08,
+      "tags": ["fiori-elements", "cap", "annotations", "odata-v4", "showcase", "nodejs"],
+      "description": "CAP Fiori Elements Feature Showcase",
+      "libraryId": "/cap-fiori-showcase",
+      "sourcePath": "cap-fiori-showcase",
+      "baseUrl": "https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -197,7 +262,15 @@
     { "from": "cds", "to": ["cap", "cloud application programming"] },
     { "from": "odata", "to": ["rest", "api", "service"] },
     { "from": "typescript", "to": ["ts", "types", "type definitions"] },
-    { "from": "spreadsheet", "to": ["excel", "csv", "import", "upload"] }
+    { "from": "spreadsheet", "to": ["excel", "csv", "import", "upload"] },
+    { "from": "abap", "to": ["advanced business application programming", "sap programming"] },
+    { "from": "clean-code", "to": ["clean code", "best practices", "style guide"] },
+    { "from": "style-guide", "to": ["styleguide", "coding standards", "best practices"] },
+    { "from": "leitfaden", "to": ["guidelines", "guide", "best practices"] },
+    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development"] },
+    { "from": "fiori-elements", "to": ["fiori elements", "annotations", "odata"] },
+    { "from": "rap", "to": ["restful application programming", "abap restful"] },
+    { "from": "annotations", "to": ["ui5 annotations", "odata annotations", "fiori annotations"] }
   ],
   
   "acronyms": {
@@ -208,7 +281,10 @@
     "MTA": ["Multi-Target Application"],
     "CQL": ["CDS Query Language", "query"],
     "OData": ["Open Data Protocol", "rest", "api"],
-    "TS": ["TypeScript", "types"]
+    "TS": ["TypeScript", "types"],
+    "ABAP": ["Advanced Business Application Programming", "sap programming"],
+    "DSAG": ["Deutschsprachige SAP-Anwendergruppe", "german sap user group"],
+    "RAP": ["RESTful Application Programming", "abap restful", "business object"]
   },
 
   "contextBoosts": {
@@ -242,6 +318,7 @@
     },
     "CAP": {
       "/cap": 1.0,
+      "/cap-fiori-showcase": 0.9,
       "/sapui5": 0.2
     },
     "TypeScript": {
@@ -253,6 +330,33 @@
       "/ui5-cc-spreadsheetimporter": 1.0,
       "/sapui5": 0.3,
       "/openui5-api": 0.3
+    },
+    "ABAP": {
+      "/abap-cheat-sheets": 1.0,
+      "/sap-styleguides": 0.9,
+      "/dsag-abap-leitfaden": 0.8,
+      "/cap": 0.2
+    },
+    "Clean Code": {
+      "/sap-styleguides": 1.0,
+      "/dsag-abap-leitfaden": 0.8,
+      "/abap-cheat-sheets": 0.4
+    },
+    "DSAG": {
+      "/dsag-abap-leitfaden": 1.0,
+      "/abap-cheat-sheets": 0.5,
+      "/sap-styleguides": 0.3
+    },
+    "Fiori Elements": {
+      "/abap-fiori-showcase": 1.0,
+      "/cap-fiori-showcase": 1.0,
+      "/sapui5": 0.6,
+      "/cap": 0.5
+    },
+    "RAP": {
+      "/abap-fiori-showcase": 1.0,
+      "/abap-cheat-sheets": 0.6,
+      "/cap": 0.3
     }
   },
 
@@ -270,7 +374,12 @@
     "cloud-sdk-java": "cloud-sdk-java",
     "cloud-sdk-ai-java": "cloud-sdk-ai-java",
     "ui5-typescript": "ui5-typescript",
-    "ui5-cc-spreadsheetimporter": "ui5-cc-spreadsheetimporter"
+    "ui5-cc-spreadsheetimporter": "ui5-cc-spreadsheetimporter",
+    "abap-cheat-sheets": "abap-cheat-sheets",
+    "sap-styleguides": "sap-styleguides",
+    "dsag-abap-leitfaden": "dsag-abap-leitfaden",
+    "abap-fiori-showcase": "abap-fiori-showcase",
+    "cap-fiori-showcase": "cap-fiori-showcase"
   },
 
   "contextEmojis": {
@@ -283,6 +392,11 @@
     "Cloud MTA Build Tool": "🚢",
     "TypeScript": "📝",
     "UI5 CC Spreadsheet Importer": "📊",
+    "ABAP": "💻",
+    "Clean Code": "✨",
+    "DSAG": "🇩🇪",
+    "Fiori Elements": "📱",
+    "RAP": "⚡",
     "MIXED": "🔀"
   }
 }

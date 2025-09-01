@@ -30,6 +30,7 @@ import {
   SapUi5UrlGenerator,
   CapUrlGenerator,
   Wdi5UrlGenerator,
+  DsagUrlGenerator,
   GenericUrlGenerator
 } from '../src/lib/url-generation/index.js';
 import { DocUrlConfig, getDocUrlConfig } from '../src/lib/metadata.js';
@@ -82,7 +83,12 @@ describe('Comprehensive URL Generation System', () => {
       '/ui5-webcomponents': { basePath: 'sources/ui5-webcomponents/docs' },
       '/wdi5': { basePath: 'sources/wdi5/docs' },
       '/ui5-typescript': { basePath: 'sources/ui5-typescript' },
-      '/ui5-cc-spreadsheetimporter': { basePath: 'sources/ui5-cc-spreadsheetimporter/docs' }
+      '/ui5-cc-spreadsheetimporter': { basePath: 'sources/ui5-cc-spreadsheetimporter/docs' },
+      '/abap-cheat-sheets': { basePath: 'sources/abap-cheat-sheets' },
+      '/sap-styleguides': { basePath: 'sources/sap-styleguides' },
+      '/dsag-abap-leitfaden': { basePath: 'sources/dsag-abap-leitfaden/docs' },
+      '/abap-fiori-showcase': { basePath: 'sources/abap-fiori-showcase' },
+      '/cap-fiori-showcase': { basePath: 'sources/cap-fiori-showcase' }
     };
 
     const mapping = pathMappings[libraryId];
@@ -225,6 +231,46 @@ describe('Comprehensive URL Generation System', () => {
       expectedUrl: 'https://docs.spreadsheet-importer.com/pages/Checks/#error-types',
       frontmatter: '',
       content: '## Error Types\n\nThe following types of errors are handled by the UI5 Spreadsheet Upload Control...'
+    },
+    {
+      name: 'ABAP Cheat Sheets - Internal Tables',
+      libraryId: '/abap-cheat-sheets',
+      relFile: '01_Internal_Tables.md',
+      expectedUrl: 'https://github.com/SAP-samples/abap-cheat-sheets/blob/main/01_Internal_Tables#internal-tables',
+      frontmatter: '',
+      content: '# Internal Tables\n\nThis cheat sheet contains a selection of syntax examples and notes on internal tables...'
+    },
+    {
+      name: 'SAP Style Guides - Clean ABAP',
+      libraryId: '/sap-styleguides',
+      relFile: 'clean-abap/CleanABAP.md',
+      expectedUrl: 'https://github.com/SAP/styleguides/blob/main/CleanABAP#clean-abap',
+      frontmatter: '',
+      content: '# Clean ABAP\n\n> [**中文**](CleanABAP_zh.md)\n\nThis style guide presents the essentials of clean ABAP...'
+    },
+    {
+      name: 'DSAG ABAP Leitfaden - Clean Core',
+      libraryId: '/dsag-abap-leitfaden',
+      relFile: 'clean-core/what-is-clean-core.md',
+      expectedUrl: 'https://1dsag.github.io/ABAP-Leitfaden/clean-core/what-is-clean-core/#was-ist-clean-core',
+      frontmatter: '',
+      content: '# Was ist Clean Core?\n\nClean Core ist ein Konzept von SAP, das darauf abzielt...'
+    },
+    {
+      name: 'ABAP Platform Fiori Feature Showcase - General Features',
+      libraryId: '/abap-fiori-showcase',
+      relFile: '01_general_features.md',
+      expectedUrl: 'https://github.com/SAP-samples/abap-platform-fiori-feature-showcase/blob/main/01_general_features#general-features',
+      frontmatter: '',
+      content: '# General Features\n\nThis section describes the features that are generally used throughout...'
+    },
+    {
+      name: 'CAP Fiori Elements Feature Showcase - README',
+      libraryId: '/cap-fiori-showcase',
+      relFile: 'README.md',
+      expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README#fiori-elements-feature-showcase',
+      frontmatter: '',
+      content: '# Fiori Elements Feature Showcase\n\nThis app showcases different features of SAP Fiori elements...'
     }
     // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
     // or fallback to mock content if actual files don't exist in expected locations
@@ -389,6 +435,38 @@ describe('Comprehensive URL Generation System', () => {
         });
         
         expect(result).toBe('https://ui5-community.github.io/wdi5/#/configuration/basic-config');
+      });
+    });
+
+    describe('DsagUrlGenerator', () => {
+      it('should generate GitHub Pages URLs with path transformation', () => {
+        const config = getConfigForLibrary('/dsag-abap-leitfaden');
+        const generator = new DsagUrlGenerator('/dsag-abap-leitfaden', config);
+        const content = '# Was ist Clean Core?\n\nClean Core ist ein Konzept von SAP...';
+        
+        const result = generator.generateUrl({
+          libraryId: '/dsag-abap-leitfaden',
+          relFile: 'clean-core/what-is-clean-core.md',
+          content,
+          config
+        });
+        
+        expect(result).toBe('https://1dsag.github.io/ABAP-Leitfaden/clean-core/what-is-clean-core/#was-ist-clean-core');
+      });
+
+      it('should handle root-level documentation', () => {
+        const config = getConfigForLibrary('/dsag-abap-leitfaden');
+        const generator = new DsagUrlGenerator('/dsag-abap-leitfaden', config);
+        const content = '# ABAP Leitfaden\n\nDer DSAG ABAP Leitfaden...';
+        
+        const result = generator.generateUrl({
+          libraryId: '/dsag-abap-leitfaden',
+          relFile: 'README.md',
+          content,
+          config
+        });
+        
+        expect(result).toBe('https://1dsag.github.io/ABAP-Leitfaden/README/#abap-leitfaden');
       });
     });
 
