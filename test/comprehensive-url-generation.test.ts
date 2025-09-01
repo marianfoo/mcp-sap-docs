@@ -268,9 +268,9 @@ describe('Comprehensive URL Generation System', () => {
       name: 'CAP Fiori Elements Feature Showcase - README',
       libraryId: '/cap-fiori-showcase',
       relFile: 'README.md',
-      expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README#fiori-elements-feature-showcase',
+      expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README#sap-fiori-elements-for-odata-v4-feature-showcase',
       frontmatter: '',
-      content: '# Fiori Elements Feature Showcase\n\nThis app showcases different features of SAP Fiori elements...'
+      content: '# SAP Fiori Elements for OData V4 Feature Showcase\n\nThis app showcases different features of SAP Fiori elements...'
     }
     // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
     // or fallback to mock content if actual files don't exist in expected locations
