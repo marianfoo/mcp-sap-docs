@@ -250,6 +250,110 @@
       "baseUrl": "https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main",
       "pathPattern": "/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "abap-docs-758",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.05,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.58"],
+      "description": "Official ABAP Keyword Documentation (7.58)",
+      "libraryId": "/abap-docs-758",
+      "sourcePath": "abap-docs/docs/7.58/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-757",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.02,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.57"],
+      "description": "Official ABAP Keyword Documentation (7.57)",
+      "libraryId": "/abap-docs-757",
+      "sourcePath": "abap-docs/docs/7.57/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_757_index_htm/7.57/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-756",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.01,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.56"],
+      "description": "Official ABAP Keyword Documentation (7.56)",
+      "libraryId": "/abap-docs-756",
+      "sourcePath": "abap-docs/docs/7.56/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_756_index_htm/7.56/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-755",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.01,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.55"],
+      "description": "Official ABAP Keyword Documentation (7.55)",
+      "libraryId": "/abap-docs-755",
+      "sourcePath": "abap-docs/docs/7.55/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_755_index_htm/7.55/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-754",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.01,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.54"],
+      "description": "Official ABAP Keyword Documentation (7.54)",
+      "libraryId": "/abap-docs-754",
+      "sourcePath": "abap-docs/docs/7.54/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_754_index_htm/7.54/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-753",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.01,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.53"],
+      "description": "Official ABAP Keyword Documentation (7.53)",
+      "libraryId": "/abap-docs-753",
+      "sourcePath": "abap-docs/docs/7.53/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_753_index_htm/7.53/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-752",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.01,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "7.52"],
+      "description": "Official ABAP Keyword Documentation (7.52)",
+      "libraryId": "/abap-docs-752",
+      "sourcePath": "abap-docs/docs/7.52/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_752_index_htm/7.52/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-latest",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 1.0,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "latest"],
+      "description": "Official ABAP Keyword Documentation (Latest)",
+      "libraryId": "/abap-docs-latest",
+      "sourcePath": "abap-docs/docs/latest/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
     }
   ],
   
@@ -332,9 +436,17 @@
       "/openui5-api": 0.3
     },
     "ABAP": {
-      "/abap-cheat-sheets": 1.0,
-      "/sap-styleguides": 0.9,
-      "/dsag-abap-leitfaden": 0.8,
+      "/abap-docs-latest": 1.0,
+      "/abap-cheat-sheets": 0.8,
+      "/sap-styleguides": 0.7,
+      "/dsag-abap-leitfaden": 0.6,
+      "/abap-docs-758": 0.05,
+      "/abap-docs-757": 0.02,
+      "/abap-docs-756": 0.01,
+      "/abap-docs-755": 0.01,
+      "/abap-docs-754": 0.01,
+      "/abap-docs-753": 0.01,
+      "/abap-docs-752": 0.01,
       "/cap": 0.2
     },
     "Clean Code": {
@@ -357,6 +469,38 @@
       "/abap-fiori-showcase": 1.0,
       "/abap-cheat-sheets": 0.6,
       "/cap": 0.3
+    },
+    "7.58": {
+      "/abap-docs-758": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.57": {
+      "/abap-docs-757": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.56": {
+      "/abap-docs-756": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.55": {
+      "/abap-docs-755": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.54": {
+      "/abap-docs-754": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.53": {
+      "/abap-docs-753": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "7.52": {
+      "/abap-docs-752": 2.0,
+      "/abap-docs-latest": 0.3
+    },
+    "latest": {
+      "/abap-docs-latest": 1.5,
+      "/abap-docs-758": 0.1
     }
   },
 
@@ -379,7 +523,15 @@
     "sap-styleguides": "sap-styleguides",
     "dsag-abap-leitfaden": "dsag-abap-leitfaden",
     "abap-fiori-showcase": "abap-fiori-showcase",
-    "cap-fiori-showcase": "cap-fiori-showcase"
+    "cap-fiori-showcase": "cap-fiori-showcase",
+    "abap-docs-758": "abap-docs",
+    "abap-docs-757": "abap-docs",
+    "abap-docs-756": "abap-docs",
+    "abap-docs-755": "abap-docs",
+    "abap-docs-754": "abap-docs",
+    "abap-docs-753": "abap-docs",
+    "abap-docs-752": "abap-docs",
+    "abap-docs-latest": "abap-docs"
   },
 
   "contextEmojis": {

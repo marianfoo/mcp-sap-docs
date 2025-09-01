@@ -38,6 +38,11 @@ export async function search(
   const queryVariants = expandQueryTerms(query);
   const seen = new Map<string, any>();
   
+  // Check if query contains specific ABAP version
+  const versionMatch = query.match(/\b(7\.\d{2}|latest)\b/i);
+  const requestedVersion = versionMatch ? versionMatch[1].toLowerCase() : null;
+  const requestedVersionId = requestedVersion ? requestedVersion.replace('.', '') : null;
+  
   // Search with all query variants (union approach)
   for (const variant of queryVariants) {
     try {
@@ -54,12 +59,46 @@ export async function search(
     if (seen.size >= k) break; // enough candidates
   }
   
-  const rows = Array.from(seen.values()).slice(0, k);
+  let rows = Array.from(seen.values()).slice(0, k);
+  
+  // Smart ABAP version filtering - only show latest unless version specified
+  if (!requestedVersion) {
+    // For general ABAP queries without version, aggressively filter out older versions
+    rows = rows.filter(r => {
+      const id = r.id || '';
+      
+      // Keep all non-ABAP-docs sources
+      if (!id.includes('/abap-docs-')) return true;
+      
+      // For ABAP docs, ONLY keep latest version for general queries
+      return id.includes('/abap-docs-latest/');
+    });
+    
+    console.log(`Filtered to latest ABAP version only: ${rows.length} results`);
+  } else {
+    // For version-specific queries, ONLY show the requested version and non-ABAP sources
+    rows = rows.filter(r => {
+      const id = r.id || '';
+      
+      // Keep all non-ABAP-docs sources (style guides, cheat sheets, etc.)
+      if (!id.includes('/abap-docs-')) return true;
+      
+      // For ABAP docs, ONLY keep the specifically requested version
+      return id.includes(`/abap-docs-${requestedVersionId}/`);
+    });
+    
+    console.log(`Filtered to ABAP version ${requestedVersion} only: ${rows.length} results`);
+  }
   
   // Convert to consistent format with source boosts
   const results = rows.map(r => {
     const sourceId = extractSourceId(r.libraryId || r.id);
-    const boost = sourceBoosts[sourceId] || 0;
+    let boost = sourceBoosts[sourceId] || 0;
+    
+    // Additional boost for version-specific queries
+    if (requestedVersionId && r.id.includes(`/abap-docs-${requestedVersionId}/`)) {
+      boost += 1.0; // Extra boost for requested version
+    }
     
     return {
       id: r.id,
@@ -70,6 +109,8 @@ export async function search(
       finalScore: (-r.bm25Score) * (1 + boost) // Convert to descending with boost
     };
   });
+  
+  // Results are already filtered above, just sort them
   
   // Sort by final score (higher = better)
   return results.sort((a, b) => b.finalScore - a.finalScore);

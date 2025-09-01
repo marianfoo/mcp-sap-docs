@@ -212,8 +212,183 @@ const SOURCES: SourceConfig[] = [
     description: "SAP Fiori Elements features and annotations showcase using CAP",
     filePattern: "*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.58", "md"),
+    id: "/abap-docs-758",
+    name: "ABAP Keyword Documentation (7.58)",
+    description: "Official ABAP language reference and syntax documentation (version 7.58) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.57", "md"),
+    id: "/abap-docs-757",
+    name: "ABAP Keyword Documentation (7.57)",
+    description: "Official ABAP language reference and syntax documentation (version 7.57) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.56", "md"),
+    id: "/abap-docs-756",
+    name: "ABAP Keyword Documentation (7.56)",
+    description: "Official ABAP language reference and syntax documentation (version 7.56) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.55", "md"),
+    id: "/abap-docs-755",
+    name: "ABAP Keyword Documentation (7.55)",
+    description: "Official ABAP language reference and syntax documentation (version 7.55) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.54", "md"),
+    id: "/abap-docs-754",
+    name: "ABAP Keyword Documentation (7.54)",
+    description: "Official ABAP language reference and syntax documentation (version 7.54) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.53", "md"),
+    id: "/abap-docs-753",
+    name: "ABAP Keyword Documentation (7.53)",
+    description: "Official ABAP language reference and syntax documentation (version 7.53) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "7.52", "md"),
+    id: "/abap-docs-752",
+    name: "ABAP Keyword Documentation (7.52)",
+    description: "Official ABAP language reference and syntax documentation (version 7.52) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-docs",
+    absDir: join("sources", "abap-docs", "docs", "latest", "md"),
+    id: "/abap-docs-latest",
+    name: "ABAP Keyword Documentation (Latest)",
+    description: "Official ABAP language reference and syntax documentation (latest version) - individual files optimized for LLM consumption",
+    filePattern: "*.md",
+    type: "markdown" as const
   }
 ];
+
+// Extract meaningful content from ABAP documentation files
+function extractAbapContent(content: string, filename: string): { title: string; description: string; snippetCount: number } {
+  const lines = content.split(/\r?\n/);
+  
+  // Skip attribution header (first few lines with "📖 Official SAP Documentation")
+  let contentStart = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('📖 Official SAP Documentation') || lines[i].startsWith('> **📖')) {
+      // Skip until we find the actual content (after attribution and separators)
+      for (let j = i; j < lines.length; j++) {
+        if (lines[j].trim() === '' || lines[j].includes('* * *') || lines[j].includes('---')) {
+          continue;
+        }
+        if (!lines[j].startsWith('>')) {
+          contentStart = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+  
+  // Find the actual title (first non-metadata heading)
+  let title = filename.replace('.md', '').replace('aben', '');
+  for (let i = contentStart; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line && !line.startsWith('AS ABAP Release') && !line.startsWith('[ABAP -') && !line.startsWith('[![') && !line.includes('Mail Feedback')) {
+      if (line.match(/^[A-Z][a-zA-Z\s]+$/)) {
+        // Found a proper title (like "Inline Declarations")
+        title = line;
+        contentStart = i + 1;
+        break;
+      }
+    }
+  }
+  
+  // Extract meaningful description from content
+  const contentLines = lines.slice(contentStart);
+  const meaningfulLines = [];
+  
+  for (const line of contentLines) {
+    const trimmed = line.trim();
+    
+    // Skip empty lines, separators, and navigation
+    if (!trimmed || trimmed === '---' || trimmed === '* * *' || trimmed.startsWith('[ABAP -') || trimmed.includes('Mail Feedback')) {
+      continue;
+    }
+    
+    // Skip metadata lines
+    if (trimmed.startsWith('AS ABAP Release') || trimmed.includes('©Copyright')) {
+      continue;
+    }
+    
+    // Stop at "Continue" or "Programming Guideline" sections
+    if (trimmed.startsWith('Continue') || trimmed.startsWith('Programming Guideline')) {
+      break;
+    }
+    
+    meaningfulLines.push(trimmed);
+    
+    // Stop when we have enough content for a good description
+    if (meaningfulLines.join(' ').length > 300) {
+      break;
+    }
+  }
+  
+  // Build description from meaningful content
+  let description = meaningfulLines.join(' ').trim();
+  
+  // If description is too short, add version info
+  if (description.length < 50) {
+    const versionMatch = filename.match(/abap-docs-(\d+)/);
+    const version = versionMatch ? versionMatch[1] : '7.58';
+    description = `${title} - ABAP ${version} language reference`;
+  }
+  
+  // Extract ABAP-specific terms for better searchability
+  const abapTerms: string[] = [];
+  const descriptionLower = description.toLowerCase();
+  
+  // Common ABAP statement keywords
+  const statements = ['data', 'final', 'field-symbol', 'select', 'loop', 'if', 'try', 'catch', 'class', 'method'];
+  statements.forEach(stmt => {
+    if (descriptionLower.includes(stmt)) {
+      abapTerms.push(stmt);
+    }
+  });
+  
+  // Add statement context if found
+  if (abapTerms.length > 0) {
+    description += ` | Statements: ${abapTerms.join(', ')}`;
+  }
+  
+  // Count code snippets (ABAP typically has fewer but more meaningful ones)
+  const snippetCount = (content.match(/```/g)?.length || 0) / 2;
+  
+  return {
+    title,
+    description: description.substring(0, 400), // Allow longer descriptions for ABAP
+    snippetCount
+  };
+}
 
 // Extract information from sample files (JS, XML, JSON, HTML)
 function extractSampleInfo(content: string, filePath: string) {
@@ -558,22 +733,40 @@ async function main() {
       let id: string;
 
       if (src.type === "markdown") {
-        // Handle markdown files
-        const { content, data: frontmatter } = matter(raw);
+        // Handle markdown files with error handling for malformed frontmatter
+        let frontmatter, content;
+        try {
+          const parsed = matter(raw);
+          frontmatter = parsed.data;
+          content = parsed.content;
+        } catch (yamlError: any) {
+          console.warn(`YAML parsing failed for ${rel}, using fallback:`, yamlError?.message || yamlError);
+          // Fallback: extract content without frontmatter
+          const lines = raw.split('\n');
+          const contentStartIndex = lines.findIndex((line, index) => line.trim() === '---' && index > 0) + 1;
+          frontmatter = {};
+          content = contentStartIndex > 0 ? lines.slice(contentStartIndex).join('\n') : raw;
+        }
         const lines = content.split(/\r?\n/);
 
-        title = lines.find((l) => l.startsWith("# "))?.slice(2).trim() ||
+        // Use frontmatter for title and description (works for ABAP and other sources)
+        title = frontmatter?.title || 
+                lines.find((l) => l.startsWith("# "))?.slice(2).trim() ||
                 path.basename(rel, ".md");
         
-        // Try to get description from frontmatter synopsis first, then fall back to content
-        let rawDescription = lines.find((l) => l.trim() && !l.startsWith("#"))?.trim() || "";
-        if (frontmatter?.synopsis && rawDescription.includes("{{ $frontmatter.synopsis }}")) {
+        // Enhanced description from frontmatter or content
+        if (frontmatter?.description) {
+          description = frontmatter.description;
+        } else if (frontmatter?.synopsis && content.includes("{{ $frontmatter.synopsis }}")) {
           description = frontmatter.synopsis;
         } else {
+          // Fallback to content extraction
+          const rawDescription = lines.find((l) => l.trim() && !l.startsWith("#"))?.trim() || "";
           description = rawDescription;
         }
         
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
+        
         id = `${src.id}/${rel.replace(/\.md$/, "")}`;
         
         // Extract individual sections as separate entries for all markdown docs

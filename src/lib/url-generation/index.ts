@@ -9,6 +9,7 @@ import { SapUi5UrlGenerator } from './sapui5.js';
 import { CapUrlGenerator } from './cap.js';
 import { Wdi5UrlGenerator } from './wdi5.js';
 import { DsagUrlGenerator } from './dsag.js';
+import { AbapUrlGenerator } from './abap.js';
 import { GenericUrlGenerator } from './GenericUrlGenerator.js';
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
 
@@ -43,6 +44,16 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   
   // DSAG ABAP Leitfaden with custom GitHub Pages URL pattern
   '/dsag-abap-leitfaden': DsagUrlGenerator,
+  
+  // ABAP Keyword Documentation with SAP help.sap.com URLs (all versions)
+  '/abap-docs-758': AbapUrlGenerator,
+  '/abap-docs-757': AbapUrlGenerator,
+  '/abap-docs-756': AbapUrlGenerator,
+  '/abap-docs-755': AbapUrlGenerator,
+  '/abap-docs-754': AbapUrlGenerator,
+  '/abap-docs-753': AbapUrlGenerator,
+  '/abap-docs-752': AbapUrlGenerator,
+  '/abap-docs-latest': AbapUrlGenerator,
   
   // Generic sources
   '/ui5-tooling': GenericUrlGenerator,
@@ -127,3 +138,4 @@ export { generateSapUi5Url, generateOpenUi5ApiUrl, generateOpenUi5SampleUrl, gen
 export { generateCapUrl, generateCapCdsUrl, generateCapTutorialUrl } from './cap.js';
 export { generateWdi5Url, generateWdi5ConfigUrl, generateWdi5SelectorUrl } from './wdi5.js';
 export { generateDsagUrl } from './dsag.js';
+export { generateAbapUrl } from './abap.js';

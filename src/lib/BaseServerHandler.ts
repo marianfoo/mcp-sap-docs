@@ -18,11 +18,7 @@ import {
   searchCommunity
 } from "./localDocs.js";
 import { searchSapHelp, getSapHelpContent } from "./sapHelp.js";
-import { 
-  searchAbapDocs, 
-  getAbapDoc, 
-  getAvailableVersions 
-} from "./abapDocs.js";
+
 import { SearchResponse } from "./types.js";
 import { logger } from "./logger.js";
 import { search } from "./search.js";
@@ -116,13 +112,13 @@ export class BaseServerHandler {
         tools: [
           {
             name: "sap_docs_search",
-            description: "Search across SAP documentation sources including UI5, CAP, testing frameworks, and development tools. Covers SAPUI5 documentation, CAP documentation, wdi5 testing framework, OpenUI5 control APIs, UI5 Tooling, Cloud SDK, and more. Use this for general SAP development topics, UI5 controls, CAP concepts, and testing frameworks. For comprehensive ABAP language syntax and official keyword documentation, use abap_search instead.",
+            description: "Unified search across all SAP documentation sources including ABAP Keyword Documentation, UI5, CAP, testing frameworks, and development tools. Covers official ABAP language reference (multiple versions), SAPUI5 documentation, CAP documentation, wdi5 testing framework, OpenUI5 control APIs, UI5 Tooling, Cloud SDK, and more. Automatically detects ABAP versions from queries (e.g., 'LOOP 7.57' searches ABAP 7.57, 'SELECT latest' searches latest ABAP). Defaults to ABAP 7.58 for version-less ABAP queries.",
             inputSchema: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds Wizard controls and docs), 'annotation' (finds annotation docs across CAP/UI5), 'wdi5' (finds testing framework docs), 'testing' (finds testing and automation docs), 'routing', 'authentication', 'table', 'odata', 'fiori elements', 'cds', 'rap', 'clean code', 'typescript'. For ABAP language syntax, use abap_search instead."
+                  description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds UI5/CAP docs), 'annotation' (finds annotation docs), 'wdi5' (finds testing docs), 'ABAP SELECT statements' (finds ABAP docs), 'inline declarations' (finds ABAP syntax), 'LOOP 7.57' (auto-detects version 7.57), 'exception handling latest' (searches latest ABAP version). Supports ABAP version auto-detection from queries containing versions like '7.52', '7.53', '7.54', '7.55', '7.56', '7.57', '7.58', or 'latest'. Defaults to ABAP 7.58 for version-less ABAP queries."
                 }
               },
               required: ["query"]
@@ -150,7 +146,7 @@ export class BaseServerHandler {
               properties: {
                 library_id: {
                   type: "string",
-                  description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api', '/ui5-typescript', '/abap-cheat-sheets', '/sap-styleguides', '/abap-fiori-showcase', '/cap-fiori-showcase' for general docs, or a specific document ID like '/openui5-api/sap/m/Button' for detailed control API documentation. For community posts, use IDs like 'community-12345' from sap_community_search results."
+                  description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api', '/ui5-typescript', '/abap-cheat-sheets', '/sap-styleguides', '/abap-fiori-showcase', '/cap-fiori-showcase' for general docs, '/abap-docs-758', '/abap-docs-757', '/abap-docs-756', '/abap-docs-755', '/abap-docs-754', '/abap-docs-753', '/abap-docs-752', '/abap-docs-latest' for ABAP documentation by version, or a specific document ID like '/openui5-api/sap/m/Button' or '/abap-docs-758/abeninline_declarations' for detailed documentation. For community posts, use IDs like 'community-12345' from sap_community_search results."
                 },
                 topic: {
                   type: "string",
@@ -188,46 +184,7 @@ export class BaseServerHandler {
               required: ["result_id"]
             }
           },
-          {
-            name: "abap_search",
-            description: "Search the official ABAP Keyword Documentation across multiple ABAP versions for comprehensive language syntax and programming concepts. This is the authoritative source for ABAP language constructs, statements, and official documentation. Use this for detailed ABAP syntax, language features, and official SAP documentation. For ABAP examples, best practices, and community guidelines, use sap_docs_search instead.",
-            inputSchema: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description: "What to search for in official ABAP documentation. Examples: 'SELECT statements', 'internal tables', 'object orientation', 'exception handling', 'function modules', 'classes', 'methods', 'data types', 'ABAP SQL', 'CDS views', 'LOOP statements', 'IF conditions', 'TRY CATCH', or any ABAP language construct."
-                },
-                version: {
-                  type: "string",
-                  description: "ABAP version to search in. Examples: '7.58', '7.57', '7.56', 'latest'. Defaults to '7.58' if not specified."
-                },
-                limit: {
-                  type: "number",
-                  description: "Maximum number of results to return. Defaults to 10 if not specified."
-                }
-              },
-              required: ["query"]
-            }
-          },
-          {
-            name: "abap_get",
-            description: "Retrieve the full content of a specific ABAP documentation bundle from the official ABAP Keyword Documentation. Use the IDs returned from abap_search to get the complete bundled documentation content. Each bundle combines multiple related ABAP documentation pages for comprehensive coverage of a topic.",
-            inputSchema: {
-              type: "object",
-              properties: {
-                doc_id: {
-                  type: "string",
-                  description: "The ID from abap_search results (e.g., 'abap-7.58-bundles-abap-keyword-documentation-...'). This ID is used to fetch the complete bundled documentation content."
-                },
-                version: {
-                  type: "string", 
-                  description: "ABAP version for the documentation. Defaults to '7.58' if not specified."
-                }
-              },
-              required: ["doc_id"]
-            }
-          }
+
         ]
       };
     });
@@ -419,102 +376,7 @@ export class BaseServerHandler {
         }
       }
 
-      if (name === "abap_search") {
-        const { query, version = '7.58', limit = 10 } = args as { 
-          query: string; 
-          version?: string; 
-          limit?: number; 
-        };
-        
-        // Log the ABAP search request
-        logger.logRequest(name, query, clientMetadata);
-        
-        try {
-          const results = await searchAbapDocs(query, version, limit);
-          
-          if (results.results.length === 0) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `No ABAP documentation found for "${query}" in version ${version}. Try searching for ABAP language concepts like 'SELECT statements', 'internal tables', 'classes', 'methods', 'exception handling', or 'data types'.`
-                }
-              ]
-            };
-          }
-          
-          // Format results similar to other search tools
-          const formattedResults = results.results.map((result, index) => {
-            return `⭐️ **${result.id}** (Score: ${result.score.toFixed(2)})
-   ${result.title} (ABAP ${result.version})
-   ${result.preview}
-   Use in abap_get`;
-          }).join('\n\n');
-          
-          const summary = `Found ${results.results.length} ABAP documentation bundles for '${query}' (version ${version}):\n\n${formattedResults}`;
-          
-          return {
-            content: [
-              {
-                type: "text",
-                text: summary
-              }
-            ]
-          };
-        } catch (error: any) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error searching ABAP documentation: ${error.message}`
-              }
-            ]
-          };
-        }
-      }
 
-      if (name === "abap_get") {
-        const { doc_id, version = '7.58' } = args as { 
-          doc_id: string; 
-          version?: string; 
-        };
-        
-        // Log the ABAP get request
-        logger.logRequest(name, doc_id, clientMetadata);
-        
-        try {
-          const content = await getAbapDoc(doc_id, version);
-          
-          if (!content) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `ABAP documentation not found for ID: ${doc_id}. Use abap_search first to get valid document IDs.`
-                }
-              ]
-            };
-          }
-          
-          return {
-            content: [
-              {
-                type: "text",
-                text: content
-              }
-            ]
-          };
-        } catch (error: any) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error retrieving ABAP documentation: ${error.message}`
-              }
-            ]
-          };
-        }
-      }
 
       throw new Error(`Unknown tool: ${name}`);
     });
