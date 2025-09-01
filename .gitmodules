@@ -42,3 +42,23 @@
 	path = sources/ui5-cc-spreadsheetimporter
 	url = https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter.git
 	branch = main
+[submodule "sources/abap-cheat-sheets"]
+	path = sources/abap-cheat-sheets
+	url = https://github.com/SAP-samples/abap-cheat-sheets.git
+	branch = main
+[submodule "sources/sap-styleguides"]
+	path = sources/sap-styleguides
+	url = https://github.com/SAP/styleguides.git
+	branch = main
+[submodule "sources/dsag-abap-leitfaden"]
+	path = sources/dsag-abap-leitfaden
+	url = https://github.com/1DSAG/ABAP-Leitfaden.git
+	branch = main
+[submodule "sources/abap-fiori-showcase"]
+	path = sources/abap-fiori-showcase
+	url = https://github.com/SAP-samples/abap-platform-fiori-feature-showcase.git
+	branch = main
+[submodule "sources/cap-fiori-showcase"]
+	path = sources/cap-fiori-showcase
+	url = https://github.com/SAP-samples/fiori-elements-feature-showcase.git
+	branch = main

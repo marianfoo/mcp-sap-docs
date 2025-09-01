@@ -1,0 +1,325 @@
+# Adding New GitHub Documentation Sources (Rule)
+
+**Complete guide for adding new GitHub repositories as documentation sources to the SAP docs MCP project.**
+
+## Overview
+
+The SAP docs MCP uses a metadata-driven architecture that makes adding new GitHub sources straightforward. The process involves 5 main steps:
+
+1. **Git Submodule Setup** - Add repository as submodule
+2. **Metadata Configuration** - Define source in `src/metadata.json`
+3. **Build Configuration** - Add to build scripts
+4. **URL Generation** - Configure URL patterns
+5. **Testing & Validation** - Add tests and verify functionality
+
+## Step-by-Step Process
+
+### 1. Git Submodule Setup
+
+Add the new repository as a Git submodule in `.gitmodules`:
+
+```bash
+# Example: Adding UI5 TypeScript source
+[submodule "sources/ui5-typescript"]
+    path = sources/ui5-typescript
+    url = https://github.com/UI5/typescript.git
+    branch = gh-pages  # Specify the correct branch
+```
+
+**Key considerations:**
+
+- Use descriptive path names under `sources/`
+- Specify the correct branch (main, master, gh-pages, etc.)
+- Ensure the repository contains documentation files (typically `.md` files)
+
+### 2. Metadata Configuration
+
+Add source definition to `src/metadata.json` in the `sources` array:
+
+```json
+{
+  "id": "ui5-typescript",
+  "type": "documentation",
+  "lang": "en",
+  "boost": 0.1,
+  "tags": ["ui5", "typescript", "types", "frontend"],
+  "description": "UI5 TypeScript",
+  "libraryId": "/ui5-typescript",
+  "sourcePath": "ui5-typescript",
+  "baseUrl": "https://github.com/UI5/typescript/blob/gh-pages",
+  "pathPattern": "/{file}",
+  "anchorStyle": "github"
+}
+```
+
+**Required fields:**
+
+- `id`: Unique identifier for the source
+- `type`: "documentation", "api", or "samples"
+- `libraryId`: Library identifier (usually `/` + id)
+- `sourcePath`: Path under `sources/` directory
+- `baseUrl`: Base URL for generated documentation links
+- `pathPattern`: URL pattern (`{file}` is replaced with filename)
+- `anchorStyle`: "github", "docsify", or "custom"
+
+**Optional enhancements:**
+
+- Add to `synonyms` array for query expansion
+- Add to `acronyms` object for abbreviation handling
+- Add to `contextBoosts` for intelligent query routing
+- Add to `libraryMappings` for ID resolution
+- Add to `contextEmojis` for UI presentation
+
+### 3. Build Configuration
+
+Add source to `scripts/build-index.ts` in the `SOURCES` array:
+
+```typescript
+{
+  repoName: "ui5-typescript",
+  absDir: join("sources", "ui5-typescript"),
+  id: "/ui5-typescript",
+  name: "UI5 TypeScript",
+  description: "Official entry point to anything TypeScript related for UI5",
+  filePattern: "*.md",  // Adjust pattern as needed
+  type: "markdown" as const
+}
+```
+
+**File patterns:**
+
+- `*.md` - Root level markdown files only
+- `**/*.md` - All markdown files recursively
+- `**/*.mdx` - MDX files (like Cloud SDK sources)
+- Custom patterns for specific structures
+
+### 4. URL Generation Configuration
+
+Add source to URL generator registry in `src/lib/url-generation/index.ts`:
+
+```typescript
+const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfig) => BaseUrlGenerator> = {
+  // ... existing generators ...
+  '/ui5-typescript': GenericUrlGenerator,  // Use appropriate generator
+  '/ui5-cc-spreadsheetimporter': GenericUrlGenerator,
+};
+```
+
+**Generator types:**
+
+- `GenericUrlGenerator` - For standard GitHub repos or documentation sites
+- `CloudSdkUrlGenerator` - For Cloud SDK-style documentation
+- `SapUi5UrlGenerator` - For UI5 API documentation
+- `CapUrlGenerator` - For CAP-style documentation
+- `Wdi5UrlGenerator` - For wdi5-style documentation
+
+### 5. Testing & Validation
+
+Add test cases to `test/comprehensive-url-generation.test.ts`:
+
+```typescript
+// Add path mapping in getSourceFilePath function
+const pathMappings: Record<string, { basePath: string; transform?: (relFile: string) => string }> = {
+  // ... existing mappings ...
+  '/ui5-typescript': { basePath: 'sources/ui5-typescript' },
+  '/ui5-cc-spreadsheetimporter': { basePath: 'sources/ui5-cc-spreadsheetimporter/docs' }
+};
+
+// Add test case in testCases array
+{
+  name: 'UI5 TypeScript - FAQ Documentation',
+  libraryId: '/ui5-typescript',
+  relFile: 'faq.md',
+  expectedUrl: 'https://github.com/UI5/typescript/blob/gh-pages/faq#faq---frequently-asked-questions-for-the-ui5-type-definitions',
+  frontmatter: '',
+  content: '# FAQ - Frequently Asked Questions for the UI5 Type Definitions\n\nWhile the [main page](README.md) answers the high-level questions...'
+}
+```
+
+## Common URL Pattern Examples
+
+### GitHub Repository URLs
+
+```json
+{
+  "baseUrl": "https://github.com/UI5/typescript/blob/gh-pages",
+  "pathPattern": "/{file}",
+  "anchorStyle": "github"
+}
+// Generates: https://github.com/UI5/typescript/blob/gh-pages/faq.md
+```
+
+### Documentation Site URLs
+
+```json
+{
+  "baseUrl": "https://docs.spreadsheet-importer.com",
+  "pathPattern": "/pages/{file}/",
+  "anchorStyle": "github"
+}
+// Generates: https://docs.spreadsheet-importer.com/pages/Checks/
+```
+
+### GitHub Pages URLs
+
+```json
+{
+  "baseUrl": "https://sap.github.io/ui5-tooling/v4",
+  "pathPattern": "/pages/{file}",
+  "anchorStyle": "github"
+}
+// Generates: https://sap.github.io/ui5-tooling/v4/pages/Builder
+```
+
+## Build and Deployment Commands
+
+```bash
+# 1. Initialize new submodules
+./setup.sh
+
+# 2. Build search index
+npm run build
+
+# 3. Run URL generation tests
+npm run test:url-generation
+
+# 4. Test specific source URLs
+npx tsx test/quick-url-test.ts [source-filter] [count]
+
+# 5. Restart MCP server
+npm start
+```
+
+## Validation Checklist
+
+- [ ] **Submodule added** to `.gitmodules` with correct branch
+- [ ] **Source definition** added to `src/metadata.json`
+- [ ] **Build configuration** added to `scripts/build-index.ts`
+- [ ] **URL generator** mapped in `src/lib/url-generation/index.ts`
+- [ ] **Test cases** added to `test/comprehensive-url-generation.test.ts`
+- [ ] **Enhanced metadata** (synonyms, context boosts, emojis) if needed
+- [ ] **All URL tests** passing (`npm run test:url-generation`)
+- [ ] **Live URL test** working (`npx tsx test/quick-url-test.ts [source]`)
+- [ ] **Build completes** successfully (`npm run build`)
+- [ ] **Search integration** working (test with actual queries)
+
+## Common Pitfalls & Troubleshooting
+
+### 1. Wrong Branch Specified
+
+**Problem**: Submodule points to wrong branch (e.g., `main` instead of `gh-pages`)
+**Solution**: Check repository structure and update branch in `.gitmodules`
+
+### 2. Incorrect File Patterns
+
+**Problem**: No files found during build process
+**Solution**: Verify `filePattern` in build configuration matches actual file structure
+
+### 3. URL Generation Failures
+
+**Problem**: Generated URLs return 404 errors
+**Solution**: Check `baseUrl` and `pathPattern` match the actual documentation site structure
+
+### 4. Missing Path Mappings
+
+**Problem**: Test cases fail with "file not found" errors
+**Solution**: Add correct path mapping in `test/comprehensive-url-generation.test.ts`
+
+### 5. Build Index Errors
+
+**Problem**: Build fails with source not found
+**Solution**: Ensure `sourcePath` in metadata matches actual directory structure
+
+## Example: Complete Addition Process
+
+Here's the complete process used to add UI5 TypeScript source:
+
+```bash
+# 1. Add to .gitmodules
+[submodule "sources/ui5-typescript"]
+    path = sources/ui5-typescript
+    url = https://github.com/UI5/typescript.git
+    branch = gh-pages
+```
+
+```json
+// 2. Add to src/metadata.json
+{
+  "id": "ui5-typescript",
+  "type": "documentation",
+  "lang": "en",
+  "boost": 0.1,
+  "tags": ["ui5", "typescript", "types", "frontend"],
+  "description": "UI5 TypeScript",
+  "libraryId": "/ui5-typescript",
+  "sourcePath": "ui5-typescript",
+  "baseUrl": "https://github.com/UI5/typescript/blob/gh-pages",
+  "pathPattern": "/{file}",
+  "anchorStyle": "github"
+}
+```
+
+```typescript
+// 3. Add to scripts/build-index.ts
+{
+  repoName: "ui5-typescript",
+  absDir: join("sources", "ui5-typescript"),
+  id: "/ui5-typescript",
+  name: "UI5 TypeScript",
+  description: "Official entry point to anything TypeScript related for UI5",
+  filePattern: "*.md",
+  type: "markdown" as const
+}
+```
+
+```typescript
+// 4. Add to src/lib/url-generation/index.ts
+'/ui5-typescript': GenericUrlGenerator,
+```
+
+```typescript
+// 5. Add test case
+{
+  name: 'UI5 TypeScript - FAQ Documentation',
+  libraryId: '/ui5-typescript',
+  relFile: 'faq.md',
+  expectedUrl: 'https://github.com/UI5/typescript/blob/gh-pages/faq#faq---frequently-asked-questions-for-the-ui5-type-definitions',
+  frontmatter: '',
+  content: '# FAQ - Frequently Asked Questions for the UI5 Type Definitions...'
+}
+```
+
+## System Integration Details
+
+### Metadata Loading
+
+- Sources are loaded once at startup via `src/lib/metadata.ts`
+- Type-safe APIs provide configuration access throughout the system
+- No code changes needed after metadata updates
+
+### Search Integration
+
+- New sources automatically included in FTS5 search index
+- Context awareness and scoring applied based on metadata
+- Query expansion using synonyms and acronyms
+
+### URL Generation
+
+- Source-specific generators handle different documentation patterns
+- Fallback to GenericUrlGenerator for standard repositories
+- Anchor generation based on content structure
+
+### Build Process
+
+- Index building processes all configured sources automatically
+- FTS database includes new source content
+- TypeScript compilation handles any metadata changes
+
+@file .gitmodules
+@file src/metadata.json
+@file scripts/build-index.ts
+@file src/lib/url-generation/index.ts
+@file test/comprehensive-url-generation.test.ts
+@file src/lib/metadata.ts
+@file docs/ARCHITECTURE.md
+@file docs/DEV.md

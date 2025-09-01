@@ -8,6 +8,7 @@ import { CloudSdkUrlGenerator } from './cloud-sdk.js';
 import { SapUi5UrlGenerator } from './sapui5.js';
 import { CapUrlGenerator } from './cap.js';
 import { Wdi5UrlGenerator } from './wdi5.js';
+import { DsagUrlGenerator } from './dsag.js';
 import { GenericUrlGenerator } from './GenericUrlGenerator.js';
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
 
@@ -40,12 +41,19 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   // wdi5 testing framework
   '/wdi5': Wdi5UrlGenerator,
   
+  // DSAG ABAP Leitfaden with custom GitHub Pages URL pattern
+  '/dsag-abap-leitfaden': DsagUrlGenerator,
+  
   // Generic sources
   '/ui5-tooling': GenericUrlGenerator,
   '/cloud-mta-build-tool': GenericUrlGenerator,
   '/ui5-webcomponents': GenericUrlGenerator,
   '/ui5-typescript': GenericUrlGenerator,
   '/ui5-cc-spreadsheetimporter': GenericUrlGenerator,
+  '/abap-cheat-sheets': GenericUrlGenerator,
+  '/sap-styleguides': GenericUrlGenerator,
+  '/abap-fiori-showcase': GenericUrlGenerator,
+  '/cap-fiori-showcase': GenericUrlGenerator,
 };
 
 /**
@@ -110,6 +118,7 @@ export { CloudSdkUrlGenerator } from './cloud-sdk.js';
 export { SapUi5UrlGenerator } from './sapui5.js';
 export { CapUrlGenerator } from './cap.js';
 export { Wdi5UrlGenerator } from './wdi5.js';
+export { DsagUrlGenerator } from './dsag.js';
 export { GenericUrlGenerator } from './GenericUrlGenerator.js';
 
 // Re-export convenience functions for backward compatibility
@@ -117,3 +126,4 @@ export { generateCloudSdkUrl, generateCloudSdkAiUrl, generateCloudSdkUrlForLibra
 export { generateSapUi5Url, generateOpenUi5ApiUrl, generateOpenUi5SampleUrl, generateUi5UrlForLibrary } from './sapui5.js';
 export { generateCapUrl, generateCapCdsUrl, generateCapTutorialUrl } from './cap.js';
 export { generateWdi5Url, generateWdi5ConfigUrl, generateWdi5SelectorUrl } from './wdi5.js';
+export { generateDsagUrl } from './dsag.js';

@@ -167,6 +167,51 @@ const SOURCES: SourceConfig[] = [
     description: "UI5 Custom Control for importing spreadsheet data",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "abap-cheat-sheets",
+    absDir: join("sources", "abap-cheat-sheets"),
+    id: "/abap-cheat-sheets",
+    name: "ABAP Cheat Sheets",
+    description: "Comprehensive ABAP syntax examples and cheat sheets",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "sap-styleguides",
+    absDir: join("sources", "sap-styleguides"),
+    id: "/sap-styleguides",
+    name: "SAP Style Guides",
+    description: "SAP coding style guides and best practices including Clean ABAP",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "dsag-abap-leitfaden",
+    absDir: join("sources", "dsag-abap-leitfaden", "docs"),
+    id: "/dsag-abap-leitfaden",
+    name: "DSAG ABAP Leitfaden",
+    description: "German ABAP guidelines and best practices by DSAG",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-fiori-showcase",
+    absDir: join("sources", "abap-fiori-showcase"),
+    id: "/abap-fiori-showcase",
+    name: "ABAP Platform Fiori Feature Showcase",
+    description: "Annotation-driven SAP Fiori Elements features for OData V4 using ABAP RAP",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cap-fiori-showcase", 
+    absDir: join("sources", "cap-fiori-showcase"),
+    id: "/cap-fiori-showcase",
+    name: "CAP Fiori Elements Feature Showcase",
+    description: "SAP Fiori Elements features and annotations showcase using CAP",
+    filePattern: "*.md",
+    type: "markdown" as const
   }
 ];
 
