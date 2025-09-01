@@ -1,6 +1,6 @@
 {
   "name": "mcp-sap-docs",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
@@ -12,7 +12,7 @@
     "start:http": "node dist/src/http-server.js",
     "start:streamable": "node dist/src/streamable-http-server.js",
     "inspect": "npx @modelcontextprotocol/inspector",
-    "test": "npm run test:url-generation && npm run test:abap && npm run test:integration", 
+    "test": "npm run test:url-generation && npm run test:abap && npm run test:integration",
     "test:url-generation": "npm run build:tsc && npx vitest run test/comprehensive-url-generation.test.ts",
     "test:abap": "npm run build:tsc && npx vitest run test/abap-search.test.ts",
     "test:url-generation:debug": "npm run build:tsc && DEBUG_TESTS=true npx vitest run test/comprehensive-url-generation.test.ts",
