@@ -17,6 +17,17 @@ jobs:
     steps:
       - name: Check out repo (for action context only)
         uses: actions/checkout@v4
+        with:
+          # Fetch more than just the triggering commit to handle workflow reruns
+          fetch-depth: 10
+          
+      - name: Ensure we have the latest main branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          echo "Current HEAD: $(git rev-parse HEAD)"
+          echo "Latest main: $(git rev-parse origin/main)"
 
       - name: Preflight verify required secrets are present
         run: |
@@ -57,12 +68,56 @@ jobs:
           sed -i 's/const VERSION = "[0-9]*\.[0-9]*\.[0-9]*";/const VERSION = "'${{ env.NEW_VERSION }}'";/g' src/streamable-http-server.ts
           
       - name: Commit version bump
+        id: version_bump
+        continue-on-error: true
         run: |
+          set -e
+          
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # Check if there are any changes to commit
           git add package.json package-lock.json src/streamable-http-server.ts
-          git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]" || exit 0
-          git push
+          if ! git diff --staged --quiet; then
+            
+            if git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]"; then
+              echo "Version bump committed successfully"
+              
+              # Handle potential conflicts from concurrent pushes or workflow reruns
+              echo "Attempting to push version bump..."
+              if ! git push; then
+                echo "Push failed, likely due to remote changes. Pulling and retrying..."
+                git fetch origin main
+                
+                # Try rebase first
+                if git rebase origin/main; then
+                  echo "Rebase successful, pushing again..."
+                  git push
+                else
+                  echo "Rebase failed, attempting merge strategy..."
+                  git rebase --abort
+                  git merge origin/main --no-edit
+                  git push
+                fi
+              fi
+              echo "✅ Version bump pushed successfully"
+            else
+              echo "ℹ️  No version changes to commit"
+            fi
+          else
+            echo "ℹ️  No version changes detected"
+          fi
+          
+      - name: Handle version bump failure
+        if: steps.version_bump.outcome == 'failure'
+        run: |
+          echo "⚠️  Version bump failed, but continuing with deployment"
+          echo "This can happen with concurrent workflows or when rerunning failed deployments"
+          echo "The deployment will proceed with the current version"
+          
+          # Reset any partial git state
+          git reset --hard HEAD
+          git clean -fd
 
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
