@@ -191,9 +191,9 @@ Create or edit `~/.cursor/mcp.json`:
 
 Eclipse users can integrate the SAP Docs MCP server with GitHub Copilot for seamless access to SAP development documentation.
 
-> ⚠️ **Important Limitation**: GitHub Copilot currently does **not support** Eclipse ADT (ABAP Development Tools) due to the `semanticfs` URI scheme used for ABAP development. This affects ABAP-specific features when working directly with SAP systems in Eclipse ADT. See [GitHub Issue #171406](https://github.com/orgs/community/discussions/171406) for details.
+> ⚠️ **Important Limitation**: GitHub Copilot did **not support** Eclipse ADT (ABAP Development Tools) due to the `semanticfs` URI scheme used for ABAP development. See [GitHub Issue #171406](https://github.com/orgs/community/discussions/171406) for details.
 > 
-> **Workaround**: For ABAP development with Copilot, use VS Code with ABAP Remote File System instead, where this functionality works as expected.
+> **Workaround**: Make sure your Copilot Version in Eclipse is up to date to make it work!
 
 <details>
 <summary><b>Remote (recommended) — hosted server</b></summary>

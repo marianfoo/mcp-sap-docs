@@ -1341,7 +1341,7 @@ export async function fetchLibraryDocumentation(
   for (const lib of Object.values(index)) {
     for (const doc of lib.docs) {
       allDocs.push({ lib, doc });
-      // If this matches a specific document ID, return just that document
+      // Try exact match first (for section documents with fragments)
       if (doc.id === libraryIdOrDocId) {
         const sourcePath = getSourcePath(lib.id);
         if (!sourcePath) {
@@ -1379,6 +1379,113 @@ ${content}
           return content;
         }
       }
+    }
+  }
+  
+  // If no exact match found and the ID contains a fragment, try stripping the fragment
+  // This handles cases where fragments are used for navigation but don't exist as separate documents
+  if (libraryIdOrDocId.includes('#')) {
+    const baseId = libraryIdOrDocId.split('#')[0];
+    
+    // Try to find a document with the base ID (without fragment)
+    for (const lib of Object.values(index)) {
+      for (const doc of lib.docs) {
+        if (doc.id === baseId) {
+          const sourcePath = getSourcePath(lib.id);
+          if (!sourcePath) {
+            throw new Error(`Unknown library ID: ${lib.id}`);
+          }
+          
+          const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
+          const content = await fs.readFile(abs, "utf8");
+          
+          // For JavaScript API files, format the content for better readability
+          if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
+            return formatJSDocContent(content, doc.title || '');
+          }
+          // For sample files, format them appropriately
+          else if (lib.id === '/openui5-samples') {
+            return formatSampleContent(content, doc.relFile, doc.title || '');
+          }
+          // For documented libraries, add URL context
+          else if (getDocUrlConfig(lib.id)) {
+            const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
+            const libName = lib.id.replace('/', '').toUpperCase();
+            
+            return `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+          } else {
+            return content;
+          }
+        }
+      }
+    }
+    
+    // Try library-level lookup with base ID
+    const baseLib = index[baseId];
+    if (baseLib) {
+      const term = topic.toLowerCase();
+      const targets = term
+        ? baseLib.docs.filter(
+            (d) =>
+              d.title.toLowerCase().includes(term) ||
+              d.description.toLowerCase().includes(term)
+          )
+        : baseLib.docs;
+
+      if (!targets.length) return `No topic "${topic}" found inside ${baseId}.`;
+
+      const parts: string[] = [];
+      for (const doc of targets) {
+        const sourcePath = getSourcePath(baseLib.id);
+        if (!sourcePath) {
+          throw new Error(`Unknown library ID: ${baseLib.id}`);
+        }
+        
+        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
+        const content = await fs.readFile(abs, "utf8");
+        
+        // For JavaScript API files, format the content for better readability
+        if (doc.relFile && doc.relFile.endsWith('.js') && baseLib.id === '/openui5-api') {
+          const formattedContent = formatJSDocContent(content, doc.title || '');
+          parts.push(formattedContent);
+        }
+        // For sample files, format them appropriately
+        else if (baseLib.id === '/openui5-samples') {
+          const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
+          parts.push(formattedContent);
+        }
+        // For documented libraries, add URL context
+        else if (getDocUrlConfig(baseLib.id)) {
+          const documentationUrl = generateDocumentationUrl(baseLib.id, doc.relFile, content);
+          const libName = baseLib.id.replace('/', '').toUpperCase();
+          
+          const formattedContent = `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+          parts.push(formattedContent);
+        } else {
+          parts.push(content);
+        }
+      }
+      return parts.join("\n\n---\n\n");
     }
   }
   
