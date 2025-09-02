@@ -1,6 +1,14 @@
 /**
  * Base Server Handler - Shared functionality for MCP servers
  * Eliminates code duplication between stdio and HTTP server implementations
+ * 
+ * IMPORTANT FOR LLMs/AI ASSISTANTS:
+ * =================================
+ * The function names in this MCP server may appear with different prefixes depending on your MCP client:
+ * - Simple names: sap_docs_search, sap_community_search, sap_docs_get, sap_help_search, sap_help_get
+ * - Prefixed names: mcp_sap-docs-remote_sap_docs_search, mcp_sap-docs-remote_sap_community_search, etc.
+ * 
+ * Try the simple names first, then the prefixed versions if they don't work.
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -112,27 +120,70 @@ export class BaseServerHandler {
         tools: [
           {
             name: "sap_docs_search",
-            description: "Unified search across all SAP documentation sources including ABAP Keyword Documentation, UI5, CAP, testing frameworks, and development tools. Covers official ABAP language reference (multiple versions), SAPUI5 documentation, CAP documentation, wdi5 testing framework, OpenUI5 control APIs, UI5 Tooling, Cloud SDK, and more. Automatically detects ABAP versions from queries (e.g., 'LOOP 7.57' searches ABAP 7.57, 'SELECT latest' searches latest ABAP). Defaults to ABAP 7.58 for version-less ABAP queries.",
+            description: `SEARCH SAP DOCS: sap_docs_search(query="search terms")
+
+FUNCTION NAME: sap_docs_search (or mcp_sap-docs-remote_sap_docs_search)
+
+COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
+AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
+
+TYPICAL WORKFLOW:
+1. sap_docs_search(query="your search terms") 
+2. sap_docs_get(library_id="result_id_from_step_1")
+
+QUERY TIPS:
+• Be specific: "CAP action binary parameter" not just "CAP"
+• Include error codes: "415 error CAP action"
+• Use technical terms: "LargeBinary MediaType XMLHttpRequest"
+• For ABAP: Include version like "7.58" or "latest"`,
             inputSchema: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "What to search for. Examples: 'button' (finds UI5 Button controls), 'wizard' (finds UI5/CAP docs), 'annotation' (finds annotation docs), 'wdi5' (finds testing docs), 'ABAP SELECT statements' (finds ABAP docs), 'inline declarations' (finds ABAP syntax), 'LOOP 7.57' (auto-detects version 7.57), 'exception handling latest' (searches latest ABAP version). Supports ABAP version auto-detection from queries containing versions like '7.52', '7.53', '7.54', '7.55', '7.56', '7.57', '7.58', or 'latest'. Defaults to ABAP 7.58 for version-less ABAP queries."
+                  description: "Search terms using natural language. Be specific and include technical terms.",
+                  examples: [
+                    "CAP binary data LargeBinary MediaType",
+                    "UI5 button properties",
+                    "wdi5 testing locators", 
+                    "ABAP SELECT statements 7.58",
+                    "415 error CAP action parameter"
+                  ]
                 }
               },
               required: ["query"]
             }
           },
           {
-            name: "sap_community_search",
-            description: "Search the SAP Community for blog posts, discussions, and solutions related to SAPUI5 and CAP development. Returns real-time results from the SAP Community with links to the original content and IDs for retrieving full posts. Results include engagement data (kudos) when available and follow SAP Community's 'Best Match' ranking.",
+            name: "sap_community_search", 
+            description: `SEARCH SAP COMMUNITY: sap_community_search(query="search terms")
+
+FUNCTION NAME: sap_community_search (or mcp_sap-docs-remote_sap_community_search)
+
+FINDS: Blog posts, discussions, solutions from SAP Community
+INCLUDES: Engagement data (kudos), ranked by "Best Match"
+
+TYPICAL WORKFLOW:
+1. sap_community_search(query="your problem + error code")
+2. sap_docs_get(library_id="community-12345") for full posts
+
+BEST FOR TROUBLESHOOTING:
+• Include error codes: "415 error", "500 error"
+• Be specific: "CAP action binary upload 415"
+• Use real scenarios: "wizard implementation issues"`,
             inputSchema: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "What to search for in the SAP Community. Examples: 'wizard implementation', 'button best practices', 'authentication', 'deployment', 'fiori elements', or any SAP development topic. Searches both post titles and content for comprehensive results."
+                  description: "Search terms for SAP Community. Include error codes and specific technical details.",
+                  examples: [
+                    "CAP action parameter binary file upload 415 error",
+                    "wizard implementation best practices",
+                    "fiori elements authentication",
+                    "UI5 deployment issues",
+                    "wdi5 test automation problems"
+                  ]
                 }
               },
               required: ["query"]
@@ -140,17 +191,42 @@ export class BaseServerHandler {
           },
           {
             name: "sap_docs_get",
-            description: "Retrieve specific SAP documentation, UI5 control API details, wdi5 testing docs, or SAP Community posts. Use the IDs returned from sap_docs_search or sap_community_search to get full content. Works with library IDs, document IDs, and community post IDs (e.g., 'community-12345').",
+            description: `GET SPECIFIC DOCS: sap_docs_get(library_id="result_id")
+
+FUNCTION NAME: sap_docs_get (or mcp_sap-docs-remote_sap_docs_get)
+
+RETRIEVES: Full content from search results
+WORKS WITH: Library IDs, document IDs, community post IDs
+
+COMMON PATTERNS:
+• Broad exploration: library_id="/cap", topic="binary"
+• Specific API: library_id="/openui5-api/sap/m/Button" 
+• Community posts: library_id="community-12345"
+• ABAP docs: library_id="/abap-docs-758/abeninline_declarations"`,
             inputSchema: {
               type: "object",
               properties: {
                 library_id: {
                   type: "string",
-                  description: "Library or document ID from sap_docs_search results. Can be a library ID like '/sapui5', '/cap', '/wdi5', '/openui5-api', '/ui5-typescript', '/abap-cheat-sheets', '/sap-styleguides', '/abap-fiori-showcase', '/cap-fiori-showcase' for general docs, '/abap-docs-758', '/abap-docs-757', '/abap-docs-756', '/abap-docs-755', '/abap-docs-754', '/abap-docs-753', '/abap-docs-752', '/abap-docs-latest' for ABAP documentation by version, or a specific document ID like '/openui5-api/sap/m/Button' or '/abap-docs-758/abeninline_declarations' for detailed documentation. For community posts, use IDs like 'community-12345' from sap_community_search results."
+                  description: "ID from sap_docs_search or sap_community_search results. Use exact IDs returned by search functions.",
+                  examples: [
+                    "/cap",
+                    "/sapui5", 
+                    "/openui5-api/sap/m/Button",
+                    "/abap-docs-758",
+                    "community-12345"
+                  ]
                 },
                 topic: {
-                  type: "string",
-                  description: "Optional topic filter to narrow down results within a library. Examples: 'properties', 'events', 'methods', 'aggregations', 'routing', 'authentication', 'annotations', 'testing', 'locators', 'pageObjects'. Most useful with library IDs rather than specific document IDs."
+                  type: "string", 
+                  description: "Optional topic filter for library IDs only (not specific document IDs).",
+                  examples: [
+                    "binary",
+                    "authentication", 
+                    "properties",
+                    "methods",
+                    "locators"
+                  ]
                 }
               },
               required: ["library_id"]
@@ -158,27 +234,62 @@ export class BaseServerHandler {
           },
           {
             name: "sap_help_search",
-            description: "Search the SAP Help Portal using private APIs. This searches across all SAP Help documentation including product guides, implementation guides, and technical documentation. Returns real-time results from help.sap.com with IDs for retrieving full content.",
+            description: `SEARCH SAP HELP PORTAL: sap_help_search(query="product + topic")
+
+FUNCTION NAME: sap_help_search (or mcp_sap-docs-remote_sap_help_search)
+
+SEARCHES: Official SAP Help Portal (help.sap.com)
+COVERS: Product guides, implementation guides, technical documentation
+
+TYPICAL WORKFLOW:
+1. sap_help_search(query="product name + configuration topic")
+2. sap_help_get(result_id="sap-help-12345abc")
+
+BEST PRACTICES:
+• Include product names: "S/4HANA", "BTP", "Fiori"
+• Add specific tasks: "configuration", "setup", "deployment"
+• Use official SAP terminology`,
             inputSchema: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "What to search for in SAP Help Portal. Examples: 'S/4HANA configuration', 'Fiori Launchpad setup', 'BTP integration', 'ABAP development', 'SAP Analytics Cloud', or any SAP product or technical topic. Searches across all SAP Help content."
+                  description: "Search terms for SAP Help Portal. Include product names and specific topics.",
+                  examples: [
+                    "S/4HANA configuration",
+                    "Fiori Launchpad setup", 
+                    "BTP integration",
+                    "ABAP development guide",
+                    "SAP Analytics Cloud setup"
+                  ]
                 }
               },
               required: ["query"]
             }
           },
           {
-            name: "sap_help_get",
-            description: "Retrieve the full content of a specific SAP Help page. Use the IDs returned from sap_help_search to get the complete documentation page content. This uses the private SAP Help APIs to fetch metadata and page content.",
+            name: "sap_help_get", 
+            description: `GET SAP HELP PAGE: sap_help_get(result_id="sap-help-12345abc")
+
+FUNCTION NAME: sap_help_get (or mcp_sap-docs-remote_sap_help_get)
+
+RETRIEVES: Complete SAP Help Portal page content
+REQUIRES: Exact result_id from sap_help_search
+
+USAGE PATTERN:
+1. Get ID from sap_help_search results  
+2. Use exact ID (don't modify the format)
+3. Receive full page content + metadata`,
             inputSchema: {
               type: "object",
               properties: {
                 result_id: {
                   type: "string",
-                  description: "The ID from sap_help_search results (e.g., 'sap-help-12345abc'). This ID is used to fetch the complete page content including metadata."
+                  description: "Exact ID from sap_help_search results. Copy the ID exactly as returned.",
+                  examples: [
+                    "sap-help-12345abc",
+                    "sap-help-98765def"
+                  ]
                 }
               },
               required: ["result_id"]
@@ -214,7 +325,14 @@ export class BaseServerHandler {
               content: [
                 {
                   type: "text",
-                  text: `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication', 'fiori elements', 'rap'. For detailed ABAP language syntax, use abap_search instead.`
+                  text: `No results for "${query}".
+
+TRY INSTEAD:
+• UI5 controls: "button", "table", "wizard"  
+• CAP topics: "actions", "authentication", "media", "binary"
+• Testing: "wdi5", "locators", "e2e"
+• ABAP: Use version numbers like "SELECT 7.58"
+• Errors: Include error codes like "415 error CAP action"`
                 }
               ]
             };
@@ -254,7 +372,14 @@ export class BaseServerHandler {
                 content: [
                   {
                     type: "text",
-                    text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication', 'fiori elements', 'rap'. For detailed ABAP language syntax, use abap_search instead.`
+                    text: res.error || `No results for "${query}".
+
+TRY INSTEAD:
+• UI5 controls: "button", "table", "wizard"  
+• CAP topics: "actions", "authentication", "media", "binary"
+• Testing: "wdi5", "locators", "e2e"
+• ABAP: Use version numbers like "SELECT 7.58"
+• Errors: Include error codes like "415 error CAP action"`
                   }
                 ]
               };
@@ -276,7 +401,13 @@ export class BaseServerHandler {
               content: [
                 {
                   type: "text",
-                  text: `Search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
+                  text: `Search temporarily unavailable. 
+
+NEXT STEPS:
+• Wait 30 seconds and retry
+• Try sap_community_search instead
+• Use more specific search terms
+• Error ID: ${timing.requestId}`
                 }
               ]
             };
