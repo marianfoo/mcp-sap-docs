@@ -209,8 +209,8 @@ jobs:
             fi
             echo "✅ Memory OK: ${AVAILABLE_MB_MEM}MB available"
 
-            echo "==> Stop services gracefully before build"
-            pm2 stop all || true
+            echo "==> Stop MCP services gracefully before build"
+            pm2 stop mcp-sap-proxy mcp-sap-http mcp-sap-streamable || true
             sleep 3
             
             echo "==> Run setup (shallow, single-branch submodules + build)"
@@ -227,7 +227,7 @@ jobs:
             mkdir -p /opt/mcp-sap/logs
             chown -R "$USER":"$USER" /opt/mcp-sap/logs
 
-            echo "==> (Re)start PM2 processes with BM25 search support"
+            echo "==> (Re)start MCP services with BM25 search support"
             # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001; Streamable HTTP on 127.0.0.1:3122
             pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-proxy      || pm2 restart mcp-sap-proxy
             pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http       || pm2 restart mcp-sap-http
