@@ -98,7 +98,13 @@ async function main() {
 
   // Handle all MCP Streamable HTTP requests (GET, POST, DELETE) on a single endpoint
   app.all('/mcp', async (req: Request, res: Response) => {
-    console.log(`Received ${req.method} request to /mcp`);
+    const requestId = `http_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    logger.debug(`Received ${req.method} request to /mcp`, { 
+      requestId,
+      userAgent: req.headers['user-agent'],
+      contentLength: req.headers['content-length'],
+      sessionId: req.headers['mcp-session-id'] as string || 'none'
+    });
     
     try {
       // Check for existing session ID
@@ -108,6 +114,11 @@ async function main() {
       if (sessionId && transports[sessionId]) {
         // Reuse existing transport
         transport = transports[sessionId];
+        logger.logTransportEvent('transport_reused', sessionId, { 
+          requestId, 
+          method: req.method,
+          transportCount: Object.keys(transports).length
+        });
       } else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
         // New initialization request - create new transport
         transport = new StreamableHTTPServerTransport({
@@ -115,7 +126,10 @@ async function main() {
           eventStore, // Enable resumability
           onsessioninitialized: (sessionId: string) => {
             // Store the transport by session ID when session is initialized
-            console.log(`StreamableHTTP session initialized with ID: ${sessionId}`);
+            logger.logTransportEvent('session_initialized', sessionId, { 
+              requestId,
+              transportCount: Object.keys(transports).length + 1
+            });
             transports[sessionId] = transport;
           }
         });
@@ -124,7 +138,10 @@ async function main() {
         transport.onclose = () => {
           const sid = transport.sessionId;
           if (sid && transports[sid]) {
-            console.log(`Transport closed for session ${sid}, removing from transports map`);
+            logger.logTransportEvent('session_closed', sid, { 
+              requestId,
+              transportCount: Object.keys(transports).length - 1
+            });
             delete transports[sid];
           }
         };
@@ -132,8 +149,22 @@ async function main() {
         // Connect the transport to the MCP server
         const server = createServer();
         await server.connect(transport);
+        
+        logger.logTransportEvent('transport_created', undefined, { 
+          requestId,
+          method: req.method
+        });
       } else {
         // Invalid request - no session ID or not initialization request
+        logger.warn('Invalid MCP request', {
+          requestId,
+          method: req.method,
+          hasSessionId: !!sessionId,
+          isInitRequest: isInitializeRequest(req.body),
+          sessionId: sessionId || 'none',
+          userAgent: req.headers['user-agent']
+        });
+        
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
@@ -148,13 +179,21 @@ async function main() {
       // Handle the request with the transport
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
-      console.error('Error handling MCP request:', error);
+      logger.error('Error handling MCP request', {
+        requestId,
+        error: String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        method: req.method,
+        sessionId: req.headers['mcp-session-id'] as string || 'none',
+        userAgent: req.headers['user-agent']
+      });
+      
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
           error: {
             code: -32603,
-            message: 'Internal server error',
+            message: `Internal server error. Request ID: ${requestId}`,
           },
           id: null,
         });
@@ -214,20 +253,41 @@ Health check: GET /health
     pid: process.pid
   });
 
+  // Set up performance monitoring (every 5 minutes)
+  const performanceInterval = setInterval(() => {
+    logger.logPerformanceMetrics();
+    logger.info('Active sessions status', {
+      activeSessions: Object.keys(transports).length,
+      sessionIds: Object.keys(transports),
+      timestamp: new Date().toISOString()
+    });
+  }, 5 * 60 * 1000);
+
   // Handle server shutdown
   process.on('SIGINT', async () => {
-    console.log('Shutting down server...');
+    logger.info('Shutdown signal received, closing server gracefully');
+    
+    // Clear performance monitoring
+    clearInterval(performanceInterval);
+    
     // Close all active transports to properly clean up resources
-    for (const sessionId in transports) {
+    const sessionIds = Object.keys(transports);
+    logger.info(`Closing ${sessionIds.length} active sessions`);
+    
+    for (const sessionId of sessionIds) {
       try {
-        console.log(`Closing transport for session ${sessionId}`);
+        logger.logTransportEvent('session_shutdown', sessionId);
         await transports[sessionId].close();
         delete transports[sessionId];
       } catch (error) {
-        console.error(`Error closing transport for session ${sessionId}:`, error);
+        logger.error('Error closing transport during shutdown', {
+          sessionId,
+          error: String(error)
+        });
       }
     }
-    console.log('Server shutdown complete');
+    
+    logger.info('Server shutdown complete');
     process.exit(0);
   });
 }

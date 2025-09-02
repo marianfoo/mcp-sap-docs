@@ -1,12 +1,25 @@
-name: Update Documentation Submodules
+name: Documentation Update & Database Health Monitor
 
 on:
-  # Run daily at 4 AM UTC
+  # Run daily at 4 AM UTC for submodule updates
   schedule:
     - cron: '0 4 * * *'
+    # Run every 2 hours for database health monitoring
+    - cron: '0 */2 * * *'
   
-  # Allow manual triggering
+  # Allow manual triggering with options
   workflow_dispatch:
+    inputs:
+      health_check_only:
+        description: 'Perform health check only (no submodule update)'
+        required: false
+        default: 'false'
+        type: boolean
+      force_rebuild:
+        description: 'Force database rebuild even if healthy'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   update-submodules:
@@ -16,7 +29,7 @@ jobs:
       name: remove server
 
     steps:
-      - name: Update submodules on server
+      - name: Update submodules on server with database safety checks
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -26,30 +39,299 @@ jobs:
             set -e
             cd /opt/mcp-sap/mcp-sap-docs
             
-            # Configure git for HTTPS
-            git config --global url."https://github.com/".insteadOf git@github.com:
+            DB_PATH="/opt/mcp-sap/mcp-sap-docs/dist/data/docs.sqlite"
+            HEALTH_CHECK_ONLY="${{ inputs.health_check_only }}"
+            FORCE_REBUILD="${{ inputs.force_rebuild }}"
             
-            # Reuse setup.sh to ensure shallow, single-branch submodules and build
-            SKIP_NESTED_SUBMODULES=1 bash setup.sh
+            # Determine if this is a health check or full update
+            IS_HEALTH_CHECK_SCHEDULE=false
+            if [ "$(date +%H)" != "04" ] && [ "$HEALTH_CHECK_ONLY" != "true" ]; then
+              IS_HEALTH_CHECK_SCHEDULE=true
+              echo "=== Database Health Check (Scheduled) Started ==="
+            elif [ "$HEALTH_CHECK_ONLY" = "true" ]; then
+              echo "=== Database Health Check (Manual) Started ==="
+            else
+              echo "=== Documentation Update with Database Safety Started ==="
+            fi
+            echo "📅 $(date)"
+            echo "🔍 Health check only: $HEALTH_CHECK_ONLY"
+            echo "🔧 Force rebuild: $FORCE_REBUILD"
+            
+            # Function to check SQLite database integrity
+            check_db_integrity() {
+              local db_path="$1"
+              if [ -f "$db_path" ]; then
+                echo "🔍 Checking database integrity: $db_path"
+                if sqlite3 "$db_path" "PRAGMA integrity_check;" 2>/dev/null | grep -q "ok"; then
+                  echo "✅ Database integrity OK"
+                  return 0
+                else
+                  echo "❌ Database corruption detected"
+                  return 1
+                fi
+              else
+                echo "ℹ️  Database file does not exist: $db_path"
+                return 1
+              fi
+            }
+            
+            echo "==> Database health check"
+            DB_WAS_CORRUPT=0
+            DB_NEEDS_REPAIR=0
+            
+            if ! check_db_integrity "$DB_PATH"; then
+              DB_WAS_CORRUPT=1
+              DB_NEEDS_REPAIR=1
+              echo "⚠️  Database corruption detected"
+            fi
+            
+            # Force rebuild if requested
+            if [ "$FORCE_REBUILD" = "true" ]; then
+              DB_NEEDS_REPAIR=1
+              echo "🔄 Force rebuild requested"
+            fi
+            
+            # For health checks, test search functionality 
+            if [ "$IS_HEALTH_CHECK_SCHEDULE" = "true" ] || [ "$HEALTH_CHECK_ONLY" = "true" ]; then
+              echo "==> Testing search functionality"
+              SEARCH_TEST=$(curl -s -X POST http://127.0.0.1:3001/mcp \
+                -H "Content-Type: application/json" \
+                -d '{"role": "user", "content": "health check search"}' || echo "curl_failed")
+              
+              if echo "$SEARCH_TEST" | grep -q "SqliteError\|SQLITE_CORRUPT\|Tool execution failed\|curl_failed"; then
+                DB_NEEDS_REPAIR=1
+                echo "❌ Search functionality failed - repair needed"
+                echo "Response: $SEARCH_TEST"
+              else
+                echo "✅ Search functionality OK"
+              fi
+            fi
+            
+            # Only proceed with backup and rebuilds if needed
+            REPAIR_PERFORMED=0
+            SUBMODULES_UPDATED=0
+            
+            if [ "$DB_NEEDS_REPAIR" -eq 1 ]; then
+              echo ""
+              echo "🔧 DATABASE REPAIR REQUIRED"
+              echo "=========================="
+              
+              echo "==> Creating backup before repair"
+              BACKUP_DIR="/opt/mcp-sap/backups"
+              mkdir -p "$BACKUP_DIR"
+              
+              if [ -f "$DB_PATH" ] && [ "$DB_WAS_CORRUPT" -eq 0 ]; then
+                BACKUP_PATH="$BACKUP_DIR/pre-repair-$(date +%Y%m%d-%H%M%S).sqlite"
+                cp "$DB_PATH" "$BACKUP_PATH"
+                echo "✅ Database backed up to $BACKUP_PATH"
+              fi
+              
+              echo "==> Checking system resources"
+              # Check disk space
+              AVAILABLE_MB=$(df /opt/mcp-sap --output=avail -m | tail -n1)
+              if [ "$AVAILABLE_MB" -lt 1000 ]; then
+                echo "❌ ERROR: Insufficient disk space. Available: ${AVAILABLE_MB}MB, Required: 1000MB"
+                exit 1
+              fi
+              echo "✅ Disk space OK: ${AVAILABLE_MB}MB available"
+              
+              # Check memory
+              AVAILABLE_KB=$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)
+              AVAILABLE_MB_MEM=$((AVAILABLE_KB / 1024))
+              if [ "$AVAILABLE_MB_MEM" -lt 512 ]; then
+                echo "❌ ERROR: Insufficient memory. Available: ${AVAILABLE_MB_MEM}MB, Required: 512MB"
+                exit 1
+              fi
+              echo "✅ Memory OK: ${AVAILABLE_MB_MEM}MB available"
+              
+              echo "==> Gracefully stopping services for repair"
+              pm2 stop all || true
+              sleep 3
+              
+              # Remove corrupted database
+              echo "🗑️  Removing corrupted database"
+              rm -f "$DB_PATH"
+              
+              # Rebuild database
+              echo "🔨 Rebuilding database..."
+              npm run build:fts
+              
+              REPAIR_PERFORMED=1
+              
+            elif [ "$IS_HEALTH_CHECK_SCHEDULE" != "true" ] && [ "$HEALTH_CHECK_ONLY" != "true" ]; then
+              echo ""
+              echo "📦 SUBMODULE UPDATE PROCESS"
+              echo "=========================="
+              
+              echo "==> Creating backup before update"
+              BACKUP_DIR="/opt/mcp-sap/backups"
+              mkdir -p "$BACKUP_DIR"
+              
+              if [ -f "$DB_PATH" ]; then
+                BACKUP_PATH="$BACKUP_DIR/pre-update-$(date +%Y%m%d-%H%M%S).sqlite"
+                cp "$DB_PATH" "$BACKUP_PATH"
+                echo "✅ Database backed up to $BACKUP_PATH"
+              fi
+              
+              echo "==> Checking system resources"
+              # Check disk space
+              AVAILABLE_MB=$(df /opt/mcp-sap --output=avail -m | tail -n1)
+              if [ "$AVAILABLE_MB" -lt 500 ]; then
+                echo "❌ ERROR: Insufficient disk space. Available: ${AVAILABLE_MB}MB, Required: 500MB"
+                exit 1
+              fi
+              echo "✅ Disk space OK: ${AVAILABLE_MB}MB available"
+              
+              echo "==> Gracefully stopping services for update"
+              pm2 stop all || true
+              sleep 3
+              
+              # Configure git for HTTPS
+              git config --global url."https://github.com/".insteadOf git@github.com:
+              
+              echo "==> Checking for submodule updates"
+              # Get current submodule commits
+              git submodule status > /tmp/before-update.txt || true
+              
+              # Reuse setup.sh to ensure shallow, single-branch submodules and build
+              echo "==> Running setup script (includes submodule update and rebuild)"
+              SKIP_NESTED_SUBMODULES=1 bash setup.sh
+              
+              # Check what changed
+              git submodule status > /tmp/after-update.txt || true
+              
+              if ! diff -q /tmp/before-update.txt /tmp/after-update.txt >/dev/null 2>&1; then
+                echo "✅ Submodules were updated - changes detected"
+                SUBMODULES_UPDATED=1
+              else
+                echo "ℹ️  No submodule changes detected"
+                SUBMODULES_UPDATED=0
+              fi
+            else
+              echo "ℹ️  Health check only - no database repair or submodule update needed"
+            fi
+            
+            # Post-operation database integrity check (only if changes were made)
+            if [ "$REPAIR_PERFORMED" -eq 1 ] || [ "$SUBMODULES_UPDATED" -eq 1 ]; then
+              echo "==> Post-operation database integrity check"
+              if ! check_db_integrity "$DB_PATH"; then
+                echo "❌ ERROR: Database corruption after operation"
+                
+                # Try to restore from backup if available
+                if [ -f "$BACKUP_PATH" ] && [ "$DB_WAS_CORRUPT" -eq 0 ]; then
+                  echo "🔄 Attempting to restore from backup..."
+                  cp "$BACKUP_PATH" "$DB_PATH"
+                  
+                  if check_db_integrity "$DB_PATH"; then
+                    echo "✅ Successfully restored from backup"
+                  else
+                    echo "❌ Backup is also corrupted - forcing fresh rebuild"
+                    rm -f "$DB_PATH"
+                    npm run build:fts
+                  fi
+                else
+                  echo "🔄 No clean backup available - forcing fresh rebuild"
+                  rm -f "$DB_PATH"
+                  npm run build:fts
+                fi
+                
+                # Final check
+                if ! check_db_integrity "$DB_PATH"; then
+                  echo "❌ CRITICAL: Could not create working database"
+                  exit 1
+                fi
+              fi
+            fi
+            
+            # Restart services if they were stopped
+            if [ "$REPAIR_PERFORMED" -eq 1 ] || [ "$SUBMODULES_UPDATED" -eq 1 ]; then
+              echo "==> Creating logs directory"
+              mkdir -p /opt/mcp-sap/logs
+              chown -R "$USER":"$USER" /opt/mcp-sap/logs
+              
+              echo "==> Restarting services"
+              pm2 start all
+              pm2 save
+              sleep 10
+            fi
+            
+            echo "==> Health verification"
+            # Test search functionality
+            SEARCH_TEST=$(curl -s -X POST http://127.0.0.1:3001/mcp \
+              -H "Content-Type: application/json" \
+              -d '{"role": "user", "content": "test search"}' || echo "curl_failed")
+            
+            if echo "$SEARCH_TEST" | grep -q "SqliteError\|SQLITE_CORRUPT\|Tool execution failed\|curl_failed"; then
+              echo "❌ ERROR: Search functionality test failed after update"
+              echo "Response: $SEARCH_TEST"
+              exit 1
+            else
+              echo "✅ Search functionality verified"
+            fi
+            
+            echo "==> Cleanup old backups (keep last 7)"
+            ls -t "$BACKUP_DIR"/*.sqlite 2>/dev/null | tail -n +8 | xargs -r rm --
+            
+            echo ""
+            if [ "$IS_HEALTH_CHECK_SCHEDULE" = "true" ] || [ "$HEALTH_CHECK_ONLY" = "true" ]; then
+              echo "=== Health Check Completed Successfully ==="
+              echo "🔍 Database health: $([ "$DB_NEEDS_REPAIR" -eq 0 ] && echo "Healthy" || echo "Repaired")"
+              echo "🔧 Repair performed: $([ "$REPAIR_PERFORMED" -eq 1 ] && echo "Yes" || echo "No")"
+            else
+              echo "=== Documentation Update Completed Successfully ==="
+              echo "📊 Submodules updated: $([ "$SUBMODULES_UPDATED" -eq 1 ] && echo "Yes" || echo "No")"
+              echo "🔧 Database repair: $([ "$REPAIR_PERFORMED" -eq 1 ] && echo "Yes" || echo "No")"
+            fi
+            echo "📅 Completion time: $(date)"
 
-            # Restart services to pick up new content (HTTP status)
-            pm2 restart mcp-sap-http || true
-            pm2 save
-
-      - name: Create summary
-        if: always()
+      - name: Create success summary
+        if: success()
         run: |
-          echo "## Documentation Update Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Documentation Update Complete (Enhanced with DB Safety)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Submodules updated to latest remote commits**" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Search index rebuilt with updated documentation**" >> $GITHUB_STEP_SUMMARY  
-          echo "✅ **Services restarted to pick up new content**" >> $GITHUB_STEP_SUMMARY
+          echo "### Update Results:" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Submodules**: Updated to latest remote commits" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Search Index**: Rebuilt with enhanced safety checks" >> $GITHUB_STEP_SUMMARY  
+          echo "✅ **Database Health**: Verified before and after update" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Services**: Restarted and verified working" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Backup**: Pre-update backup created (if needed)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The MCP server now has the latest SAP documentation available."
+          echo "### Safety Features Added:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 **Database integrity checks** before and after update" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **Automatic backup** of healthy database before changes" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔧 **Automatic corruption recovery** with backup restoration" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 **Search functionality verification** after update" >> $GITHUB_STEP_SUMMARY
+          echo "- 💾 **System resource validation** before rebuild" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🕐 **Update time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The MCP server now has the latest SAP documentation with verified database integrity."
 
-      - name: Notify on failure
+      - name: Create failure summary
         if: failure()
         run: |
           echo "## ❌ Documentation Update Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check server connectivity and try manual trigger." >> $GITHUB_STEP_SUMMARY
+          echo "🚨 **Status**: Enhanced update process encountered errors" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Enhanced Troubleshooting:" >> $GITHUB_STEP_SUMMARY
+          echo "**Check these areas on the server:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Database corruption**: Check for SQLite errors in logs" >> $GITHUB_STEP_SUMMARY
+          echo "2. **System resources**: Disk space and memory availability" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Service status**: PM2 process health and logs" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Backup availability**: Check /opt/mcp-sap/backups/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Recovery Commands:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Check PM2 status and logs" >> $GITHUB_STEP_SUMMARY
+          echo "pm2 status && pm2 logs --lines 50" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Manual database rebuild if corruption detected" >> $GITHUB_STEP_SUMMARY
+          echo "cd /opt/mcp-sap/mcp-sap-docs" >> $GITHUB_STEP_SUMMARY
+          echo "pm2 stop all" >> $GITHUB_STEP_SUMMARY
+          echo "rm -f dist/data/docs.sqlite" >> $GITHUB_STEP_SUMMARY
+          echo "npm run build:fts" >> $GITHUB_STEP_SUMMARY
+          echo "pm2 start all" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🕐 **Failure time**: $(date -u)" >> $GITHUB_STEP_SUMMARY

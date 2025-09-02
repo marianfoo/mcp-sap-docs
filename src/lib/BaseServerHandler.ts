@@ -197,8 +197,8 @@ export class BaseServerHandler {
       if (name === "sap_docs_search") {
         const { query } = args as { query: string };
         
-        // Log the search request with client metadata
-        logger.logRequest(name, query, clientMetadata);
+        // Enhanced logging with timing
+        const timing = logger.logToolStart(name, query, clientMetadata);
         
         try {
           // Use hybrid search with reranking
@@ -209,6 +209,7 @@ export class BaseServerHandler {
           const topResults = results;
           
           if (topResults.length === 0) {
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: false });
             return {
               content: [
                 {
@@ -229,6 +230,8 @@ export class BaseServerHandler {
           
           const summary = `Found ${topResults.length} results for '${query}':\n\n${formattedResults}`;
           
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, topResults.length, { fallback: false });
+          
           return {
             content: [
               {
@@ -238,20 +241,71 @@ export class BaseServerHandler {
             ]
           };
         } catch (error) {
-          logger.error('Hybrid search failed, falling back to original search:', { error: String(error) });
-          // Fallback to original search
-          const res: SearchResponse = await searchLibraries(query);
+          logger.logToolError(name, timing.requestId, timing.startTime, error, false);
+          logger.info('Attempting fallback to original search after hybrid search failure');
           
-          if (!res.results.length) {
+          // Fallback to original search
+          try {
+            const res: SearchResponse = await searchLibraries(query);
+            
+            if (!res.results.length) {
+              logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: true });
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication', 'fiori elements', 'rap'. For detailed ABAP language syntax, use abap_search instead.`
+                  }
+                ]
+              };
+            }
+            
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length, { fallback: true });
+            
             return {
               content: [
                 {
                   type: "text",
-                  text: res.error || `No results found for "${query}". Try searching for UI5 controls like 'button', 'table', 'wizard', testing topics like 'wdi5', 'testing', 'e2e', or concepts like 'routing', 'annotation', 'authentication', 'fiori elements', 'rap'. For detailed ABAP language syntax, use abap_search instead.`
+                  text: res.results[0].description
+                }
+              ]
+            };
+          } catch (fallbackError) {
+            logger.logToolError(name, timing.requestId, timing.startTime, fallbackError, true);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
                 }
               ]
             };
           }
+        }
+      }
+
+      if (name === "sap_community_search") {
+        const { query } = args as { query: string };
+        
+        // Enhanced logging with timing
+        const timing = logger.logToolStart(name, query, clientMetadata);
+        
+        try {
+          const res: SearchResponse = await searchCommunity(query);
+          
+          if (!res.results.length) {
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: res.error || `No SAP Community posts found for "${query}". Try different keywords or check your connection.`
+                }
+              ]
+            };
+          }
+          
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length);
           
           return {
             content: [
@@ -261,36 +315,17 @@ export class BaseServerHandler {
               }
             ]
           };
-        }
-      }
-
-      if (name === "sap_community_search") {
-        const { query } = args as { query: string };
-        
-        // Log the community search request
-        logger.logRequest(name, query, clientMetadata);
-        
-        const res: SearchResponse = await searchCommunity(query);
-        
-        if (!res.results.length) {
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
           return {
             content: [
               {
                 type: "text",
-                text: res.error || `No SAP Community posts found for "${query}". Try different keywords or check your connection.`
+                text: `SAP Community search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
               }
             ]
           };
         }
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: res.results[0].description
-            }
-          ]
-        };
       }
 
       if (name === "sap_docs_get") {
@@ -299,62 +334,102 @@ export class BaseServerHandler {
           topic?: string; 
         };
         
-        // Log the docs get request
-        logger.logRequest(name, library_id + (topic ? `/${topic}` : ''), clientMetadata);
+        // Enhanced logging with timing
+        const searchKey = library_id + (topic ? `/${topic}` : '');
+        const timing = logger.logToolStart(name, searchKey, clientMetadata);
         
-        const text = await fetchLibraryDocumentation(library_id, topic);
-        
-        if (!text) {
+        try {
+          const text = await fetchLibraryDocumentation(library_id, topic);
+          
+          if (!text) {
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Nothing found for ${library_id}`
+                }
+              ]
+            };
+          }
+          
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, 1, { 
+            contentLength: text.length,
+            libraryId: library_id,
+            topic: topic || undefined
+          });
+          
+          return { content: [{ type: "text", text }] };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
           return {
             content: [
               {
                 type: "text",
-                text: `Nothing found for ${library_id}`
+                text: `Error retrieving documentation for ${library_id}. Please try again later. Error ID: ${timing.requestId}`
               }
             ]
           };
         }
-        
-        return { content: [{ type: "text", text }] };
       }
 
       if (name === "sap_help_search") {
         const { query } = args as { query: string };
         
-        // Log the SAP Help search request
-        logger.logRequest(name, query, clientMetadata);
+        // Enhanced logging with timing
+        const timing = logger.logToolStart(name, query, clientMetadata);
         
-        const res: SearchResponse = await searchSapHelp(query);
-        
-        if (!res.results.length) {
+        try {
+          const res: SearchResponse = await searchSapHelp(query);
+          
+          if (!res.results.length) {
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: res.error || `No SAP Help results found for "${query}". Try different keywords or check your connection.`
+                }
+              ]
+            };
+          }
+          
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length);
+          
           return {
             content: [
               {
                 type: "text",
-                text: res.error || `No SAP Help results found for "${query}". Try different keywords or check your connection.`
+                text: res.results[0].description
+              }
+            ]
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `SAP Help search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
               }
             ]
           };
         }
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: res.results[0].description
-            }
-          ]
-        };
       }
 
       if (name === "sap_help_get") {
         const { result_id } = args as { result_id: string };
         
-        // Log the SAP Help get request
-        logger.logRequest(name, result_id, clientMetadata);
+        // Enhanced logging with timing
+        const timing = logger.logToolStart(name, result_id, clientMetadata);
         
         try {
           const content = await getSapHelpContent(result_id);
+          
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, 1, { 
+            contentLength: content.length,
+            resultId: result_id
+          });
           
           return {
             content: [
@@ -364,12 +439,13 @@ export class BaseServerHandler {
               }
             ]
           };
-        } catch (error: any) {
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
           return {
             content: [
               {
                 type: "text",
-                text: `Error retrieving SAP Help content: ${error.message}`
+                text: `Error retrieving SAP Help content. Please try again later. Error ID: ${timing.requestId}`
               }
             ]
           };

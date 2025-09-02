@@ -44,6 +44,19 @@ async function main() {
     pid: process.pid
   });
   
+  // Set up performance monitoring (every 10 minutes for stdio servers)
+  const performanceInterval = setInterval(() => {
+    logger.logPerformanceMetrics();
+  }, 10 * 60 * 1000);
+
+  // Handle server shutdown
+  process.on('SIGINT', () => {
+    logger.info('Shutdown signal received, closing stdio server gracefully');
+    clearInterval(performanceInterval);
+    logger.info('Stdio server shutdown complete');
+    process.exit(0);
+  });
+  
   // Log the port if we're running in HTTP mode (for debugging)
   if (process.env.PORT) {
     console.error(`📚 MCP server configured for port: ${process.env.PORT}`);

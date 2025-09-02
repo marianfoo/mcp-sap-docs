@@ -24,10 +24,51 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Setup submodules and build
+    - name: Setup submodules and build with database verification
       run: |
         export SKIP_NESTED_SUBMODULES=1
         bash setup.sh
         
-    - name: Run tests
-      run: npm run test
+        # Verify database was built correctly and is not corrupted
+        DB_PATH="./dist/data/docs.sqlite"
+        if [ -f "$DB_PATH" ]; then
+          echo "✅ Database file created: $DB_PATH"
+          DB_SIZE=$(du -h "$DB_PATH" | cut -f1)
+          echo "📏 Database size: $DB_SIZE"
+          
+          # Test database integrity
+          if sqlite3 "$DB_PATH" "PRAGMA integrity_check;" | grep -q "ok"; then
+            echo "✅ Database integrity check passed"
+          else
+            echo "❌ Database integrity check failed"
+            exit 1
+          fi
+          
+          # Test basic FTS functionality
+          if sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs_fts;" | grep -qE '^[1-9][0-9]*$'; then
+            echo "✅ Database contains indexed documents"
+            DOCUMENT_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs_fts;")
+            echo "📄 Document count: $DOCUMENT_COUNT"
+          else
+            echo "❌ Database appears empty or malformed"
+            exit 1
+          fi
+        else
+          echo "❌ Database file not found: $DB_PATH"
+          exit 1
+        fi
+        
+    - name: Run tests with database health check
+      run: |
+        # Run the standard tests
+        npm run test
+        
+        # Additional database health verification after tests
+        echo "==> Post-test database integrity check"
+        DB_PATH="./dist/data/docs.sqlite"
+        if sqlite3 "$DB_PATH" "PRAGMA integrity_check;" | grep -q "ok"; then
+          echo "✅ Database integrity maintained after tests"
+        else
+          echo "❌ Database corruption detected after tests"
+          exit 1
+        fi

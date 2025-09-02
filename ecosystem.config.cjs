@@ -15,14 +15,24 @@ module.exports = {
       cwd: "/opt/mcp-sap/mcp-sap-docs",
       env: { 
         NODE_ENV: "production",
-        LOG_LEVEL: "INFO",
+        LOG_LEVEL: "DEBUG",  // Enhanced for debugging
         LOG_FORMAT: "json",
         // BM25-only search configuration
         RETURN_K: "25"  // Centralized result limit (can override CONFIG.RETURN_K)
       },
       autorestart: true,
       max_restarts: 10,
-      restart_delay: 2000
+      restart_delay: 2000,
+      // Enhanced logging configuration
+      log_file: "/opt/mcp-sap/logs/mcp-proxy-combined.log",
+      out_file: "/opt/mcp-sap/logs/mcp-proxy-out.log",
+      error_file: "/opt/mcp-sap/logs/mcp-proxy-error.log",
+      log_type: "json",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      // Log rotation
+      max_size: "10M",
+      retain: 10,
+      compress: true
     },
 
     // HTTP status server on :3001 (pinned port for PM2)
@@ -34,12 +44,24 @@ module.exports = {
       env: { 
         NODE_ENV: "production", 
         PORT: "3001",
+        LOG_LEVEL: "DEBUG",  // Enhanced for debugging
+        LOG_FORMAT: "json",
         // BM25-only search configuration
         RETURN_K: "25"  // Centralized result limit (can override CONFIG.RETURN_K)
       },
       autorestart: true,
       max_restarts: 10,
-      restart_delay: 2000
+      restart_delay: 2000,
+      // Enhanced logging configuration
+      log_file: "/opt/mcp-sap/logs/mcp-http-combined.log",
+      out_file: "/opt/mcp-sap/logs/mcp-http-out.log",
+      error_file: "/opt/mcp-sap/logs/mcp-http-error.log",
+      log_type: "json",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      // Log rotation
+      max_size: "10M",
+      retain: 10,
+      compress: true
     },
 
     // Streamable HTTP MCP server (latest MCP spec)
@@ -51,12 +73,24 @@ module.exports = {
       env: { 
         NODE_ENV: "production", 
         MCP_PORT: "3122",
+        LOG_LEVEL: "DEBUG",  // Enhanced for debugging
+        LOG_FORMAT: "json",
         // BM25-only search configuration
         RETURN_K: "25"  // Centralized result limit (can override CONFIG.RETURN_K)
       },
       autorestart: true,
       max_restarts: 10,
-      restart_delay: 2000
+      restart_delay: 2000,
+      // Enhanced logging configuration
+      log_file: "/opt/mcp-sap/logs/mcp-streamable-combined.log",
+      out_file: "/opt/mcp-sap/logs/mcp-streamable-out.log",
+      error_file: "/opt/mcp-sap/logs/mcp-streamable-error.log",
+      log_type: "json",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      // Log rotation
+      max_size: "10M",
+      retain: 10,
+      compress: true
     }
   ]
 }

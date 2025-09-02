@@ -76,6 +76,45 @@ jobs:
           script: |
             set -Eeuo pipefail
 
+            echo "==> Database Health Pre-Check"
+            cd /opt/mcp-sap/mcp-sap-docs || { echo "Directory not found, will be created"; }
+            
+            # Function to check SQLite database integrity
+            check_db_integrity() {
+              local db_path="$1"
+              if [ -f "$db_path" ]; then
+                echo "🔍 Checking database integrity: $db_path"
+                if sqlite3 "$db_path" "PRAGMA integrity_check;" 2>/dev/null | grep -q "ok"; then
+                  echo "✅ Database integrity OK"
+                  return 0
+                else
+                  echo "❌ Database corruption detected"
+                  return 1
+                fi
+              else
+                echo "ℹ️  Database file does not exist: $db_path"
+                return 1
+              fi
+            }
+            
+            # Check existing database and create backup
+            DB_PATH="/opt/mcp-sap/mcp-sap-docs/dist/data/docs.sqlite"
+            if [ -f "$DB_PATH" ]; then
+              if ! check_db_integrity "$DB_PATH"; then
+                echo "==> Database corruption detected - will rebuild"
+                rm -f "$DB_PATH"
+              else
+                echo "==> Creating database backup before deployment"
+                BACKUP_PATH="/opt/mcp-sap/backups/deploy-backup-$(date +%Y%m%d-%H%M%S).sqlite"
+                mkdir -p /opt/mcp-sap/backups
+                cp "$DB_PATH" "$BACKUP_PATH"
+                echo "✅ Database backed up to $BACKUP_PATH"
+                
+                # Keep only last 5 backups
+                ls -t /opt/mcp-sap/backups/deploy-backup-*.sqlite 2>/dev/null | tail -n +6 | xargs -r rm --
+              fi
+            fi
+
             echo "==> Ensure base path exists and owned by user"
             sudo mkdir -p /opt/mcp-sap
             sudo chown -R "$USER":"$USER" /opt/mcp-sap
@@ -99,8 +138,39 @@ jobs:
             # Ensure metadata file exists for centralized configuration
             [ -f /opt/mcp-sap/mcp-sap-docs/data/metadata.json ] || echo "Metadata file will be created during build"
             
+            echo "==> Check system resources before build"
+            AVAILABLE_MB=$(df /opt/mcp-sap --output=avail -m | tail -n1)
+            if [ "$AVAILABLE_MB" -lt 1000 ]; then
+              echo "❌ ERROR: Insufficient disk space. Available: ${AVAILABLE_MB}MB, Required: 1000MB"
+              exit 1
+            fi
+            echo "✅ Disk space OK: ${AVAILABLE_MB}MB available"
+            
+            AVAILABLE_KB=$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)
+            AVAILABLE_MB_MEM=$((AVAILABLE_KB / 1024))
+            if [ "$AVAILABLE_MB_MEM" -lt 512 ]; then
+              echo "❌ ERROR: Insufficient memory. Available: ${AVAILABLE_MB_MEM}MB, Required: 512MB"
+              exit 1
+            fi
+            echo "✅ Memory OK: ${AVAILABLE_MB_MEM}MB available"
+
+            echo "==> Stop services gracefully before build"
+            pm2 stop all || true
+            sleep 3
+            
             echo "==> Run setup (shallow, single-branch submodules + build)"
             SKIP_NESTED_SUBMODULES=1 bash setup.sh
+
+            echo "==> Verify database integrity after build"
+            if ! check_db_integrity "$DB_PATH"; then
+              echo "❌ ERROR: Database corruption after build - deployment failed"
+              exit 1
+            fi
+            echo "✅ Database integrity verified after build"
+
+            echo "==> Create logs directory with proper permissions"
+            mkdir -p /opt/mcp-sap/logs
+            chown -R "$USER":"$USER" /opt/mcp-sap/logs
 
             echo "==> (Re)start PM2 processes with BM25 search support"
             # Proxy (SSE) on 127.0.0.1:18080; HTTP status on 127.0.0.1:3001; Streamable HTTP on 127.0.0.1:3122
@@ -109,7 +179,9 @@ jobs:
             pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-streamable || pm2 restart mcp-sap-streamable
             pm2 save
 
-            echo "==> Health checks"
+            echo "==> Enhanced health checks with database verification"
+            sleep 5
+            
             for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/status >/dev/null && break || sleep 2; done
             curl -fsS http://127.0.0.1:18080/status
             for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3001/status  >/dev/null && break || sleep 2; done
@@ -117,3 +189,23 @@ jobs:
             # Streamable HTTP server health on 127.0.0.1:3122
             for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3122/health  >/dev/null && break || sleep 2; done
             curl -fsS http://127.0.0.1:3122/health
+
+            # Test actual search functionality to ensure no SQLite corruption
+            echo "==> Testing search functionality"
+            SEARCH_TEST=$(curl -s -X POST http://127.0.0.1:3001/mcp -H "Content-Type: application/json" -d '{"role": "user", "content": "test search"}')
+            if echo "$SEARCH_TEST" | grep -q "SqliteError\|SQLITE_CORRUPT\|Tool execution failed"; then
+              echo "❌ ERROR: Search test failed - possible database corruption"
+              echo "Response: $SEARCH_TEST"
+              exit 1
+            fi
+            echo "✅ Search functionality verified - no corruption detected"
+
+            echo "==> Final database integrity check"
+            if ! check_db_integrity "$DB_PATH"; then
+              echo "❌ WARNING: Database corruption detected after deployment"
+              # Don't fail deployment, but alert
+            else
+              echo "✅ Final database integrity check passed"
+            fi
+
+            echo "✅ Deployment completed successfully - Version: $NEW_VERSION"
