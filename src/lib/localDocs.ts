@@ -65,12 +65,25 @@ async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
     });
 
     return hits.map(hit => ({
+      library_id: hit.postId ? `community-${hit.postId}` : `community-url-${encodeURIComponent(hit.url)}`,
+      topic: '',
       id: hit.postId ? `community-${hit.postId}` : `community-url-${encodeURIComponent(hit.url)}`,
       title: hit.title,
+      url: hit.url,
+      snippet: hit.snippet || '',
+      score: 0,
+      metadata: {
+        source: 'community',
+        postTime: hit.published,
+        author: hit.author,
+        likes: hit.likes,
+        tags: hit.tags,
+        totalSnippets: 1
+      },
+      // Legacy fields for backward compatibility
       description: hit.snippet || '',
       totalSnippets: 1,
       source: 'community',
-      url: hit.url,
       postTime: hit.published,
       author: hit.author,
       likes: hit.likes,
@@ -100,6 +113,45 @@ async function getCommunityPost(postId: string): Promise<string | null> {
     console.warn('Failed to get community post:', error);
     return null;
   }
+}
+
+// Helper function to parse document ID into library_id and topic
+function parseDocumentId(docId: string): { libraryId: string; topic: string } {
+  // docId formats:
+  // - "/cap" -> libraryId="/cap", topic=""
+  // - "/cap/guides/domain-modeling#compositions" -> libraryId="/cap", topic="guides/domain-modeling#compositions"
+  // - "/openui5-api/sap/m/Button" -> libraryId="/openui5-api", topic="sap/m/Button"
+  
+  // Find the first slash after the initial slash
+  const match = docId.match(/^(\/[^\/]+)(?:\/(.*))?$/);
+  if (match) {
+    const [, libraryId, topic = ""] = match;
+    return { libraryId, topic };
+  }
+  
+  // Fallback: treat the whole thing as library_id
+  return { libraryId: docId, topic: "" };
+}
+
+// Helper function to format search result entries with clear library_id and topic
+function formatSearchResultEntry(result: any, queryContext: string): string {
+  const { libraryId, topic } = parseDocumentId(result.docId);
+  const score = result.score.toFixed(0);
+  const description = result.docDescription.substring(0, 100);
+  const contextEmoji = getContextEmoji(queryContext);
+  
+  let formatted = `${contextEmoji} **${result.docTitle}** (Score: ${score})\n`;
+  formatted += `   📄 ${description}${description.length >= 100 ? '...' : ''}\n`;
+  formatted += `   📂 Library: \`${libraryId}\`\n`;
+  
+  if (topic) {
+    formatted += `   🎯 Topic: \`${topic}\`\n`;
+    formatted += `   ✅ **Call:** \`sap_docs_get(library_id="${libraryId}", topic="${topic}")\`\n\n`;
+  } else {
+    formatted += `   ✅ **Call:** \`sap_docs_get(library_id="${libraryId}")\`\n\n`;
+  }
+  
+  return formatted;
 }
 
 // Format JavaScript content for better readability in documentation context
@@ -1249,49 +1301,49 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
     if (capGuides.length > 0) {
       response += `🏗️ **CAP Documentation:**\n`;
       for (const r of capGuides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
     
     if (wdi5Guides.length > 0) {
       response += `🧪 **wdi5 Documentation:**\n`;
       for (const r of wdi5Guides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
     
     if (sapui5Guides.length > 0) {
       response += `📖 **SAPUI5 Guides:**\n`;
       for (const r of sapui5Guides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
 
     if (ui5WebComponentsGuides.length > 0) {
       response += `🕹️ **UI5 Web Components Guides:**\n`;
       for (const r of ui5WebComponentsGuides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
 
     if (ui5ToolingGuides.length > 0) {
       response += `🔧 **UI5 Tooling Guides:**\n`;
       for (const r of ui5ToolingGuides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
 
     if (sapCloudSdkGuides.length > 0) {
       response += `🌐 **SAP Cloud SDK Guides:**\n`;
       for (const r of sapCloudSdkGuides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
 
     if (cloudMtaBuildToolGuides.length > 0) {
       response += `🚢 **Cloud MTA Build Tool Guides:**\n`;
       for (const r of cloudMtaBuildToolGuides) {
-        response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+        response += formatSearchResultEntry(r, queryContext);
       }
     }
   }
@@ -1299,14 +1351,14 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   if (apiDocs.length > 0) {
     response += `🔹 **UI5 API Documentation:**\n`;
     for (const r of apiDocs.slice(0, 8)) {
-      response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+      response += formatSearchResultEntry(r, queryContext);
     }
   }
   
   if (samples.length > 0) {
     response += `🔸 **UI5 Samples:**\n`;
     for (const r of samples.slice(0, 8)) {
-      response += `⭐️ **${r.docTitle}** (Score: ${r.score.toFixed(0)}) - \`${r.docId}\`\n   ${r.docDescription.substring(0, 120)}\n   Use in sap_docs_get\n\n`;
+      response += formatSearchResultEntry(r, queryContext);
     }
   }
   
@@ -1314,12 +1366,24 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   response += `🔍 **Tried queries**: ${triedQueries.slice(0, 3).join(", ")}${triedQueries.length > 3 ? '...' : ''}`;
 
   return {
-    results: [{
-      id: 'search-results',
-      title: `Search Results for '${query}'`,
-      description: response,
-      totalSnippets: topResults.reduce((sum, r) => sum + r.snippetCount, 0)
-    }]
+    results: topResults.map((r, index) => {
+      const { libraryId, topic } = parseDocumentId(r.docId);
+      return {
+        library_id: libraryId,
+        topic: topic,
+        id: r.docId,
+        title: r.docTitle,
+        url: r.url || `#${r.docId}`,
+        snippet: r.docDescription,
+        score: r.score,
+        metadata: {
+          source: 'sap-docs',
+          library: libraryId,
+          rank: index + 1,
+          context: queryContext
+        }
+      };
+    })
   };
 }
 
@@ -1489,20 +1553,106 @@ ${content}
     }
   }
   
-  // If not a specific document ID, treat as library ID
+  // If not a specific document ID, treat as library ID with optional topic
   const lib = index[libraryIdOrDocId];
   if (!lib) return null;
 
-  const term = topic.toLowerCase();
-  const targets = term
-    ? lib.docs.filter(
-        (d) =>
-          d.title.toLowerCase().includes(term) ||
-          d.description.toLowerCase().includes(term)
-      )
-    : lib.docs;
+  // If topic is provided, first try to construct the full document ID
+  if (topic) {
+    const fullDocId = `${libraryIdOrDocId}/${topic}`;
+    
+    // Try to find exact document match first
+    for (const doc of lib.docs) {
+      if (doc.id === fullDocId) {
+        const sourcePath = getSourcePath(lib.id);
+        if (!sourcePath) {
+          throw new Error(`Unknown library ID: ${lib.id}`);
+        }
+        
+        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
+        const content = await fs.readFile(abs, "utf8");
+        
+        // Format the content appropriately based on library type
+        if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
+          return formatJSDocContent(content, doc.title || '');
+        } else if (lib.id === '/openui5-samples') {
+          return formatSampleContent(content, doc.relFile, doc.title || '');
+        } else if (getDocUrlConfig(lib.id)) {
+          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
+          const libName = lib.id.replace('/', '').toUpperCase();
+          
+          return `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
 
-  if (!targets.length) return `No topic "${topic}" found inside ${libraryIdOrDocId}.`;
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+        } else {
+          return content;
+        }
+      }
+    }
+    
+    // If exact match not found, fall back to topic keyword search
+    const term = topic.toLowerCase();
+    const targets = lib.docs.filter(
+      (d) =>
+        d.title.toLowerCase().includes(term) ||
+        d.description.toLowerCase().includes(term)
+    );
+    
+    if (targets.length > 0) {
+      // Process the filtered documents
+      const parts: string[] = [];
+      for (const doc of targets) {
+        const sourcePath = getSourcePath(lib.id);
+        if (!sourcePath) {
+          throw new Error(`Unknown library ID: ${lib.id}`);
+        }
+        
+        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
+        const content = await fs.readFile(abs, "utf8");
+        
+        if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
+          const formattedContent = formatJSDocContent(content, doc.title || '');
+          parts.push(formattedContent);
+        } else if (lib.id === '/openui5-samples') {
+          const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
+          parts.push(formattedContent);
+        } else if (getDocUrlConfig(lib.id)) {
+          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
+          const libName = lib.id.replace('/', '').toUpperCase();
+          
+          const formattedContent = `**Source:** ${libName} Documentation
+**URL:** ${documentationUrl || 'Documentation URL not available'}
+**File:** ${doc.relFile}
+
+---
+
+${content}
+
+---
+
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+          parts.push(formattedContent);
+        } else {
+          parts.push(content);
+        }
+      }
+      return parts.join("\n\n---\n\n");
+    }
+    
+    return `No topic "${topic}" found inside ${libraryIdOrDocId}.`;
+  }
+  
+  // No topic provided, return all library documents
+  const targets = lib.docs;
+  if (!targets.length) return `No documents found inside ${libraryIdOrDocId}.`;
 
   const parts: string[] = [];
   for (const doc of targets) {
@@ -1628,12 +1778,15 @@ export async function readDocumentationResource(uri: string) {
   }
 
   // Parse URI: sap-docs://[libraryId]/[optional-file-path]
-  const match = uri.match(/^sap-docs:\/\/([^\/]+)(?:\/(.+))?$/);
+  // Note: libraryId starts with '/', so we may have sap-docs:///cap/... (3 slashes)
+  const match = uri.match(/^sap-docs:\/\/\/?([^\/]+)(?:\/(.+))?$/);
   if (!match) {
     throw new Error(`Invalid resource URI: ${uri}`);
   }
 
-  const [, libraryId, encodedFilePath] = match;
+  const [, libIdPart, encodedFilePath] = match;
+  // Library ID should have leading slash
+  const libraryId = libIdPart.startsWith('/') ? libIdPart : `/${libIdPart}`;
   const lib = index[libraryId];
   if (!lib) {
     throw new Error(`Library not found: ${libraryId}`);
@@ -1759,13 +1912,23 @@ export async function searchCommunity(query: string): Promise<SearchResponse> {
     response += `💡 **Note:** These results include the full content from ${Object.keys(result.posts).length} SAP Community posts, representing real-world developer experiences and solutions.`;
 
     return { 
-      results: [{
-        id: 'community-search-results-with-content',
-        title: `SAP Community Results with Full Content for "${query}"`,
-        description: response,
-        totalSnippets: result.search.length,
-        source: 'community'
-      }]
+      results: result.search.map((searchResult, index) => ({
+        library_id: `community-${searchResult.postId || index}`,
+        topic: '',
+        id: `community-${searchResult.postId || index}`,
+        title: searchResult.title,
+        url: searchResult.url,
+        snippet: searchResult.snippet || '',
+        score: 0,
+        metadata: {
+          source: 'community',
+          postTime: searchResult.published,
+          author: searchResult.author,
+          likes: searchResult.likes,
+          tags: searchResult.tags,
+          rank: index + 1
+        }
+      }))
     };
   } catch (error: any) {
     console.error("Error searching SAP Community:", error);

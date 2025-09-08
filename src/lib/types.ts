@@ -1,10 +1,16 @@
 export interface SearchResult {
+  library_id: string;
+  topic: string;
   id: string;
   title: string;
-  description: string;
-  totalSnippets: number;
+  url?: string;
+  snippet?: string;
+  score?: number;
+  metadata?: Record<string, any>;
+  // Legacy fields for backward compatibility
+  description?: string;
+  totalSnippets?: number;
   source?: string; // "docs" | "community" | "help"
-  url?: string;    // For community posts or help pages
   postTime?: string; // For community posts
   author?: string; // For community posts - author name
   likes?: number;  // For community posts - number of likes/kudos

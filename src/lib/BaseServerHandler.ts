@@ -59,11 +59,18 @@ interface DocumentResult {
  * Create structured JSON response for search results
  */
 function createSearchResponse(results: SearchResult[]): any {
+  // Clean the results to avoid JSON serialization issues in MCP protocol
+  const cleanedResults = results.map(result => ({
+    ...result,
+    snippet: result.snippet ? result.snippet.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n') : result.snippet,
+    title: result.title ? result.title.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n') : result.title
+  }));
+  
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify({ results })
+        text: JSON.stringify({ results: cleanedResults })
       }
     ]
   };
@@ -73,11 +80,20 @@ function createSearchResponse(results: SearchResult[]): any {
  * Create structured JSON response for document fetch
  */
 function createDocumentResponse(document: DocumentResult): any {
+  // Clean the text content to avoid JSON serialization issues in MCP protocol
+  const cleanedDocument = {
+    ...document,
+    text: document.text
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars except \n, \r, \t
+      .replace(/\r\n/g, '\n') // Normalize line endings
+      .replace(/\r/g, '\n') // Convert remaining \r to \n
+  };
+  
   return {
     content: [
       {
         type: "text", 
-        text: JSON.stringify(document)
+        text: JSON.stringify(cleanedDocument)
       }
     ]
   };
@@ -257,29 +273,40 @@ BEST FOR TROUBLESHOOTING:
           },
           {
             name: "sap_docs_get",
-            description: `GET SPECIFIC DOCS: sap_docs_get(library_id="result_id")
+            description: `GET SPECIFIC DOCS: sap_docs_get(library_id, topic)
 
 FUNCTION NAME: sap_docs_get (or mcp_sap-docs-remote_sap_docs_get)
 
-RETRIEVES: Full content from search results
-WORKS WITH: Library IDs, document IDs, community post IDs
+RETRIEVES: Full documentation content based on search results
 
-COMMON PATTERNS:
-• Broad exploration: library_id="/cap", topic="binary"
-• Specific API: library_id="/openui5-api/sap/m/Button" 
-• Community posts: library_id="community-12345"
-• ABAP docs: library_id="/abap-docs-758/abeninline_declarations"`,
+📋 PARAMETER SCHEMA:
+• library_id: The library identifier (e.g., "/cap", "/sapui5", "/wdi5")  
+• topic: Specific document/section path within the library (optional)
+
+🎯 USAGE PATTERNS FROM SEARCH RESULTS:
+• Search shows: Library: "/cap", Topic: "guides/domain-modeling#compositions"
+• Call: sap_docs_get(library_id="/cap", topic="guides/domain-modeling#compositions")
+
+• Search shows: Library: "/openui5-api", Topic: "sap/m/Button"
+• Call: sap_docs_get(library_id="/openui5-api", topic="sap/m/Button")
+
+• Search shows: Library: "/cap" (no topic)
+• Call: sap_docs_get(library_id="/cap")
+
+✅ ALWAYS use the exact library_id and topic shown in search results
+❌ DON'T combine them into a single parameter`,
             inputSchema: {
               type: "object",
               properties: {
                 library_id: {
                   type: "string",
-                  description: "ID from sap_docs_search or sap_community_search results. Use exact IDs returned by search functions.",
+                  description: "Library identifier from search results. Always use the value shown as 'Library:' in search results.",
                   examples: [
                     "/cap",
                     "/sapui5", 
-                    "/openui5-api/sap/m/Button",
+                    "/openui5-api",
                     "/abap-docs-758",
+                    "/wdi5",
                     "community-12345"
                   ]
                 },
@@ -472,23 +499,27 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform results to structured JSON format
+          // Transform results to structured JSON format compatible with the localDocs format
           const searchResults: SearchResult[] = topResults.map((r, index) => {
-            // Extract title from text (format: "title\n\ndescription...")
-            const titleMatch = r.text.split('\n')[0] || r.id;
-            const libraryId = r.sourceId ? `/${r.sourceId}` : r.id;
+            // Extract library_id and topic from document ID
+            const libraryIdMatch = r.id.match(/^(\/[^\/]+)/);
+            const libraryId = libraryIdMatch ? libraryIdMatch[1] : (r.sourceId ? `/${r.sourceId}` : r.id);
+            const topic = r.id.startsWith(libraryId) ? r.id.slice(libraryId.length + 1) : '';
+            
             const config = getDocUrlConfig(libraryId);
             const docUrl = config ? generateDocumentationUrl(libraryId, '', r.text, config) : null;
             
             return {
+              library_id: libraryId,
+              topic: topic,
               id: r.id,
-              title: titleMatch || r.id,
+              title: r.text.split('\n')[0] || r.id,
               url: docUrl || `#${r.id}`,
               snippet: r.text ? r.text.substring(0, 200) + '...' : '',
               score: r.finalScore,
               metadata: {
                 source: r.sourceId || 'sap-docs',
-                library: r.sourceId,
+                library: libraryId,
                 bm25Score: r.bm25,
                 rank: index + 1
               }
@@ -556,13 +587,16 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform community search results to structured format
-          const communityResults: SearchResult[] = res.results.map((r, index) => ({
+          // Transform community search results to structured format matching the new library_id/topic format
+          const communityResults: SearchResult[] = res.results.map((r: any, index) => ({
+            library_id: r.library_id || `community-${index}`,
+            topic: r.topic || '',
             id: r.id || `community-${index}`,
             title: r.title || 'SAP Community Post',
             url: r.url || `#${r.id}`,
-            snippet: r.description ? r.description.substring(0, 200) + '...' : '',
-            metadata: {
+            snippet: r.snippet || (r.description ? r.description.substring(0, 200) + '...' : ''),
+            score: r.score || 0,
+            metadata: r.metadata || {
               source: 'sap-community',
               likes: r.likes,
               author: r.author,

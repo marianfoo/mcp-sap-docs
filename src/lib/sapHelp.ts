@@ -81,12 +81,24 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
 
     // Store the search results for later retrieval
     const searchResults: SearchResult[] = results.map((hit, index) => ({
+      library_id: `sap-help-${hit.loio}`,
+      topic: '',
       id: `sap-help-${hit.loio}`,
       title: hit.title,
+      url: ensureAbsoluteUrl(hit.url),
+      snippet: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
+      score: 0,
+      metadata: {
+        source: "help",
+        loio: hit.loio,
+        product: hit.product || hit.productId,
+        version: hit.version || hit.versionId,
+        rank: index + 1
+      },
+      // Legacy fields for backward compatibility
       description: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
       totalSnippets: 1,
-      source: "help",
-      url: ensureAbsoluteUrl(hit.url)
+      source: "help"
     }));
 
     // Store the full search results in a simple cache for retrieval
@@ -104,9 +116,19 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
     ).join('\n');
 
     return {
-      results: [{
+      results: searchResults.length > 0 ? searchResults : [{
+        library_id: "sap-help",
+        topic: '',
         id: "search-results",
         title: `SAP Help Search Results for "${query}"`,
+        url: '',
+        snippet: `Found ${searchResults.length} results from SAP Help:\n\n${formattedResults}\n\nUse sap_help_get with the ID of any result to retrieve the full content.`,
+        score: 0,
+        metadata: {
+          source: "help",
+          totalSnippets: searchResults.length
+        },
+        // Legacy fields for backward compatibility
         description: `Found ${searchResults.length} results from SAP Help:\n\n${formattedResults}\n\nUse sap_help_get with the ID of any result to retrieve the full content.`,
         totalSnippets: searchResults.length,
         source: "help"
