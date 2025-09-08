@@ -45,9 +45,9 @@ jobs:
           fi
           
           # Test basic FTS functionality
-          if sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs_fts;" | grep -qE '^[1-9][0-9]*$'; then
+          if sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs;" | grep -qE '^[1-9][0-9]*$'; then
             echo "✅ Database contains indexed documents"
-            DOCUMENT_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs_fts;")
+            DOCUMENT_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM docs;")
             echo "📄 Document count: $DOCUMENT_COUNT"
           else
             echo "❌ Database appears empty or malformed"
