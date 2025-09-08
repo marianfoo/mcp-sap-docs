@@ -34,6 +34,72 @@ import { CONFIG } from "./config.js";
 import { loadMetadata, getDocUrlConfig } from "./metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./url-generation/index.js";
 
+/**
+ * Helper functions for creating structured JSON responses compatible with ChatGPT and all MCP clients
+ */
+
+interface SearchResult {
+  id: string;
+  title: string;
+  url: string;
+  snippet?: string;
+  score?: number;
+  metadata?: Record<string, any>;
+}
+
+interface DocumentResult {
+  id: string;
+  title: string;
+  text: string;
+  url: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Create structured JSON response for search results
+ */
+function createSearchResponse(results: SearchResult[]): any {
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({ results })
+      }
+    ]
+  };
+}
+
+/**
+ * Create structured JSON response for document fetch
+ */
+function createDocumentResponse(document: DocumentResult): any {
+  return {
+    content: [
+      {
+        type: "text", 
+        text: JSON.stringify(document)
+      }
+    ]
+  };
+}
+
+/**
+ * Create error response in structured JSON format
+ */
+function createErrorResponse(error: string, requestId?: string): any {
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({ 
+          error,
+          requestId: requestId || 'unknown'
+        })
+      }
+    ]
+  };
+}
+
 export interface ServerConfig {
   name: string;
   description: string;
@@ -295,6 +361,85 @@ USAGE PATTERN:
               required: ["result_id"]
             }
           },
+          {
+            name: "search",
+            description: `SEARCH SAP DOCS (alias for sap_docs_search): search(query="search terms")
+
+FUNCTION NAME: search (alias for sap_docs_search)
+
+COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
+AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
+
+TYPICAL WORKFLOW:
+1. search(query="your search terms") 
+2. fetch(library_id="result_id_from_step_1")
+
+QUERY TIPS:
+• Be specific: "CAP action binary parameter" not just "CAP"
+• Include error codes: "415 error CAP action"
+• Use technical terms: "LargeBinary MediaType XMLHttpRequest"
+• For ABAP: Include version like "7.58" or "latest"`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "Search terms using natural language. Be specific and include technical terms.",
+                  examples: [
+                    "CAP binary data LargeBinary MediaType",
+                    "UI5 button properties",
+                    "wdi5 testing locators", 
+                    "ABAP SELECT statements 7.58",
+                    "415 error CAP action parameter"
+                  ]
+                }
+              },
+              required: ["query"]
+            }
+          },
+          {
+            name: "fetch",
+            description: `GET SPECIFIC DOCS (alias for sap_docs_get): fetch(library_id="result_id")
+
+FUNCTION NAME: fetch (alias for sap_docs_get)
+
+RETRIEVES: Full content from search results
+WORKS WITH: Library IDs, document IDs, community post IDs
+
+COMMON PATTERNS:
+• Broad exploration: library_id="/cap", topic="binary"
+• Specific API: library_id="/openui5-api/sap/m/Button" 
+• Community posts: library_id="community-12345"
+• ABAP docs: library_id="/abap-docs-758/abeninline_declarations"`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                library_id: {
+                  type: "string",
+                  description: "ID from search results. Use exact IDs returned by search functions.",
+                  examples: [
+                    "/cap",
+                    "/sapui5", 
+                    "/openui5-api/sap/m/Button",
+                    "/abap-docs-758",
+                    "community-12345"
+                  ]
+                },
+                topic: {
+                  type: "string", 
+                  description: "Optional topic filter for library IDs only (not specific document IDs).",
+                  examples: [
+                    "binary",
+                    "authentication", 
+                    "properties",
+                    "methods",
+                    "locators"
+                  ]
+                }
+              },
+              required: ["library_id"]
+            }
+          },
 
         ]
       };
@@ -305,7 +450,7 @@ USAGE PATTERN:
       const { name, arguments: args } = request.params;
       const clientMetadata = extractClientMetadata(request);
 
-      if (name === "sap_docs_search") {
+      if (name === "sap_docs_search" || name === "search") {
         const { query } = args as { query: string };
         
         // Enhanced logging with timing
@@ -321,43 +466,38 @@ USAGE PATTERN:
           
           if (topResults.length === 0) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: false });
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `No results for "${query}".
-
-TRY INSTEAD:
-• UI5 controls: "button", "table", "wizard"  
-• CAP topics: "actions", "authentication", "media", "binary"
-• Testing: "wdi5", "locators", "e2e"
-• ABAP: Use version numbers like "SELECT 7.58"
-• Errors: Include error codes like "415 error CAP action"`
-                }
-              ]
-            };
+            return createErrorResponse(
+              `No results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP with versions ("SELECT 7.58"), or include error codes ("415 error").`,
+              timing.requestId
+            );
           }
           
-          // Format results similar to original response
-          const formattedResults = topResults.map((r, index) => {
-            return formatSearchResult(r, CONFIG.EXCERPT_LENGTH_MAIN, {
-              generateDocumentationUrl,
-              getDocUrlConfig
-            });
-          }).join('\n');
-          
-          const summary = `Found ${topResults.length} results for '${query}':\n\n${formattedResults}`;
+          // Transform results to structured JSON format
+          const searchResults: SearchResult[] = topResults.map((r, index) => {
+            // Extract title from text (format: "title\n\ndescription...")
+            const titleMatch = r.text.split('\n')[0] || r.id;
+            const libraryId = r.sourceId ? `/${r.sourceId}` : r.id;
+            const config = getDocUrlConfig(libraryId);
+            const docUrl = config ? generateDocumentationUrl(libraryId, '', r.text, config) : null;
+            
+            return {
+              id: r.id,
+              title: titleMatch || r.id,
+              url: docUrl || `#${r.id}`,
+              snippet: r.text ? r.text.substring(0, 200) + '...' : '',
+              score: r.finalScore,
+              metadata: {
+                source: r.sourceId || 'sap-docs',
+                library: r.sourceId,
+                bm25Score: r.bm25,
+                rank: index + 1
+              }
+            };
+          });
           
           logger.logToolSuccess(name, timing.requestId, timing.startTime, topResults.length, { fallback: false });
           
-          return {
-            content: [
-              {
-                type: "text",
-                text: summary
-              }
-            ]
-          };
+          return createSearchResponse(searchResults);
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error, false);
           logger.info('Attempting fallback to original search after hybrid search failure');
@@ -368,49 +508,33 @@ TRY INSTEAD:
             
             if (!res.results.length) {
               logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: true });
-              return {
-                content: [
-                  {
-                    type: "text",
-                    text: res.error || `No results for "${query}".
-
-TRY INSTEAD:
-• UI5 controls: "button", "table", "wizard"  
-• CAP topics: "actions", "authentication", "media", "binary"
-• Testing: "wdi5", "locators", "e2e"
-• ABAP: Use version numbers like "SELECT 7.58"
-• Errors: Include error codes like "415 error CAP action"`
-                  }
-                ]
-              };
+              return createErrorResponse(
+                res.error || `No fallback results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP with versions ("SELECT 7.58"), or include error codes.`,
+                timing.requestId
+              );
             }
+            
+            // Transform fallback results to structured format
+            const fallbackResults: SearchResult[] = res.results.map((r, index) => ({
+              id: r.id || `fallback-${index}`,
+              title: r.title || 'SAP Documentation',
+              url: r.url || `#${r.id}`,
+              snippet: r.description ? r.description.substring(0, 200) + '...' : '',
+              metadata: {
+                source: 'fallback-search',
+                rank: index + 1
+              }
+            }));
             
             logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length, { fallback: true });
             
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: res.results[0].description
-                }
-              ]
-            };
+            return createSearchResponse(fallbackResults);
           } catch (fallbackError) {
             logger.logToolError(name, timing.requestId, timing.startTime, fallbackError, true);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Search temporarily unavailable. 
-
-NEXT STEPS:
-• Wait 30 seconds and retry
-• Try sap_community_search instead
-• Use more specific search terms
-• Error ID: ${timing.requestId}`
-                }
-              ]
-            };
+            return createErrorResponse(
+              `Search temporarily unavailable. Wait 30 seconds and retry, try sap_community_search instead, or use more specific search terms.`,
+              timing.requestId
+            );
           }
         }
       }
@@ -426,40 +550,40 @@ NEXT STEPS:
           
           if (!res.results.length) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: res.error || `No SAP Community posts found for "${query}". Try different keywords or check your connection.`
-                }
-              ]
-            };
+            return createErrorResponse(
+              res.error || `No SAP Community posts found for "${query}". Try different keywords or check your connection.`,
+              timing.requestId
+            );
           }
+          
+          // Transform community search results to structured format
+          const communityResults: SearchResult[] = res.results.map((r, index) => ({
+            id: r.id || `community-${index}`,
+            title: r.title || 'SAP Community Post',
+            url: r.url || `#${r.id}`,
+            snippet: r.description ? r.description.substring(0, 200) + '...' : '',
+            metadata: {
+              source: 'sap-community',
+              likes: r.likes,
+              author: r.author,
+              postTime: r.postTime,
+              rank: index + 1
+            }
+          }));
           
           logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length);
           
-          return {
-            content: [
-              {
-                type: "text",
-                text: res.results[0].description
-              }
-            ]
-          };
+          return createSearchResponse(communityResults);
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `SAP Community search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
-              }
-            ]
-          };
+          return createErrorResponse(
+            `SAP Community search service temporarily unavailable. Please try again later.`,
+            timing.requestId
+          );
         }
       }
 
-      if (name === "sap_docs_get") {
+      if (name === "sap_docs_get" || name === "fetch") {
         const { library_id, topic = "" } = args as { 
           library_id: string; 
           topic?: string; 
@@ -474,15 +598,27 @@ NEXT STEPS:
           
           if (!text) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Nothing found for ${library_id}`
-                }
-              ]
-            };
+            return createErrorResponse(
+              `Nothing found for ${library_id}`,
+              timing.requestId
+            );
           }
+          
+          // Transform document content to structured format
+          const config = getDocUrlConfig(library_id);
+          const docUrl = config ? generateDocumentationUrl(library_id, '', text, config) : null;
+          const document: DocumentResult = {
+            id: library_id,
+            title: library_id.replace(/^\//, '').replace(/\//g, ' > ') + (topic ? ` (${topic})` : ''),
+            text: text,
+            url: docUrl || `#${library_id}`,
+            metadata: {
+              source: 'sap-docs',
+              library: library_id,
+              topic: topic || undefined,
+              contentLength: text.length
+            }
+          };
           
           logger.logToolSuccess(name, timing.requestId, timing.startTime, 1, { 
             contentLength: text.length,
@@ -490,17 +626,13 @@ NEXT STEPS:
             topic: topic || undefined
           });
           
-          return { content: [{ type: "text", text }] };
+          return createDocumentResponse(document);
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error retrieving documentation for ${library_id}. Please try again later. Error ID: ${timing.requestId}`
-              }
-            ]
-          };
+          return createErrorResponse(
+            `Error retrieving documentation for ${library_id}. Please try again later.`,
+            timing.requestId
+          );
         }
       }
 
@@ -515,36 +647,34 @@ NEXT STEPS:
           
           if (!res.results.length) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: res.error || `No SAP Help results found for "${query}". Try different keywords or check your connection.`
-                }
-              ]
-            };
+            return createErrorResponse(
+              res.error || `No SAP Help results found for "${query}". Try different keywords or check your connection.`,
+              timing.requestId
+            );
           }
+          
+          // Transform SAP Help search results to structured format
+          const helpResults: SearchResult[] = res.results.map((r, index) => ({
+            id: r.id || `sap-help-${index}`,
+            title: r.title || 'SAP Help Document',
+            url: r.url || `#${r.id}`,
+            snippet: r.description ? r.description.substring(0, 200) + '...' : '',
+            metadata: {
+              source: 'sap-help',
+              totalSnippets: r.totalSnippets,
+              rank: index + 1
+            }
+          }));
           
           logger.logToolSuccess(name, timing.requestId, timing.startTime, res.results.length);
           
-          return {
-            content: [
-              {
-                type: "text",
-                text: res.results[0].description
-              }
-            ]
-          };
+          return createSearchResponse(helpResults);
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `SAP Help search service temporarily unavailable. Please try again later. Error ID: ${timing.requestId}`
-              }
-            ]
-          };
+          return createErrorResponse(
+            `SAP Help search service temporarily unavailable. Please try again later.`,
+            timing.requestId
+          );
         }
       }
 
@@ -557,29 +687,31 @@ NEXT STEPS:
         try {
           const content = await getSapHelpContent(result_id);
           
+          // Transform SAP Help content to structured format
+          const document: DocumentResult = {
+            id: result_id,
+            title: `SAP Help Document (${result_id})`,
+            text: content,
+            url: `https://help.sap.com/#${result_id}`,
+            metadata: {
+              source: 'sap-help',
+              resultId: result_id,
+              contentLength: content.length
+            }
+          };
+          
           logger.logToolSuccess(name, timing.requestId, timing.startTime, 1, { 
             contentLength: content.length,
             resultId: result_id
           });
           
-          return {
-            content: [
-              {
-                type: "text",
-                text: content
-              }
-            ]
-          };
+          return createDocumentResponse(document);
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error retrieving SAP Help content. Please try again later. Error ID: ${timing.requestId}`
-              }
-            ]
-          };
+          return createErrorResponse(
+            `Error retrieving SAP Help content. Please try again later.`,
+            timing.requestId
+          );
         }
       }
 
