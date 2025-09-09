@@ -74,11 +74,15 @@ curl -sS http://127.0.0.1:3122/health | jq .
 ---
 
 ## What you get
-- **sap_docs_search** – **unified search** across all SAP documentation sources including **40,761+ curated ABAP files across 8 versions** with intelligent version auto-detection and filtering. Shows latest ABAP by default; specific versions only when requested (e.g., "LOOP 7.57" shows only ABAP 7.57 + related sources)
-- **sap_docs_get** – fetches complete documents/snippets with smart formatting for all sources including ABAP
-- **sap_community_search** – real-time SAP Community posts with **full content** of top 3 results
-- **sap_help_search** – comprehensive search across all SAP Help Portal documentation  
-- **sap_help_get** – retrieves complete SAP Help pages with metadata
+
+### 🔍 **Unified Documentation Search**
+- **sap_docs_search** – Search across all official SAP documentation sources with intelligent filtering
+- **sap_docs_get** – Retrieve complete documents/snippets with smart formatting
+
+### 🌐 **Community & Help Portal**  
+- **sap_community_search** – Real-time SAP Community posts with full content of top 3 results
+- **sap_help_search** – Comprehensive search across SAP Help Portal documentation  
+- **sap_help_get** – Retrieve complete SAP Help pages with metadata
 
 ---
 
@@ -402,144 +406,127 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 
 ## Features
 
-### 🔍 Comprehensive Search System
-- **sap_docs_search**: **Unified search** across all SAP documentation including **40,761+ curated ABAP files across 8 versions** (7.52-7.58 + latest) with intelligent version filtering - shows latest by default, specific versions only when requested
-- **sap_community_search**: Search real-time SAP Community content with **automatic full content retrieval** of top 3 posts
-- **sap_help_search**: Search SAP Help Portal using private APIs for all SAP product documentation across S/4HANA, BTP, Analytics Cloud, and more
+### 🔍 Advanced Search Capabilities
+- **Unified search** across all official SAP documentation with intelligent ABAP version filtering
+- **BM25 full-text search** with SQLite FTS5 for fast, relevant results (~15ms average query time)
+- **Context-aware scoring** with automatic stopword filtering and phrase detection
+- **Version-specific filtering** - shows latest ABAP by default, specific versions only when requested
 
-### 📚 Comprehensive Coverage
-- **1,485+ SAPUI5 files** - Complete developer guide
-- **195+ CAP files** - Cloud Application Programming model  
-- **500+ OpenUI5 APIs** - Control APIs with detailed JSDoc
-- **2,000+ sample files** - Working examples from `demokit/sample` directories
-- **40,761+ curated ABAP files** - Official SAP ABAP keyword documentation across 8 versions with intelligent version filtering (latest by default, specific versions when requested)
-- **wdi5 E2E test framework docs** - End-to-end testing documentation
-- **UI5 TypeScript documentation** - Official TypeScript integration guides and type definitions
-- **ABAP best practices** - Clean ABAP guidelines, cheat sheets, and German community guidelines (DSAG)
-- **Fiori Elements showcases** - Comprehensive annotation references for both ABAP RAP and CAP
-- **Real-time community content** - Live posts with engagement info
-- **UI5 Tooling docs** - UI5 Tooling documentation
-- **Cloud MTA Build Tool docs** - Cloud MTA Build Tool Documentation
-- **UI5 Web Components docs** - UI5 Web Components documentation
-- **UI5 Custom Controls** - Spreadsheet importer and other custom control documentation
-- **SAP Cloud SDK** - SAP Cloud SDK documentation (Javascript & Java)
-- **SAP Cloud SDK for AI** - SAP Cloud SDK for AI documentation (Javascript & Java)
-
-### 🌐 SAP Community Integration
-- **Intelligent Search**: HTML scraping using SAP Community's "Best Match" algorithm
-- **Full Content Delivery**: Automatic retrieval of complete blog post content for top 3 results
-- **Engagement Info**: Includes kudos count when available (no hard kudos filtering)
-- **Efficient API Usage**: Batch content retrieval using LiQL API for fast response times
-- **Real-world Knowledge**: Live posts with practical developer insights and solutions
-
-### 🏢 SAP Help Portal Integration  
-- **Comprehensive Coverage**: Search across all SAP product documentation
-- **Private API Access**: Direct integration with help.sap.com internal APIs
-- **Full Content Retrieval**: Complete documentation pages with metadata
-- **Product Scope**: S/4HANA, SAP BTP, Analytics Cloud, Fiori, ABAP, and more
+### 🌐 Real-time External Integration
+- **SAP Community**: Full content retrieval using "Best Match" algorithm with engagement metrics
+- **SAP Help Portal**: Direct API access to all SAP product documentation (S/4HANA, BTP, Analytics Cloud)
+- **Efficient processing**: Batch content retrieval and intelligent caching for fast response times
 
 ### 💡 Smart Features
-- Automatic code highlighting and sample categorization
-- Context-aware search with intelligent scoring
-- Source-specific results for targeted searches
+- **Automatic content enhancement**: Code highlighting and sample categorization
+- **Intelligent ranking**: Context-aware scoring with source-specific weighting
+- **Performance optimized**: Lightweight SQLite FTS5 with no external ML dependencies
 
 ---
 
 ## What's Included
 
-### Official Documentation
-- **SAPUI5 Documentation** (`/sapui5`) - Complete developer guide with 1,485+ files
-- **CAP Documentation** (`/cap`) - Cloud Application Programming model with 195+ files  
-- **OpenUI5 API Documentation** (`/openui5-api`) - 500+ control APIs with detailed JSDoc
-- **OpenUI5 Sample Code** (`/openui5-samples`) - 2,000+ working examples
-- **wdi5 Documentation** (`/wdi5`) - End-to-end test framework documentation
-- **UI5 Tooling Documentation** (`/ui5-tooling`) - UI5 Tooling documentation
-- **Cloud MTA Build Tool Documentation** (`/cloud-mta-build-tool`) - Cloud MTA Build Tool documentation
-- **UI5 Web Components Documentation** (`/ui5-webcomponents`) - UI5 Web Components documentation
+This MCP server provides unified access to **comprehensive SAP development documentation** across multiple product areas. All sources are searched simultaneously through the `sap_docs_search` tool, with intelligent filtering and ranking.
 
-### Community Content (Full Content Included)
-- **Complete Blog Posts** - Full technical tutorials and deep-dives with complete content
-- **Real-world Solutions** - Comprehensive answers to development problems with full context
-- **Best Practices** - Community-tested approaches with detailed explanations
-- **Code Examples** - Complete implementations with full source code and explanations
-- **Engagement Info** - Displays kudos when available; results follow Best Match ranking
-- **Instant Access** - Top 3 results include full post content (no additional API calls needed)
+### 📊 Documentation Coverage Overview
 
-### SAP Help Portal Content
-- **Product Documentation** - Complete guides for S/4HANA, BTP, Analytics Cloud
-- **Implementation Guides** - Step-by-step setup and configuration documentation
-- **Technical References** - API documentation, development guides, and technical specs
-- **Troubleshooting** - Comprehensive problem-solving documentation
-- **Release Notes** - Latest updates and changes across SAP products
+| Source Category | Sources | File Count | Description |
+|-----------------|---------|------------|-------------|
+| **ABAP Development** | 4 sources | 40,800+ files | Official ABAP keyword docs (8 versions), cheat sheets, Fiori showcase, community guidelines |
+| **UI5 Development** | 6 sources | 12,000+ files | SAPUI5 docs, OpenUI5 APIs/samples, TypeScript, tooling, web components, custom controls |
+| **CAP Development** | 2 sources | 250+ files | Cloud Application Programming model docs and Fiori Elements showcase |
+| **Cloud & Deployment** | 3 sources | 500+ files | SAP Cloud SDK (JS/Java), Cloud SDK for AI, Cloud MTA Build Tool |
+| **Testing & Quality** | 2 sources | 260+ files | wdi5 E2E testing framework, SAP style guides |
 
----
+### 🔍 ABAP Development Sources
+- **Official ABAP Keyword Documentation** (`/abap-docs`) - **40,761+ curated ABAP files** across 8 versions (7.52-7.58 + latest) with intelligent version filtering
+- **ABAP Cheat Sheets** (`/abap-cheat-sheets`) - 32 comprehensive cheat sheets covering core ABAP concepts, SQL, OOP, RAP, and more
+- **ABAP RAP Fiori Elements Showcase** (`/abap-fiori-showcase`) - Complete annotation reference for ABAP RESTful Application Programming (RAP)
+- **DSAG ABAP Guidelines** (`/dsag-abap-leitfaden`) - German ABAP community best practices and development standards
 
-## Usage Examples
+### 🎨 UI5 Development Sources
+- **SAPUI5 Documentation** (`/sapui5-docs`) - **1,485+ files** - Complete official developer guide, controls, and best practices
+- **OpenUI5 Framework** (`/openui5`) - **20,000+ files** - Complete OpenUI5 source including 500+ control APIs with detailed JSDoc and 2,000+ working examples from demokit samples
+- **UI5 TypeScript Integration** (`/ui5-typescript`) - Official TypeScript setup guides, type definitions, and migration documentation
+- **UI5 Tooling** (`/ui5-tooling`) - Complete UI5 Tooling documentation for project setup, build, and development workflows
+- **UI5 Web Components** (`/ui5-webcomponents`) - **4,500+ files** - Comprehensive web components documentation, APIs, and implementation examples
+- **UI5 Custom Controls** (`/ui5-cc-spreadsheetimporter`) - Spreadsheet importer and other community custom control documentation
 
-### Search Official Documentation
-```
-Use sap_docs_search with: "wdi5 configuration"
-```
-**Returns**: wdi5 documentation about configuration, setup, and usage.
+### ☁️ CAP Development Sources  
+- **CAP Documentation** (`/cap-docs`) - **195+ files** - Complete Cloud Application Programming model documentation for Node.js and Java
+- **CAP Fiori Elements Showcase** (`/cap-fiori-showcase`) - Comprehensive annotation reference and examples for CAP-based Fiori Elements applications
 
-### Get Specific Documentation
-```
-Use sap_docs_get with: /wdi5
-```
-**Returns**: wdi5 documentation overview
+### 🚀 Cloud & Deployment Sources
+- **SAP Cloud SDK for JavaScript** (`/cloud-sdk`) - Complete SDK documentation, tutorials, and API references for JavaScript/TypeScript
+- **SAP Cloud SDK for Java** (`/cloud-sdk`) - Comprehensive Java SDK documentation and integration guides  
+- **SAP Cloud SDK for AI** (`/cloud-sdk-ai`) - Latest AI capabilities integration documentation for both JavaScript and Java
+- **Cloud MTA Build Tool** (`/cloud-mta-build-tool`) - Complete documentation for Multi-Target Application development and deployment
 
-### Search SAP Community (with Full Content)
-```
-Use sap_community_search with: "wdi5 best practices"
-```
-**Returns**: Top 3 most relevant community posts about wdi5 best practices **with complete blog post content included** - no need for additional API calls.
-
-### Search SAP Help Portal
-```
-Use sap_help_search with: "S/4HANA Fiori configuration"
-```
-**Returns**: Comprehensive SAP Help documentation about S/4HANA and Fiori configuration from help.sap.com.
-
-### Get SAP Help Content
-```
-Use sap_help_get with: sap-help-12345abc
-```
-**Returns**: Complete SAP Help page with full content and metadata.
-
-### Find Sample Implementations
-```
-Use sap_docs_search with: "button click handler"
-```
-**Returns**: 
-- Official button documentation
-- Sample button implementations with JS controllers
-- XML view examples
+### ✅ Testing & Quality Sources
+- **wdi5 Testing Framework** (`/wdi5`) - **225+ files** - End-to-end testing documentation, setup guides, and real-world examples
+- **SAP Style Guides** (`/sap-styleguides`) - Official SAP coding standards, clean code practices, and development guidelines
 
 ---
 
 ## Example Prompts
 
-Try these with any connected MCP client:
+Try these with any connected MCP client to explore the comprehensive documentation:
 
-**Official Documentation:**
-- "How do I implement authentication in SAPUI5?"
-- "Show me wdi5 testing examples for forms"
-- "Find OpenUI5 button control examples with click handlers"
-- "What is Clean ABAP and how do I follow the style guide?"
-- "Show me TypeScript setup for UI5 development"
-
-**ABAP Keyword Documentation (Enhanced):**
+### 🔍 ABAP Development Queries
+**ABAP Keyword Documentation (8 versions with intelligent filtering):**
 - "What is the syntax for inline declarations in ABAP 7.58?"
-- "How do I use SELECT statements with internal tables?"
-- "Show me exception handling with TRY-CATCH in ABAP"
-- "What are the differences between LOOP and WHILE in ABAP?"
-- "How do I define classes and methods in ABAP OOP?"
+- "How do I use SELECT statements with internal tables in ABAP 7.57?"
+- "Show me exception handling with TRY-CATCH in modern ABAP"
+- "What are constructor expressions for VALUE and CORRESPONDING?"
+- "How do I implement ABAP Unit tests with test doubles?"
 
+**ABAP Best Practices & Guidelines:**
+- "What is Clean ABAP and how do I follow the style guide?"
+- "Show me ABAP cheat sheet for internal tables operations"
+- "Find DSAG ABAP guidelines for object-oriented programming"
+- "How to implement RAP with EML in ABAP for Cloud?"
+
+### 🎨 UI5 Development Queries  
+**SAPUI5 & OpenUI5:**
+- "How do I implement authentication in SAPUI5?"
+- "Find OpenUI5 button control examples with click handlers"
+- "Show me fragment reuse patterns in UI5"
+- "What are UI5 model binding best practices?"
+
+**Modern UI5 Development:**
+- "Show me TypeScript setup for UI5 development"
+- "How do I configure UI5 Tooling for a new project?" 
+- "Find UI5 Web Components integration examples"
+- "How to implement custom controls with UI5 Web Components?"
+
+### ☁️ CAP & Cloud Development
+**CAP Framework:**
+- "How do I implement CDS views with calculated fields in CAP?"
+- "Show me CAP authentication and authorization patterns"
+- "Find CAP Node.js service implementation examples"
+- "How to handle temporal data in CAP applications?"
+
+**Cloud SDK & Deployment:**
+- "How do I use SAP Cloud SDK for JavaScript with OData?"
+- "Show me Cloud SDK for AI integration examples"
+- "Find Cloud MTA Build Tool configuration for multi-target apps"
+- "How to deploy CAP applications to SAP BTP?"
+
+### ✅ Testing & Quality
+**Testing Frameworks:**
+- "Show me wdi5 testing examples for forms and tables"
+- "How do I set up wdi5 for OData service testing?"
+- "Find end-to-end testing patterns for Fiori Elements apps"
+
+**Code Quality:**
+- "What are SAP style guide recommendations for JavaScript?"
+- "Show me clean code practices for ABAP development"
+
+### 🌐 Community & Help Portal
 **Community Knowledge (with full content):**
-- "What are the latest CAP authentication best practices from the community?"
 - "Find community examples of OData batch operations with complete implementation"
-- "Search for temporal data handling in CAP with real-world solutions"
-- "Find RAP development tips and tricks from the community"
+- "Search for RAP development tips and tricks from the community"
+- "What are the latest CAP authentication best practices from the community?"
 
 **SAP Help Portal:**
 - "How to configure S/4HANA Fiori Launchpad?"
@@ -677,12 +664,7 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 - **BM25 Search Engine** - SQLite FTS5 with optimized OR-logic queries for fast, relevant results
 - **Optimized Submodules** - Shallow, single-branch clones with blob filtering for minimal bandwidth
 
-### Search Implementation
-
-The server uses a **BM25-only approach** for optimal performance:
-
-- **SQLite FTS5** - Full-text search with prefix matching and OR logic
-- **Query Processing** - Automatic stopword filtering and phrase detection  
-- **Fast Response Times** - ~15ms average query time
-- **High Recall** - OR logic ensures comprehensive results
-- **Lightweight** - No external dependencies or ML models required
+### Technical Stack
+- **Search Engine**: BM25 with SQLite FTS5 for fast full-text search with OR logic
+- **Performance**: ~15ms average query time with optimized indexing
+- **Transport**: Latest MCP protocol with HTTP/SSE support and session management
