@@ -440,13 +440,13 @@ This MCP server provides unified access to **comprehensive SAP development docum
 
 ### 🔍 ABAP Development Sources
 - **Official ABAP Keyword Documentation** (`/abap-docs`) - **40,761+ curated ABAP files** across 8 versions (7.52-7.58 + latest) with intelligent version filtering  
-  📁 **GitHub**: [SAP-docs/abap-keyword-documentation](https://github.com/SAP-docs/abap-keyword-documentation)
+  📁 **GitHub**: [marianfoo/abap-docs](https://github.com/marianfoo/abap-docs)
 - **ABAP Cheat Sheets** (`/abap-cheat-sheets`) - 32 comprehensive cheat sheets covering core ABAP concepts, SQL, OOP, RAP, and more  
   📁 **GitHub**: [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets)
 - **ABAP RAP Fiori Elements Showcase** (`/abap-fiori-showcase`) - Complete annotation reference for ABAP RESTful Application Programming (RAP)  
   📁 **GitHub**: [SAP-samples/abap-platform-fiori-feature-showcase](https://github.com/SAP-samples/abap-platform-fiori-feature-showcase)
 - **DSAG ABAP Guidelines** (`/dsag-abap-leitfaden`) - German ABAP community best practices and development standards  
-  📁 **GitHub**: [1DSAG/Leitfaden-ABAP-Entwicklung](https://github.com/1DSAG/Leitfaden-ABAP-Entwicklung)
+  📁 **GitHub**: [1DSAG/ABAP-Leitfaden](https://github.com/1DSAG/ABAP-Leitfaden)
 
 ### 🎨 UI5 Development Sources
 - **SAPUI5 Documentation** (`/sapui5-docs`) - **1,485+ files** - Complete official developer guide, controls, and best practices  
@@ -460,21 +460,21 @@ This MCP server provides unified access to **comprehensive SAP development docum
 - **UI5 Web Components** (`/ui5-webcomponents`) - **4,500+ files** - Comprehensive web components documentation, APIs, and implementation examples  
   📁 **GitHub**: [SAP/ui5-webcomponents](https://github.com/SAP/ui5-webcomponents)
 - **UI5 Custom Controls** (`/ui5-cc-spreadsheetimporter`) - Spreadsheet importer and other community custom control documentation  
-  📁 **GitHub**: [marianfoo/ui5-cc-spreadsheetimporter](https://github.com/marianfoo/ui5-cc-spreadsheetimporter)
+  📁 **GitHub**: [spreadsheetimporter/ui5-cc-spreadsheetimporter](https://github.com/spreadsheetimporter/ui5-cc-spreadsheetimporter)
 
 ### ☁️ CAP Development Sources  
 - **CAP Documentation** (`/cap-docs`) - **195+ files** - Complete Cloud Application Programming model documentation for Node.js and Java  
   📁 **GitHub**: [cap-js/docs](https://github.com/cap-js/docs)
 - **CAP Fiori Elements Showcase** (`/cap-fiori-showcase`) - Comprehensive annotation reference and examples for CAP-based Fiori Elements applications  
-  📁 **GitHub**: [SAP-samples/cap-sflight](https://github.com/SAP-samples/cap-sflight)
+  📁 **GitHub**: [SAP-samples/fiori-elements-feature-showcase](https://github.com/SAP-samples/fiori-elements-feature-showcase)
 
 ### 🚀 Cloud & Deployment Sources
 - **SAP Cloud SDK for JavaScript** (`/cloud-sdk`) - Complete SDK documentation, tutorials, and API references for JavaScript/TypeScript  
-  📁 **GitHub**: [SAP/cloud-sdk-js](https://github.com/SAP/cloud-sdk-js)
+  📁 **GitHub**: [SAP/cloud-sdk](https://github.com/SAP/cloud-sdk)
 - **SAP Cloud SDK for Java** (`/cloud-sdk`) - Comprehensive Java SDK documentation and integration guides  
-  📁 **GitHub**: [SAP/cloud-sdk-java](https://github.com/SAP/cloud-sdk-java)
+  📁 **GitHub**: [SAP/cloud-sdk](https://github.com/SAP/cloud-sdk)
 - **SAP Cloud SDK for AI** (`/cloud-sdk-ai`) - Latest AI capabilities integration documentation for both JavaScript and Java  
-  📁 **GitHub**: [SAP/ai-sdk-js](https://github.com/SAP/ai-sdk-js) | [SAP/ai-sdk-java](https://github.com/SAP/ai-sdk-java)
+  📁 **GitHub**: [SAP/ai-sdk](https://github.com/SAP/ai-sdk)
 - **Cloud MTA Build Tool** (`/cloud-mta-build-tool`) - Complete documentation for Multi-Target Application development and deployment  
   📁 **GitHub**: [SAP/cloud-mta-build-tool](https://github.com/SAP/cloud-mta-build-tool)
 
@@ -483,37 +483,6 @@ This MCP server provides unified access to **comprehensive SAP development docum
   📁 **GitHub**: [ui5-community/wdi5](https://github.com/ui5-community/wdi5)
 - **SAP Style Guides** (`/sap-styleguides`) - Official SAP coding standards, clean code practices, and development guidelines  
   📁 **GitHub**: [SAP/styleguides](https://github.com/SAP/styleguides)
-
----
-
-## 📁 GitHub Repositories
-
-All documentation sources are synchronized from official SAP and community GitHub repositories:
-
-### Official SAP Repositories
-- [SAP-docs/abap-keyword-documentation](https://github.com/SAP-docs/abap-keyword-documentation) - Official ABAP keyword documentation
-- [SAP-docs/sapui5](https://github.com/SAP-docs/sapui5) - Official SAPUI5 documentation  
-- [SAP/openui5](https://github.com/SAP/openui5) - OpenUI5 framework source code and samples
-- [SAP/ui5-tooling](https://github.com/SAP/ui5-tooling) - UI5 Tooling for project builds
-- [SAP/ui5-webcomponents](https://github.com/SAP/ui5-webcomponents) - UI5 Web Components
-- [SAP/cloud-sdk-js](https://github.com/SAP/cloud-sdk-js) - SAP Cloud SDK for JavaScript
-- [SAP/cloud-sdk-java](https://github.com/SAP/cloud-sdk-java) - SAP Cloud SDK for Java
-- [SAP/ai-sdk-js](https://github.com/SAP/ai-sdk-js) - SAP Cloud SDK for AI (JavaScript)
-- [SAP/ai-sdk-java](https://github.com/SAP/ai-sdk-java) - SAP Cloud SDK for AI (Java)
-- [SAP/cloud-mta-build-tool](https://github.com/SAP/cloud-mta-build-tool) - Cloud MTA Build Tool
-- [SAP/styleguides](https://github.com/SAP/styleguides) - Official SAP coding standards
-
-### SAP Sample Repositories  
-- [SAP-samples/abap-cheat-sheets](https://github.com/SAP-samples/abap-cheat-sheets) - ABAP syntax and examples
-- [SAP-samples/abap-platform-fiori-feature-showcase](https://github.com/SAP-samples/abap-platform-fiori-feature-showcase) - ABAP RAP Fiori showcase
-- [SAP-samples/cap-sflight](https://github.com/SAP-samples/cap-sflight) - CAP reference application
-
-### Community Repositories
-- [cap-js/docs](https://github.com/cap-js/docs) - CAP framework documentation
-- [UI5/typescript](https://github.com/UI5/typescript) - UI5 TypeScript integration
-- [ui5-community/wdi5](https://github.com/ui5-community/wdi5) - wdi5 testing framework
-- [marianfoo/ui5-cc-spreadsheetimporter](https://github.com/marianfoo/ui5-cc-spreadsheetimporter) - UI5 custom controls
-- [1DSAG/Leitfaden-ABAP-Entwicklung](https://github.com/1DSAG/Leitfaden-ABAP-Entwicklung) - German ABAP guidelines
 
 ---
 
