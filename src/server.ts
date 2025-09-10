@@ -12,7 +12,8 @@ function createServer() {
   }, {
     capabilities: { 
       resources: {},  // Enable resources capability
-      tools: {} 
+      tools: {},      // Enable tools capability
+      prompts: {}     // Enable prompts capability for 2025-06-18 protocol
     }
   });
 

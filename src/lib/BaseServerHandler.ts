@@ -16,7 +16,9 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
   CallToolRequestSchema,
-  ListToolsRequestSchema
+  ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
 import {
   searchLibraries,
@@ -163,6 +165,7 @@ export class BaseServerHandler {
   static configureServer(srv: Server): void {
     this.setupResourceHandlers(srv);
     this.setupToolHandlers(srv);
+    // this.setupPromptHandlers(srv); // Temporarily disabled to fix session init
   }
 
   /**
@@ -752,6 +755,154 @@ COMMON PATTERNS:
 
 
       throw new Error(`Unknown tool: ${name}`);
+    });
+  }
+
+  /**
+   * Setup prompt handlers (shared between all server types)
+   */
+  private static setupPromptHandlers(srv: Server): void {
+    // List available prompts
+    srv.setRequestHandler(ListPromptsRequestSchema, async () => {
+      return {
+        prompts: [
+          {
+            name: "sap_search_help",
+            displayName: "SAP Documentation Search Helper",
+            description: "Helps users construct effective search queries for SAP documentation",
+            arguments: [
+              {
+                name: "domain",
+                description: "SAP domain (UI5, CAP, ABAP, etc.)",
+                required: false
+              },
+              {
+                name: "context",
+                description: "Specific context or technology area",
+                required: false
+              }
+            ]
+          },
+          {
+            name: "sap_troubleshoot",
+            displayName: "SAP Issue Troubleshooting Guide",
+            description: "Guides users through troubleshooting common SAP development issues",
+            arguments: [
+              {
+                name: "error_message",
+                description: "Error message or symptom description",
+                required: false
+              },
+              {
+                name: "technology",
+                description: "SAP technology stack (UI5, CAP, ABAP, etc.)",
+                required: false
+              }
+            ]
+          }
+        ]
+      };
+    });
+
+    // Get specific prompt
+    srv.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+      
+      switch (name) {
+        case "sap_search_help":
+          const domain = args?.domain || "general SAP";
+          const context = args?.context || "development";
+          
+          return {
+            description: `Search helper for ${domain} documentation`,
+            messages: [
+              {
+                role: "user",
+                content: {
+                  type: "text",
+                  text: `I need help searching ${domain} documentation for ${context}. What search terms should I use to find the most relevant results?
+
+Here are some tips for effective SAP documentation searches:
+
+**For UI5/Frontend:**
+- Include specific control names (e.g., "Table", "Button", "ObjectPage")
+- Mention UI5 version if relevant
+- Use terms like "properties", "events", "aggregations"
+
+**For CAP/Backend:**
+- Include CDS concepts (e.g., "entity", "service", "annotation")
+- Mention specific features (e.g., "authentication", "authorization", "events")
+- Use terms like "deployment", "configuration"
+
+**For ABAP:**
+- Include version number (e.g., "7.58", "latest")
+- Use specific statement types (e.g., "SELECT", "LOOP", "MODIFY")
+- Include object types (e.g., "class", "method", "interface")
+
+**General Tips:**
+- Be specific rather than broad
+- Include error codes if troubleshooting
+- Use technical terms rather than business descriptions
+- Combine multiple related terms
+
+What specific topic are you looking for help with?`
+                }
+              }
+            ]
+          };
+
+        case "sap_troubleshoot":
+          const errorMessage = args?.error_message || "an issue";
+          const technology = args?.technology || "SAP";
+          
+          return {
+            description: `Troubleshooting guide for ${technology}`,
+            messages: [
+              {
+                role: "user", 
+                content: {
+                  type: "text",
+                  text: `I'm experiencing ${errorMessage} with ${technology}. Let me help you troubleshoot this systematically.
+
+**Step 1: Information Gathering**
+- What is the exact error message or symptom?
+- When does this occur (during development, runtime, deployment)?
+- What were you trying to accomplish?
+- What technology stack are you using?
+
+**Step 2: Initial Search Strategy**
+Let me search the SAP documentation for similar issues:
+
+**For UI5 Issues:**
+- Search for the exact error message
+- Include control or component names
+- Look for browser console errors
+
+**For CAP Issues:**
+- Check service definitions and annotations
+- Look for deployment configuration
+- Verify database connections
+
+**For ABAP Issues:**
+- Include ABAP version in search
+- Look for syntax or runtime errors
+- Check object dependencies
+
+**Step 3: Common Solutions**
+Based on the issue type, I'll search for:
+- Official SAP documentation
+- Community discussions
+- Code examples and samples
+
+Please provide more details about your specific issue, and I'll search for relevant solutions.`
+                }
+              }
+            ]
+          };
+
+        default:
+          throw new Error(`Unknown prompt: ${name}`);
+      }
     });
   }
 

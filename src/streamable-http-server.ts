@@ -64,7 +64,7 @@ function createServer() {
   }, {
     capabilities: { 
       resources: {},  // Enable resources capability
-      tools: {} 
+      tools: {}       // Enable tools capability 
     }
   });
 
@@ -119,7 +119,7 @@ async function main() {
           method: req.method,
           transportCount: Object.keys(transports).length
         });
-      } else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
+      } else if (!sessionId && req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
         // New initialization request - create new transport
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -160,7 +160,7 @@ async function main() {
           requestId,
           method: req.method,
           hasSessionId: !!sessionId,
-          isInitRequest: isInitializeRequest(req.body),
+          isInitRequest: req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize',
           sessionId: sessionId || 'none',
           userAgent: req.headers['user-agent']
         });
@@ -209,21 +209,28 @@ async function main() {
       version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',
-      protocol: '2025-03-26'
+      protocol: '2025-06-18'
     });
   });
 
   // Start the server (bind to localhost for local-only access)
-  app.listen(MCP_PORT, '127.0.0.1', (error?: Error) => {
+  const server = app.listen(MCP_PORT, '127.0.0.1', (error?: Error) => {
     if (error) {
       console.error('Failed to start server:', error);
       process.exit(1);
     }
-    console.log(`📚 MCP Streamable HTTP Server listening on http://127.0.0.1:${MCP_PORT}`);
-    console.log(`
+  });
+
+  // Configure server timeouts for SSE connections
+  server.timeout = 0;           // Disable HTTP timeout for long-lived SSE connections
+  server.keepAliveTimeout = 0;  // Disable keep-alive timeout
+  server.headersTimeout = 0;    // Disable headers timeout
+  
+  console.log(`📚 MCP Streamable HTTP Server listening on http://127.0.0.1:${MCP_PORT}`);
+  console.log(`
 ==============================================
 MCP STREAMABLE HTTP SERVER
-Protocol version: 2025-03-26
+Protocol version: 2025-06-18
 
 Endpoint: /mcp
 Methods: GET, POST, DELETE
@@ -236,7 +243,6 @@ Usage:
 Health check: GET /health
 ==============================================
 `);
-  });
 
   // Log server startup
   logger.info("MCP SAP Docs Streamable HTTP server starting up", {
