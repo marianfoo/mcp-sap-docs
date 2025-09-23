@@ -58,16 +58,22 @@ interface DocumentResult {
 }
 
 /**
- * Create structured JSON response for search results
+ * Create structured JSON response for search results (ChatGPT-compatible)
  */
 function createSearchResponse(results: SearchResult[]): any {
   // Clean the results to avoid JSON serialization issues in MCP protocol
   const cleanedResults = results.map(result => ({
-    ...result,
+    // ChatGPT requires: id, title, url (other fields optional)
+    id: result.id,
+    title: result.title ? result.title.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n') : result.title,
+    url: result.url,
+    // Additional fields for enhanced functionality
     snippet: result.snippet ? result.snippet.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n') : result.snippet,
-    title: result.title ? result.title.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n') : result.title
+    score: result.score,
+    metadata: result.metadata
   }));
   
+  // ChatGPT expects: { "results": [...] } in JSON-encoded text content
   return {
     content: [
       {
@@ -79,18 +85,23 @@ function createSearchResponse(results: SearchResult[]): any {
 }
 
 /**
- * Create structured JSON response for document fetch
+ * Create structured JSON response for document fetch (ChatGPT-compatible)
  */
 function createDocumentResponse(document: DocumentResult): any {
   // Clean the text content to avoid JSON serialization issues in MCP protocol
   const cleanedDocument = {
-    ...document,
+    // ChatGPT requires: id, title, text, url, metadata
+    id: document.id,
+    title: document.title,
     text: document.text
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars except \n, \r, \t
       .replace(/\r\n/g, '\n') // Normalize line endings
-      .replace(/\r/g, '\n') // Convert remaining \r to \n
+      .replace(/\r/g, '\n'), // Convert remaining \r to \n
+    url: document.url,
+    metadata: document.metadata
   };
   
+  // ChatGPT expects document object as JSON-encoded text content
   return {
     content: [
       {
@@ -276,56 +287,50 @@ BEST FOR TROUBLESHOOTING:
           },
           {
             name: "sap_docs_get",
-            description: `GET SPECIFIC DOCS: sap_docs_get(library_id, topic)
+            description: `GET SPECIFIC DOCS: sap_docs_get(id="document_id")
 
 FUNCTION NAME: sap_docs_get (or mcp_sap-docs-remote_sap_docs_get)
 
 RETRIEVES: Full documentation content based on search results
 
 📋 PARAMETER SCHEMA:
-• library_id: The library identifier (e.g., "/cap", "/sapui5", "/wdi5")  
-• topic: Specific document/section path within the library (optional)
+• id: The document identifier from search results (e.g., "/cap/guides/domain-modeling", "/sapui5/controls/button")
 
 🎯 USAGE PATTERNS FROM SEARCH RESULTS:
-• Search shows: Library: "/cap", Topic: "guides/domain-modeling#compositions"
-• Call: sap_docs_get(library_id="/cap", topic="guides/domain-modeling#compositions")
+• Search returns: {"id": "/cap/guides/domain-modeling", "title": "..."}
+• Call: sap_docs_get(id="/cap/guides/domain-modeling")
 
-• Search shows: Library: "/openui5-api", Topic: "sap/m/Button"
-• Call: sap_docs_get(library_id="/openui5-api", topic="sap/m/Button")
+• Search returns: {"id": "/openui5-api/sap/m/Button", "title": "..."}
+• Call: sap_docs_get(id="/openui5-api/sap/m/Button")
 
-• Search shows: Library: "/cap" (no topic)
-• Call: sap_docs_get(library_id="/cap")
-
-✅ ALWAYS use the exact library_id and topic shown in search results
-❌ DON'T combine them into a single parameter`,
+✅ ALWAYS use the exact id shown in search results
+✅ ChatGPT compatible with "id" parameter`,
             inputSchema: {
               type: "object",
               properties: {
-                library_id: {
+                id: {
                   type: "string",
-                  description: "Library identifier from search results. Always use the value shown as 'Library:' in search results.",
+                  description: "Document identifier from search results. Always use the exact 'id' value from search results.",
                   examples: [
-                    "/cap",
-                    "/sapui5", 
-                    "/openui5-api",
-                    "/abap-docs-758",
-                    "/wdi5",
+                    "/cap/guides/domain-modeling",
+                    "/sapui5/controls/button-properties", 
+                    "/openui5-api/sap/m/Button",
+                    "/abap-docs-758/inline-declarations",
+                    "/wdi5/configuration/setup",
                     "community-12345"
                   ]
                 },
                 topic: {
                   type: "string", 
-                  description: "Optional topic filter for library IDs only (not specific document IDs).",
+                  description: "Optional topic filter for backward compatibility.",
                   examples: [
                     "binary",
                     "authentication", 
-                    "properties",
-                    "methods",
-                    "locators"
+                    "properties"
                   ]
                 }
               },
-              required: ["library_id"]
+              required: ["id"]
             }
           },
           {
@@ -429,45 +434,33 @@ QUERY TIPS:
           },
           {
             name: "fetch",
-            description: `GET SPECIFIC DOCS (alias for sap_docs_get): fetch(library_id="result_id")
+            description: `GET SPECIFIC DOCS: fetch(id="result_id")
 
-FUNCTION NAME: fetch (alias for sap_docs_get)
+FUNCTION NAME: fetch
 
 RETRIEVES: Full content from search results
-WORKS WITH: Library IDs, document IDs, community post IDs
+WORKS WITH: Document IDs returned by search
 
-COMMON PATTERNS:
-• Broad exploration: library_id="/cap", topic="binary"
-• Specific API: library_id="/openui5-api/sap/m/Button" 
-• Community posts: library_id="community-12345"
-• ABAP docs: library_id="/abap-docs-758/abeninline_declarations"`,
+ChatGPT COMPATIBLE:
+• Uses "id" parameter (required by ChatGPT)
+• Returns structured JSON content
+• Includes full document text and metadata`,
             inputSchema: {
               type: "object",
               properties: {
-                library_id: {
+                id: {
                   type: "string",
-                  description: "ID from search results. Use exact IDs returned by search functions.",
+                  description: "Unique document ID from search results. Use exact IDs returned by search.",
                   examples: [
-                    "/cap",
-                    "/sapui5", 
+                    "/cap/guides/domain-modeling",
+                    "/sapui5/controls/button-properties", 
                     "/openui5-api/sap/m/Button",
-                    "/abap-docs-758",
+                    "/abap-docs-758/inline-declarations",
                     "community-12345"
-                  ]
-                },
-                topic: {
-                  type: "string", 
-                  description: "Optional topic filter for library IDs only (not specific document IDs).",
-                  examples: [
-                    "binary",
-                    "authentication", 
-                    "properties",
-                    "methods",
-                    "locators"
                   ]
                 }
               },
-              required: ["library_id"]
+              required: ["id"]
             }
           },
 
@@ -502,7 +495,7 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform results to structured JSON format compatible with the localDocs format
+          // Transform results to ChatGPT-compatible format with id, title, url
           const searchResults: SearchResult[] = topResults.map((r, index) => {
             // Extract library_id and topic from document ID
             const libraryIdMatch = r.id.match(/^(\/[^\/]+)/);
@@ -513,11 +506,13 @@ COMMON PATTERNS:
             const docUrl = config ? generateDocumentationUrl(libraryId, '', r.text, config) : null;
             
             return {
-              library_id: libraryId,
-              topic: topic,
-              id: r.id,
+              // ChatGPT-required format: id, title, url
+              id: r.id,  // Use full document ID as required by ChatGPT
               title: r.text.split('\n')[0] || r.id,
               url: docUrl || `#${r.id}`,
+              // Additional fields for backward compatibility
+              library_id: libraryId,
+              topic: topic,
               snippet: r.text ? r.text.substring(0, 200) + '...' : '',
               score: r.finalScore,
               metadata: {
@@ -590,13 +585,15 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform community search results to structured format matching the new library_id/topic format
+          // Transform community search results to ChatGPT-compatible format
           const communityResults: SearchResult[] = res.results.map((r: any, index) => ({
-            library_id: r.library_id || `community-${index}`,
-            topic: r.topic || '',
+            // ChatGPT-required format: id, title, url
             id: r.id || `community-${index}`,
             title: r.title || 'SAP Community Post',
             url: r.url || `#${r.id}`,
+            // Additional fields for enhanced functionality
+            library_id: r.library_id || `community-${index}`,
+            topic: r.topic || '',
             snippet: r.snippet || (r.description ? r.description.substring(0, 200) + '...' : ''),
             score: r.score || 0,
             metadata: r.metadata || {
@@ -621,10 +618,18 @@ COMMON PATTERNS:
       }
 
       if (name === "sap_docs_get" || name === "fetch") {
-        const { library_id, topic = "" } = args as { 
-          library_id: string; 
-          topic?: string; 
-        };
+        // Handle both old format (library_id) and new ChatGPT format (id)
+        const library_id = (args as any).library_id || (args as any).id;
+        const topic = (args as any).topic || "";
+        
+        if (!library_id) {
+          const timing = logger.logToolStart(name, 'missing_id', clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error('Missing id parameter'));
+          return createErrorResponse(
+            `Missing required parameter: id. Please provide a document ID from search results.`,
+            timing.requestId
+          );
+        }
         
         // Enhanced logging with timing
         const searchKey = library_id + (topic ? `/${topic}` : '');
@@ -641,7 +646,7 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform document content to structured format
+          // Transform document content to ChatGPT-compatible format
           const config = getDocUrlConfig(library_id);
           const docUrl = config ? generateDocumentationUrl(library_id, '', text, config) : null;
           const document: DocumentResult = {
@@ -690,11 +695,13 @@ COMMON PATTERNS:
             );
           }
           
-          // Transform SAP Help search results to structured format
+          // Transform SAP Help search results to ChatGPT-compatible format
           const helpResults: SearchResult[] = res.results.map((r, index) => ({
+            // ChatGPT-required format: id, title, url
             id: r.id || `sap-help-${index}`,
             title: r.title || 'SAP Help Document',
             url: r.url || `#${r.id}`,
+            // Additional fields for enhanced functionality
             snippet: r.description ? r.description.substring(0, 200) + '...' : '',
             metadata: {
               source: 'sap-help',
