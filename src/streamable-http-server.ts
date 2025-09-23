@@ -63,7 +63,7 @@ function createServer() {
     version: VERSION
   }, {
     capabilities: { 
-      resources: {},  // Enable resources capability
+      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
       tools: {}       // Enable tools capability 
     }
   });

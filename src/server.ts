@@ -11,7 +11,7 @@ function createServer() {
     version: "0.1.0"
   }, {
     capabilities: { 
-      resources: {},  // Enable resources capability
+      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
       tools: {},      // Enable tools capability
       prompts: {}     // Enable prompts capability for 2025-06-18 protocol
     }

@@ -174,7 +174,9 @@ export class BaseServerHandler {
    * Configure server with shared resource and tool handlers
    */
   static configureServer(srv: Server): void {
-    this.setupResourceHandlers(srv);
+    // Only setup resource handlers if resources capability is enabled
+    // DISABLED: Resources capability causes 60,000+ resources which breaks Cursor
+    // this.setupResourceHandlers(srv);
     this.setupToolHandlers(srv);
     // this.setupPromptHandlers(srv); // Temporarily disabled to fix session init
   }
