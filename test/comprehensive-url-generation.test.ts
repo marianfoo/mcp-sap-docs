@@ -33,6 +33,7 @@ import {
   DsagUrlGenerator,
   GenericUrlGenerator
 } from '../src/lib/url-generation/index.js';
+import { AbapUrlGenerator, generateAbapUrl } from '../src/lib/url-generation/abap.js';
 import { DocUrlConfig, getDocUrlConfig } from '../src/lib/metadata.js';
 
 describe('Comprehensive URL Generation System', () => {
@@ -499,6 +500,186 @@ describe('Comprehensive URL Generation System', () => {
         });
         
         expect(result).toBe('https://sap.github.io/ui5-tooling/v4/pages/test#test-document');
+      });
+    });
+
+    describe('AbapUrlGenerator', () => {
+      it('should generate correct cloud URLs for latest version', () => {
+        // Mock config for ABAP documentation
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/latest/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-latest', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-latest',
+          relFile: 'abeninline_declarations.md',
+          content: '# Inline Declarations',
+          config
+        });
+        
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abeninline_declarations.html');
+      });
+
+      it('should generate correct cloud URLs for version 9.16', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/9.16/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-916', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-916',
+          relFile: 'md/abapselect.md',
+          content: '# SELECT Statement',
+          config
+        });
+        
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abapselect.html');
+      });
+
+      it('should generate correct cloud URLs for S/4HANA 2025 version 8.10', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/8.10/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-810', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-810',
+          relFile: 'abaploop.md',
+          content: '# LOOP Statement',
+          config
+        });
+        
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abaploop.html');
+      });
+
+      it('should generate correct legacy URLs for version 7.58', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US',
+          pathPattern: '/7.58/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-758', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-758',
+          relFile: 'md/abapdata.md',
+          content: '# DATA Statement',
+          config
+        });
+        
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US/abapdata.html');
+      });
+
+      it('should handle anchors correctly', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/latest/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-latest', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-latest',
+          relFile: 'abeninline_declarations.md',
+          content: '# Inline Declarations',
+          config,
+          anchor: 'syntax'
+        });
+        
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abeninline_declarations.html#syntax');
+      });
+
+      it('should correctly extract version from library ID', () => {
+        const testCases = [
+          { libraryId: '/abap-docs-758', expected: '7.58' },
+          { libraryId: '/abap-docs-latest', expected: 'latest' },
+          { libraryId: '/abap-docs-916', expected: '9.16' },
+          { libraryId: '/abap-docs-810', expected: '8.10' }
+        ];
+
+        testCases.forEach(({ libraryId, expected }) => {
+          const config: DocUrlConfig = {
+            baseUrl: 'https://example.com',
+            pathPattern: `/${expected}/en-US/{filename}`,
+            anchorStyle: 'lowercase-with-dashes'
+          };
+          
+          const generator = new AbapUrlGenerator(libraryId, config);
+          
+          // Test the version extraction by checking the generated URL
+          const result = generator.generateSourceSpecificUrl({
+            libraryId,
+            relFile: 'test.md',
+            content: '# Test',
+            config
+          });
+          
+          if (expected === 'latest' || parseFloat(expected) >= 9.1 || parseFloat(expected) >= 8.1) {
+            expect(result).toContain('abapdocu_cp_index_htm/CLOUD');
+          } else {
+            const versionCode = expected.replace('.', '');
+            expect(result).toContain(`abapdocu_${versionCode}_index_htm/${expected}`);
+          }
+        });
+      });
+
+      it('should use .html extension instead of .htm for file extension', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/latest/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-latest', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-latest',
+          relFile: 'abeninline_declarations.md',
+          content: '# Inline Declarations',
+          config
+        });
+        
+        // Should use .html file extension (not .htm file extension)
+        expect(result).toContain('abeninline_declarations.html');
+        expect(result).toMatch(/\.html$/);
+        expect(result).not.toMatch(/\.htm$/);
+      });
+
+      it('should point to latest cloud version instead of legacy 7.58 version', () => {
+        const config: DocUrlConfig = {
+          baseUrl: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US',
+          pathPattern: '/latest/en-US/{filename}',
+          anchorStyle: 'lowercase-with-dashes'
+        };
+        
+        const generator = new AbapUrlGenerator('/abap-docs-latest', config);
+        
+        const result = generator.generateSourceSpecificUrl({
+          libraryId: '/abap-docs-latest',
+          relFile: 'abeninline_declarations.md',
+          content: '# Inline Declarations',
+          config
+        });
+        
+        // Should use the new cloud URL pattern instead of the old 7.58 pattern
+        expect(result).toContain('abapdocu_cp_index_htm/CLOUD');
+        expect(result).not.toContain('abapdocu_758_index_htm/7.58');
+        expect(result).not.toContain('abapdocu_latest_index_htm/latest');
+        
+        // The full URL should match the expected cloud pattern
+        expect(result).toBe('https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abeninline_declarations.html');
       });
     });
   });
