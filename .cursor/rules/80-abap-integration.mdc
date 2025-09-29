@@ -1,0 +1,223 @@
+# ABAP Multi-Version Integration (Rule)
+
+**Guide for understanding ABAP documentation integration in the standard search system.**
+
+## Overview
+
+ABAP documentation is **fully integrated** into the standard `search` tool with intelligent version management. No specialized ABAP tools needed - everything works through the unified search interface.
+
+## Key Features
+
+### **Standard Integration (No Special Tools)**
+- Uses standard `search` tool like UI5, CAP, wdi5
+- No separate `abap_search` or `abap_get` tools
+- Same proven architecture as other documentation sources
+- Consistent experience across all SAP development
+
+### **Multi-Version Support (8 Versions)**
+- **Latest** (default) - `/abap-docs-latest` - Most current features
+- **7.58** - `/abap-docs-758` - Current stable
+- **7.57** - `/abap-docs-757` - Recent stable
+- **7.56 - 7.52** - `/abap-docs-756` through `/abap-docs-752` - Historical versions
+- **Total**: 40,761+ curated ABAP files
+
+### **Intelligent Version Filtering**
+- **Latest by default**: General queries show only latest ABAP version
+- **Version auto-detection**: "LOOP 7.57" automatically filters to ABAP 7.57
+- **Smart result limiting**: 4-5 focused results vs 25 crowded duplicates
+- **Context boosting**: Requested versions get 2.0x score multiplier
+
+## Usage Patterns
+
+### **General ABAP Queries (Latest Version)**
+```
+search: "inline declarations"          # → Latest ABAP + style guides + cheat sheets
+search: "SELECT statements"            # → Latest ABAP + best practices
+search: "exception handling"           # → Latest ABAP TRY/CATCH + clean code
+search: "class definition"             # → Latest ABAP OOP + examples
+```
+
+**Result**: 4-5 focused results including latest ABAP docs, Clean ABAP guidelines, and cheat sheets.
+
+### **Version-Specific Queries (Targeted)**
+```
+search: "LOOP 7.57"                    # → ABAP 7.57 only + related sources
+search: "SELECT statements 7.58"       # → ABAP 7.58 only + related sources
+search: "exception handling latest"    # → Latest ABAP explicitly
+search: "class definition 7.53"        # → ABAP 7.53 only + related sources
+```
+
+**Result**: 5-8 targeted results with dramatically boosted scores for requested version.
+
+### **Cross-Source Discovery**
+```
+search: "ABAP class definition best practices"
+# Returns:
+# ✅ Official ABAP docs (version-specific)
+# ✅ Clean ABAP style guides
+# ✅ ABAP cheat sheets with examples
+# ✅ Related content across sources
+```
+
+## Technical Implementation
+
+### **Metadata Configuration**
+Located in `src/metadata.json`:
+
+```json
+{
+  "sources": [
+    { "id": "abap-docs-latest", "boost": 1.0 },     // Highest priority
+    { "id": "abap-docs-758", "boost": 0.05 },       // Background availability
+    { "id": "abap-docs-757", "boost": 0.02 },       // Background availability
+    // ... 7.56-7.52 with 0.01 boost
+  ],
+  "contextBoosts": {
+    "7.58": { "/abap-docs-758": 2.0 },              // Massive boost when requested
+    "7.57": { "/abap-docs-757": 2.0 },
+    "latest": { "/abap-docs-latest": 1.5 }
+  }
+}
+```
+
+### **Search Logic (src/lib/localDocs.ts)**
+```typescript
+// Version detection
+const versionMatch = query.match(/\b(7\.\d{2}|latest)\b/i);
+
+if (!versionMatch) {
+  // General queries: Show ONLY latest ABAP
+  results = results.filter(r => 
+    !r.id.includes('/abap-docs-') || r.id.includes('/abap-docs-latest/')
+  );
+} else {
+  // Version-specific: Show ONLY requested version
+  results = results.filter(r => 
+    !r.id.includes('/abap-docs-') || r.id.includes(`/abap-docs-${versionId}/`)
+  );
+}
+```
+
+### **URL Generation (src/lib/url-generation/abap.ts)**
+Automatic version-specific URL generation:
+```typescript
+"/abap-docs-757/abenloop.md" 
+→ "https://help.sap.com/doc/abapdocu_757_index_htm/7.57/en-US/abenloop.htm"
+
+"/abap-docs-latest/abenselect.md"
+→ "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abenselect.htm"
+```
+
+## Content Quality
+
+### **Rich Frontmatter**
+Every ABAP file includes:
+- **title**: Meaningful document title
+- **description**: Actual explanations (not just filenames)
+- **keywords**: Searchable terms and concepts
+- **category**: Document classification
+- **version**: ABAP version identifier
+
+### **Filtered Noise**
+- Removed 2,156+ irrelevant `abennews` files
+- Focused on actionable documentation
+- Quality over quantity approach
+
+### **YAML-Safe Generation**
+- Proper escaping for complex ABAP syntax
+- Valid frontmatter for all documents
+- Error-resilient content processing
+
+## Benefits for Users
+
+### **Simplified Experience**
+- **One tool** for all SAP development (ABAP + UI5 + CAP + testing)
+- **Clean results** - no sifting through duplicate versions
+- **Intelligent defaults** - latest ABAP unless otherwise specified
+
+### **Comprehensive Coverage**
+- **40,761+ ABAP files** with rich, searchable content
+- **8 ABAP versions** available with smart targeting
+- **Cross-source intelligence** - related content across all documentation
+
+### **Perfect LLM Integration**
+- **Rich content snippets** with actual explanations
+- **Optimal file sizes** (3-8KB) for context windows
+- **Structured metadata** for better AI understanding
+- **Official attribution** with direct SAP documentation links
+
+## Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Total ABAP Files** | 40,761+ (curated) |
+| **Versions Supported** | 8 (7.52-7.58 + latest) |
+| **Database Size** | ~33MB (includes all sources) |
+| **Default Results** | 4-5 focused (vs 25 crowded) |
+| **Noise Reduction** | 80%+ cleaner results |
+
+## Migration Notes
+
+### **From Old System (Specialized Tools)**
+**Before:**
+```
+abap_search: "inline declarations"
+abap_get: "abap-7.58-individual-abeninline_declarations"
+```
+
+**After:**
+```
+search: "inline declarations"                # → Latest ABAP + context
+search: "inline declarations 7.57"           # → ABAP 7.57 specific
+fetch: "/abap-docs-latest/abeninline_declarations"
+```
+
+### **Benefits of Migration**
+- ✅ **Simpler interface** - one tool for all SAP development
+- ✅ **Better results** - intelligent filtering and cross-source discovery
+- ✅ **Rich content** - meaningful descriptions and context
+- ✅ **Version flexibility** - automatic management with manual override
+
+## Future Extensibility
+
+The standard integration architecture makes it easy to:
+- **Add new ABAP versions** - just update metadata and rebuild index
+- **Add new sources** - same standard integration process
+- **Adjust version priorities** - modify boost values in metadata
+- **Enhance filtering** - extend version detection patterns
+
+## Common Scenarios
+
+### **Learning ABAP (Latest)**
+```
+search: "inline declarations"
+search: "SELECT statements"
+search: "class definition"
+# Always returns latest ABAP + best practices
+```
+
+### **Version-Specific Development**
+```
+search: "LOOP variations 7.57"
+search: "NEW operator 7.54"
+# Returns only requested version + related sources
+```
+
+### **Troubleshooting & Best Practices**
+```
+search: "exception handling"              # ABAP + Clean ABAP guidelines
+search: "SELECT performance"              # ABAP syntax + optimization tips
+# Cross-source intelligence finds all relevant content
+```
+
+## Related Files
+
+@file src/metadata.json
+@file src/lib/localDocs.ts
+@file src/lib/search.ts
+@file src/lib/url-generation/abap.ts
+@file scripts/build-index.ts
+@file docs/ABAP-INTEGRATION-SUMMARY.md
+@file docs/ABAP-MULTI-VERSION-INTEGRATION.md
+@file docs/ABAP-USAGE-GUIDE.md
+@file docs/ABAP-STANDARD-INTEGRATION.md

@@ -12,15 +12,18 @@ Use this when asked about "how it works", "where to change X", or "what runs in 
 ## Key Components
 - **Search**: Pure BM25 using SQLite FTS5 for fast, reliable search
 - **Configuration**: Centralized metadata system with type-safe APIs
-- **Sources**: 12 documentation sources (SAPUI5, CAP, wdi5, Cloud SDK, etc.)
-- **Tools**: 5 MCP tools for search, retrieval, and community integration
+- **Sources**: 27 documentation sources including 8 ABAP versions (SAPUI5, CAP, ABAP, wdi5, Cloud SDK, etc.)
+- **Tools**: 5 MCP tools (search, fetch, sap_community_search, sap_help_search, sap_help_get)
 - **Build Process**: TypeScript compilation → Index building → FTS database creation
+- **ABAP Integration**: 40,761+ files across 8 versions with intelligent version filtering
 
 ## Production Setup
+- **Remote Server**: Hosted MCP server at https://mcp-sap-docs.marianzeis.de/mcp
 - **PM2**: 3 processes (proxy, http, streamable) via `ecosystem.config.cjs`
 - **Deployment**: GitHub Actions → SSH → enhanced `setup.sh` → PM2 restart
 - **Health**: Multiple endpoints (/status, /health, /healthz, /readyz)
 - **Submodules**: Optimized shallow clones with partial clone filtering
+- **Protocol**: MCP Streamable HTTP (latest protocol) + STDIO support
 
 @file package.json
 @file src/metadata.json

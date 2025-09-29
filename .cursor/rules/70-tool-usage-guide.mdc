@@ -2,138 +2,151 @@
 
 **Complete guide for understanding when to use which MCP tool in the SAP docs system.**
 
-## Tool Overview (7 Tools Available)
+## Tool Overview (5 Tools Available)
 
-The SAP docs MCP provides 7 specialized tools for different types of SAP documentation and content:
+The SAP docs MCP provides 5 specialized tools for different types of SAP documentation and content:
 
 ### **General Documentation Tools**
-1. **`sap_docs_search`** - Multi-source documentation search
-2. **`sap_docs_get`** - Retrieve specific documentation
+1. **`search`** - Multi-source documentation search (alias: `sap_docs_search`)
+2. **`fetch`** - Retrieve specific documentation (alias: `sap_docs_get`)
 
 ### **Community & Help Tools**  
 3. **`sap_community_search`** - SAP Community blog posts and discussions
 4. **`sap_help_search`** - SAP Help Portal product documentation
 5. **`sap_help_get`** - Retrieve SAP Help content
 
-### **ABAP-Specific Tools**
-6. **`abap_search`** - Official ABAP Keyword Documentation 
-7. **`abap_get`** - Retrieve ABAP documentation bundles
-
 ## When to Use Which Tool
 
-### **`sap_docs_search` - General SAP Development**
+### **`search` - Unified SAP Development Search**
 **Use for:**
-- UI5 controls and components (Button, Table, Wizard)
-- CAP framework concepts (entities, services, annotations)
-- Development frameworks (wdi5 testing, UI5 Tooling)
-- Best practices and examples (ABAP cheat sheets, Clean ABAP)
-- Fiori Elements showcases and patterns
-- TypeScript integration and setup
-- Cloud SDK and deployment topics
+- **UI5 controls and components** (Button, Table, Wizard)
+- **CAP framework concepts** (entities, services, annotations)
+- **ABAP documentation** (all versions 7.52-7.58 + latest)
+- **Development frameworks** (wdi5 testing, UI5 Tooling)
+- **Best practices and examples** (ABAP cheat sheets, Clean ABAP)
+- **Fiori Elements showcases and patterns**
+- **TypeScript integration and setup**
+- **Cloud SDK and deployment topics**
 
 **Examples:**
 ```
-sap_docs_search: "button properties"          # UI5 Button documentation
-sap_docs_search: "fiori elements annotations" # Fiori Elements patterns  
-sap_docs_search: "wdi5 testing"              # Testing framework
-sap_docs_search: "clean abap practices"      # Style guidelines
-sap_docs_search: "typescript setup"          # UI5 TypeScript
+search: "button properties"                # UI5 Button documentation
+search: "fiori elements annotations"       # Fiori Elements patterns  
+search: "wdi5 testing"                     # Testing framework
+search: "clean abap practices"             # Style guidelines
+search: "SELECT statements 7.58"           # ABAP syntax (specific version)
+search: "inline declarations"              # ABAP latest (default)
+search: "LOOP 7.57"                        # Auto-detects ABAP 7.57
 ```
 
-**Don't use for:** Detailed ABAP language syntax (use `abap_search` instead)
-
-### **`abap_search` - ABAP Language Syntax**
-**Use for:**
-- Official ABAP language constructs and syntax
-- Detailed statement documentation (SELECT, LOOP, IF)
-- Data type definitions and usage
-- Object-oriented programming concepts
-- Exception handling syntax
-- Function module and class definitions
-- ABAP SQL comprehensive documentation
-
-**Examples:**
-```
-abap_search: "SELECT statements"          # Official SQL syntax
-abap_search: "internal tables"           # Data structure documentation
-abap_search: "exception handling"        # TRY/CATCH official docs
-abap_search: "object orientation"        # Classes and interfaces
-abap_search: "function modules"          # Function definition syntax
-```
-
-**Don't use for:** Examples or best practices (use `sap_docs_search` instead)
+**ABAP Integration:**
+- ABAP docs are fully integrated (no separate tools needed)
+- Latest ABAP shown by default for general queries
+- Version auto-detection from query (e.g., "LOOP 7.57" searches ABAP 7.57)
+- 40,761+ ABAP files across 8 versions (7.52-7.58 + latest)
 
 ### **Tool Selection Matrix**
 
 | Query Type | Use This Tool | Reasoning |
 |------------|---------------|-----------|
-| "How do I create a Button?" | `sap_docs_search` | UI5 control examples and guides |
-| "SELECT statement syntax" | `abap_search` | Official ABAP language documentation |
-| "Fiori Elements annotations" | `sap_docs_search` | Cross-platform examples and showcases |
-| "TRY CATCH in ABAP" | `abap_search` | Official exception handling syntax |
-| "Clean ABAP practices" | `sap_docs_search` | Style guides and best practices |
-| "LOOP AT internal table" | `abap_search` | Official language construct syntax |
-| "wdi5 testing setup" | `sap_docs_search` | Testing framework documentation |
-| "CDS view annotations" | `sap_docs_search` | CAP and examples (unless pure syntax) |
+| "How do I create a Button?" | `search` | UI5 control examples and guides |
+| "SELECT statement syntax" | `search` | ABAP integrated - add version if needed |
+| "Fiori Elements annotations" | `search` | Cross-platform examples and showcases |
+| "TRY CATCH in ABAP 7.57" | `search` | ABAP with version auto-detection |
+| "Clean ABAP practices" | `search` | Style guides and best practices |
+| "LOOP AT internal table" | `search` | ABAP latest (or add version) |
+| "wdi5 testing setup" | `search` | Testing framework documentation |
+| "CDS view annotations" | `search` | CAP and examples unified |
+| "Community discussions on errors" | `sap_community_search` | Real-world solutions and discussions |
+| "S/4HANA configuration" | `sap_help_search` | Official product documentation |
 
 ## Content Sources by Tool
 
-### **`sap_docs_search` Sources (19 total)**
-- **UI5**: SAPUI5, OpenUI5 API/Samples, TypeScript, Custom Controls
+### **`search` Sources (27 total, including 8 ABAP versions)**
+- **ABAP**: 40,761+ files across 8 versions (7.52-7.58 + latest), cheat sheets, style guides, Fiori showcase
+- **UI5**: SAPUI5, OpenUI5 API/Samples, TypeScript, Custom Controls, Tooling, Web Components
 - **CAP**: Framework docs, Fiori Elements showcase  
-- **ABAP Examples**: Cheat sheets, Style guides, German guidelines
 - **Testing**: wdi5 framework and examples
-- **Tools**: UI5 Tooling, Cloud MTA Build Tool, Web Components
-- **Cloud**: Cloud SDK (JS/Java), AI SDK
-- **Showcases**: ABAP/CAP Fiori Elements demonstrations
+- **Cloud**: Cloud SDK (JS/Java), AI SDK, Cloud MTA Build Tool
+- **Guidelines**: SAP style guides, community best practices
 
-### **`abap_search` Sources (1 focused)**
-- **ABAP Keyword Documentation**: Official SAP documentation
-- **Versions**: 7.52, 7.53, 7.54, 7.55, 7.56, 7.57, 7.58, latest
-- **Coverage**: ~185 bundled topics per version, ~6,000+ individual pages
-- **Content**: Complete language syntax, statements, constructs
+### **Version Management (ABAP)**
+- **Latest by default**: General ABAP queries show latest version only
+- **Version auto-detection**: "LOOP 7.57" automatically filters to ABAP 7.57
+- **Smart filtering**: Prevents duplicate results across versions
+- **Context boosting**: Requested versions get 2.0x score boost
 
 ## Advanced Usage Patterns
 
 ### **Progressive Discovery**
-1. **Start broad**: Use `sap_docs_search` for general concepts
-2. **Get specific**: Use `abap_search` for detailed syntax
+1. **Start broad**: Use `search` for general concepts (all sources)
+2. **Get specific**: Add version numbers for ABAP-specific versions
 3. **Cross-reference**: Use `sap_community_search` for real-world examples
+4. **Deep dive**: Use `sap_help_search` for product documentation
 
-### **Version-Specific Queries**
+### **ABAP Version-Specific Queries**
 ```
-abap_search: 
-  query: "NEW operator"
-  version: "7.58"        # Check latest syntax
-  
-abap_search:
-  query: "NEW operator"  
-  version: "7.54"        # Check older compatibility
+search: "NEW operator"              # Shows latest ABAP version
+search: "NEW operator 7.58"         # Targets ABAP 7.58 specifically
+search: "NEW operator 7.54"         # Targets ABAP 7.54 for compatibility check
+search: "LOOP 7.57"                 # Auto-detects and filters to ABAP 7.57
 ```
 
-### **Comprehensive Coverage**
+### **Comprehensive Multi-Source Coverage**
 ```
 # For Fiori Elements development:
-sap_docs_search: "fiori elements annotations"    # Get examples and patterns
-abap_search: "RAP behavior definitions"          # Get syntax details
-sap_community_search: "fiori elements tips"     # Get community insights
+search: "fiori elements annotations"          # Official docs + showcases
+sap_community_search: "fiori elements tips"   # Community insights
+sap_help_search: "Fiori Elements setup"       # Product guides
+
+# For ABAP development:
+search: "SELECT statements"                   # Latest ABAP + best practices
+search: "SELECT statements 7.53"              # Version-specific syntax
+sap_community_search: "ABAP SELECT performance" # Real-world tips
 ```
 
 ## Tool Response Formats
 
-### **Search Tools** (`sap_docs_search`, `abap_search`, `sap_community_search`, `sap_help_search`)
+### **Search Tools** (`search`, `sap_community_search`, `sap_help_search`)
+**Standard Output:**
 ```
 Found X results for 'query':
 
 ⭐️ **document-id** (Score: X.XX)
    Title and description
-   Use in {corresponding_get_tool}
+   Use in fetch
 ```
 
-### **Get Tools** (`sap_docs_get`, `abap_get`, `sap_help_get`)
+**ChatGPT/JSON Format:**
+```json
+{
+  "results": [
+    {
+      "id": "/cap/guides/domain-modeling",
+      "title": "Domain Modeling in CAP",
+      "url": "https://cap.cloud.sap/docs/guides/domain-modeling",
+      "snippet": "Learn about domain modeling...",
+      "score": 95.42
+    }
+  ]
+}
+```
+
+### **Get Tools** (`fetch`, `sap_help_get`)
+**Standard Output:**
 ```
 **Source:** Documentation Type
 **Content:** Full formatted documentation content
+```
+
+**ChatGPT/JSON Format:**
+```json
+{
+  "id": "/cap/guides/domain-modeling",
+  "title": "Domain Modeling",
+  "text": "Full content here...",
+  "url": "https://cap.cloud.sap/docs/guides/domain-modeling"
+}
 ```
 
 ## Error Handling and Fallbacks
@@ -171,6 +184,8 @@ Found X results for 'query':
 @file src/lib/BaseServerHandler.ts
 @file src/server.ts  
 @file src/streamable-http-server.ts
-@file src/lib/abapDocs.ts
-@file docs/ABAP-KEYWORD-DOCUMENTATION.md
+@file src/lib/localDocs.ts
+@file docs/ABAP-INTEGRATION-SUMMARY.md
+@file docs/ABAP-USAGE-GUIDE.md
 @file docs/ARCHITECTURE.md
+@file docs/DEV.md

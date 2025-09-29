@@ -2,12 +2,14 @@
 
 When modifying search behavior, ranking, or index builds.
 
-## Search Architecture (BM25-Only)
+## Search Architecture (BM25-Only with FTS5)
 - **Index Build**: `scripts/build-index.ts` → `dist/data/index.json`
-- **FTS Database**: `scripts/build-fts.ts` → `dist/data/docs.sqlite`
+- **FTS Database**: `scripts/build-fts.ts` → `dist/data/docs.sqlite` (SQLite FTS5)
+- **Hybrid Search**: FTS5 candidate filtering → sophisticated scoring
 - **Search Logic**: Pure BM25 via `src/lib/search.ts` using metadata APIs
 - **Query Processing**: `toMatchQuery()` in `src/lib/searchDb.ts`
 - **Configuration**: All source settings in `src/metadata.json`
+- **Performance**: 16x faster with FTS5 hybrid approach (~42ms vs 700ms)
 
 ## Metadata-Driven Configuration
 - **Source Boosts**: Context-aware scoring via `getContextBoosts()`
@@ -20,6 +22,8 @@ When modifying search behavior, ranking, or index builds.
 - **Prefix Matching**: Terms get `*` suffix for broader matching
 - **Phrase Queries**: Dotted terms (sap.m.Button) quoted for exact match
 - **Context Awareness**: UI5/CAP/wdi5 context detection and scoring
+- **ABAP Version Filtering**: Intelligent version detection and result filtering
+- **Graceful Fallback**: Falls back to full search if FTS finds no candidates
 
 ## Performance
 - **FTS5**: SQLite full-text search for sub-second response times
@@ -33,5 +37,7 @@ When modifying search behavior, ranking, or index builds.
 @file src/lib/metadata.ts
 @file src/metadata.json
 @file src/lib/localDocs.ts
+@file docs/FTS5-IMPLEMENTATION-COMPLETE.md
+@file docs/ABAP-INTEGRATION-SUMMARY.md
 @file docs/ARCHITECTURE.md
 @file docs/DEV.md
