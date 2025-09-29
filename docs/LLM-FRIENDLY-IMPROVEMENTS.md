@@ -6,30 +6,30 @@ This document summarizes the improvements made to make the SAP Docs MCP server m
 
 ### **Original Problem**
 Claude was confused about function names, using incorrect patterns like:
-- ❌ `sap_docs_search: query "..."`  (FAILED - wrong syntax)
-- ❌ `SAP Docs MCP:sap_docs_search`  (FAILED - incorrect namespace)
-- ✅ Should be: `sap_docs_search(query="...")` or `mcp_sap-docs-remote_sap_docs_search(query="...")`
+- ❌ `search: query "..."`  (FAILED - wrong syntax)
+- ❌ `SAP Docs MCP:search`  (FAILED - incorrect namespace)
+- ✅ Should be: `search(query="...")` or `mcp_sap-docs-remote_search(query="...")`
 
 ## 🔧 **Improvements Implemented**
 
 ### **1. Simplified Visual Formatting**
 **Before:**
 ```
-**FUNCTION NAME: Use exactly 'sap_docs_search' or 'mcp_sap-docs-remote_sap_docs_search' depending on your MCP client**
+**FUNCTION NAME: Use exactly 'search' or 'mcp_sap-docs-remote_search' depending on your MCP client**
 
 Unified search across all SAP documentation sources...
 
 **EXAMPLE USAGE:**
 ```
-sap_docs_search(query="CAP binary data LargeBinary MediaType")
+search(query="CAP binary data LargeBinary MediaType")
 ```
 ```
 
 **After:**
 ```
-SEARCH SAP DOCS: sap_docs_search(query="search terms")
+SEARCH SAP DOCS: search(query="search terms")
 
-FUNCTION NAME: sap_docs_search (or mcp_sap-docs-remote_sap_docs_search)
+FUNCTION NAME: search
 
 COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
 AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
@@ -54,13 +54,13 @@ AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
 **New sections added:**
 ```
 TYPICAL WORKFLOW:
-1. sap_docs_search(query="your search terms") 
-2. sap_docs_get(library_id="result_id_from_step_1")
+1. search(query="your search terms") 
+2. fetch(id="result_id_from_step_1")
 
 COMMON PATTERNS:
-• Broad exploration: library_id="/cap", topic="binary"
-• Specific API: library_id="/openui5-api/sap/m/Button" 
-• Community posts: library_id="community-12345"
+• Broad exploration: id="/cap/binary"
+• Specific API: id="/openui5-api/sap/m/Button" 
+• Community posts: id="community-12345"
 ```
 
 ### **4. Improved Error Messages**
@@ -97,8 +97,8 @@ QUERY TIPS:
  * IMPORTANT FOR LLMs/AI ASSISTANTS:
  * =================================
  * The function names in this MCP server may appear with different prefixes depending on your MCP client:
- * - Simple names: sap_docs_search, sap_community_search, sap_docs_get, sap_help_search, sap_help_get
- * - Prefixed names: mcp_sap-docs-remote_sap_docs_search, mcp_sap-docs-remote_sap_community_search, etc.
+ * - Simple names: search, fetch, sap_community_search, sap_help_search, sap_help_get
+ * - Prefixed names: mcp_sap-docs-remote_search, mcp_sap-docs-remote_fetch, etc.
  * 
  * Try the simple names first, then the prefixed versions if they don't work.
  */
@@ -129,18 +129,18 @@ QUERY TIPS:
 
 ## 🚀 **Tools Updated**
 
-1. **sap_docs_search** - Main documentation search
-2. **sap_community_search** - Community posts and discussions  
-3. **sap_docs_get** - Retrieve specific documentation
+1. **search** - Main documentation search
+2. **fetch** - Retrieve specific documentation
+3. **sap_community_search** - Community posts and discussions  
 4. **sap_help_search** - Official SAP Help Portal
 5. **sap_help_get** - Get specific Help Portal pages
 
 ## 📝 **Best Practices for LLMs**
 
 ### **Search Strategy**
-1. Start with `sap_docs_search` for technical documentation
+1. Start with `search` for technical documentation
 2. Use `sap_community_search` for troubleshooting and error codes
-3. Always follow up search results with `sap_docs_get` or `sap_help_get`
+3. Always follow up search results with `fetch` or `sap_help_get`
 
 ### **Query Construction**
 - Include product names: "CAP", "UI5", "ABAP", "wdi5"
@@ -151,9 +151,9 @@ QUERY TIPS:
 ### **Common Workflows**
 ```
 Problem-solving pattern:
-1. sap_docs_search(query="technical problem + error code")
+1. search(query="technical problem + error code")
 2. sap_community_search(query="same problem for community solutions")
-3. sap_docs_get(library_id="most_relevant_result")
+3. fetch(id="most_relevant_result")
 ```
 
 ## ✅ **Validation**

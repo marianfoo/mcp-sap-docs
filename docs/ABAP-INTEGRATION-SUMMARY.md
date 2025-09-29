@@ -8,7 +8,7 @@ This major update integrates **40,761+ ABAP documentation files** across **8 ver
 
 #### **1. Standard System Integration** ✅
 - ✅ **Removed specialized tools** - No more `abap_search`/`abap_get` 
-- ✅ **Unified interface** - Uses standard `sap_docs_search` like UI5/CAP
+- ✅ **Unified interface** - Uses standard `search` like UI5/CAP
 - ✅ **Multi-version support** - All 8 ABAP versions (7.52-7.58 + latest) integrated
 - ✅ **Clean architecture** - Same proven system powering other sources
 
@@ -48,16 +48,16 @@ This major update integrates **40,761+ ABAP documentation files** across **8 ver
 ## **🚀 How to Use ABAP Search**
 
 ### **Standard Interface (Like UI5/CAP)**
-All ABAP search now uses the **unified `sap_docs_search` tool** - no special tools needed!
+All ABAP search now uses the **unified `search` tool** - no special tools needed!
 
 #### **General ABAP Queries (Latest Version)**
 ```javascript
 // Shows latest ABAP docs + style guides + cheat sheets
-sap_docs_search: "inline declarations"
-sap_docs_search: "SELECT statements" 
-sap_docs_search: "exception handling"
-sap_docs_search: "class definition"
-sap_docs_search: "internal table operations"
+search: "inline declarations"
+search: "SELECT statements" 
+search: "exception handling"
+search: "class definition"
+search: "internal table operations"
 
 // Example Result (Clean & Focused):
 Found 4 results for 'inline declarations':
@@ -70,10 +70,10 @@ Found 4 results for 'inline declarations':
 #### **Version-Specific Queries (Targeted Results)**
 ```javascript
 // Auto-detects version and shows ONLY that version + related sources
-sap_docs_search: "LOOP 7.57"                    // → ABAP 7.57 only
-sap_docs_search: "SELECT statements 7.58"       // → ABAP 7.58 only  
-sap_docs_search: "exception handling latest"    // → Latest ABAP only
-sap_docs_search: "class definition 7.53"        // → ABAP 7.53 only
+search: "LOOP 7.57"                    // → ABAP 7.57 only
+search: "SELECT statements 7.58"       // → ABAP 7.58 only  
+search: "exception handling latest"    // → Latest ABAP only
+search: "class definition 7.53"        // → ABAP 7.53 only
 
 // Example Result (Version-Targeted):
 Found 5 results for 'LOOP 7.57':
@@ -85,9 +85,9 @@ Found 5 results for 'LOOP 7.57':
 #### **Document Retrieval (Standard)**
 ```javascript
 // Same as other sources - use IDs from search results
-sap_docs_get: "/abap-docs-758/abeninline_declarations"
-sap_docs_get: "/abap-docs-latest/abenselect"
-sap_docs_get: "/abap-docs-757/abenloop_glosry"
+fetch: "/abap-docs-758/abeninline_declarations"
+fetch: "/abap-docs-latest/abenselect"
+fetch: "/abap-docs-757/abenloop_glosry"
 ```
 
 ---
@@ -221,12 +221,12 @@ The standard integration approach ensures **long-term maintainability** and **ea
 ## **📋 Migration Notes**
 
 ### **For Existing Users**
-- ✅ **No breaking changes** - `sap_docs_search` behavior enhanced, not changed
+- ✅ **No breaking changes** - `search` behavior enhanced, not changed
 - ✅ **Better results** - same queries now return higher quality, focused results
 - ✅ **New capabilities** - version auto-detection and cross-source intelligence
 
 ### **For New Users**  
-- ✅ **Simple onboarding** - just one tool to learn (`sap_docs_search`)
+- ✅ **Simple onboarding** - just one tool to learn (`search`)
 - ✅ **Intuitive behavior** - latest by default, specific versions on request
 - ✅ **Rich context** - meaningful results from day one
 

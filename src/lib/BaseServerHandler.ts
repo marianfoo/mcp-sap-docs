@@ -5,10 +5,12 @@
  * IMPORTANT FOR LLMs/AI ASSISTANTS:
  * =================================
  * The function names in this MCP server may appear with different prefixes depending on your MCP client:
- * - Simple names: sap_docs_search, sap_community_search, sap_docs_get, sap_help_search, sap_help_get
- * - Prefixed names: mcp_sap-docs-remote_sap_docs_search, mcp_sap-docs-remote_sap_community_search, etc.
+ * - Simple names: search, fetch, sap_community_search, sap_help_search, sap_help_get
+ * - Prefixed names: mcp_sap-docs-remote_search, mcp_sap-docs-remote_fetch, etc.
  * 
  * Try the simple names first, then the prefixed versions if they don't work.
+ * 
+ * Note: sap_docs_search and sap_docs_get are legacy aliases for backward compatibility.
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -217,42 +219,6 @@ export class BaseServerHandler {
       return {
         tools: [
           {
-            name: "sap_docs_search",
-            description: `SEARCH SAP DOCS: sap_docs_search(query="search terms")
-
-FUNCTION NAME: sap_docs_search (or mcp_sap-docs-remote_sap_docs_search)
-
-COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
-AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
-
-TYPICAL WORKFLOW:
-1. sap_docs_search(query="your search terms") 
-2. sap_docs_get(library_id="result_id_from_step_1")
-
-QUERY TIPS:
-• Be specific: "CAP action binary parameter" not just "CAP"
-• Include error codes: "415 error CAP action"
-• Use technical terms: "LargeBinary MediaType XMLHttpRequest"
-• For ABAP: Include version like "7.58" or "latest"`,
-            inputSchema: {
-              type: "object",
-              properties: {
-                query: {
-                  type: "string",
-                  description: "Search terms using natural language. Be specific and include technical terms.",
-                  examples: [
-                    "CAP binary data LargeBinary MediaType",
-                    "UI5 button properties",
-                    "wdi5 testing locators", 
-                    "ABAP SELECT statements 7.58",
-                    "415 error CAP action parameter"
-                  ]
-                }
-              },
-              required: ["query"]
-            }
-          },
-          {
             name: "sap_community_search", 
             description: `SEARCH SAP COMMUNITY: sap_community_search(query="search terms")
 
@@ -263,7 +229,7 @@ INCLUDES: Engagement data (kudos), ranked by "Best Match"
 
 TYPICAL WORKFLOW:
 1. sap_community_search(query="your problem + error code")
-2. sap_docs_get(library_id="community-12345") for full posts
+2. fetch(id="community-12345") for full posts
 
 BEST FOR TROUBLESHOOTING:
 • Include error codes: "415 error", "500 error"
@@ -285,54 +251,6 @@ BEST FOR TROUBLESHOOTING:
                 }
               },
               required: ["query"]
-            }
-          },
-          {
-            name: "sap_docs_get",
-            description: `GET SPECIFIC DOCS: sap_docs_get(id="document_id")
-
-FUNCTION NAME: sap_docs_get (or mcp_sap-docs-remote_sap_docs_get)
-
-RETRIEVES: Full documentation content based on search results
-
-📋 PARAMETER SCHEMA:
-• id: The document identifier from search results (e.g., "/cap/guides/domain-modeling", "/sapui5/controls/button")
-
-🎯 USAGE PATTERNS FROM SEARCH RESULTS:
-• Search returns: {"id": "/cap/guides/domain-modeling", "title": "..."}
-• Call: sap_docs_get(id="/cap/guides/domain-modeling")
-
-• Search returns: {"id": "/openui5-api/sap/m/Button", "title": "..."}
-• Call: sap_docs_get(id="/openui5-api/sap/m/Button")
-
-✅ ALWAYS use the exact id shown in search results
-✅ ChatGPT compatible with "id" parameter`,
-            inputSchema: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  description: "Document identifier from search results. Always use the exact 'id' value from search results.",
-                  examples: [
-                    "/cap/guides/domain-modeling",
-                    "/sapui5/controls/button-properties", 
-                    "/openui5-api/sap/m/Button",
-                    "/abap-docs-758/inline-declarations",
-                    "/wdi5/configuration/setup",
-                    "community-12345"
-                  ]
-                },
-                topic: {
-                  type: "string", 
-                  description: "Optional topic filter for backward compatibility.",
-                  examples: [
-                    "binary",
-                    "authentication", 
-                    "properties"
-                  ]
-                }
-              },
-              required: ["id"]
             }
           },
           {
@@ -400,16 +318,16 @@ USAGE PATTERN:
           },
           {
             name: "search",
-            description: `SEARCH SAP DOCS (alias for sap_docs_search): search(query="search terms")
+            description: `SEARCH SAP DOCS: search(query="search terms")
 
-FUNCTION NAME: search (alias for sap_docs_search)
+FUNCTION NAME: search
 
 COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
 AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
 
 TYPICAL WORKFLOW:
 1. search(query="your search terms") 
-2. fetch(library_id="result_id_from_step_1")
+2. fetch(id="result_id_from_step_1")
 
 QUERY TIPS:
 • Be specific: "CAP action binary parameter" not just "CAP"

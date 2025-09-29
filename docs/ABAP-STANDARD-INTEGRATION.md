@@ -56,7 +56,7 @@ export class AbapUrlGenerator extends BaseUrlGenerator {
 ## **How It Works**
 
 ### **🔍 Search Integration**
-Uses the **standard `sap_docs_search`** tool - no special ABAP tools needed!
+Uses the **standard `search`** tool - no special ABAP tools needed!
 
 ```javascript
 // Query examples that will find ABAP docs:
@@ -124,7 +124,7 @@ curl -X POST http://localhost:3000/search \
 ### **Standard Search Query**
 ```json
 {
-  "tool": "sap_docs_search",
+  "tool": "search",
   "query": "ABAP inline declarations"
 }
 ```
@@ -147,7 +147,7 @@ Found 5 results for 'ABAP inline declarations':
 ## **Key Benefits**
 
 ### ✅ **Standard Integration**
-- **No special tools** - uses existing `sap_docs_search`
+- **No special tools** - uses existing `search`
 - **Same interface** as UI5, CAP, wdi5 sources
 - **Consistent behavior** with other documentation
 
@@ -205,8 +205,8 @@ abap_get: "abap-7.58-individual-7.58-abeninline_declarations"
 ### **New Approach (Standard)**
 ```javascript  
 // Uses standard tool like everything else
-sap_docs_search: "ABAP inline declarations"
-sap_docs_get: "/abap-docs/abeninline_declarations.md"
+search: "ABAP inline declarations"
+fetch: "/abap-docs/abeninline_declarations.md"
 ```
 
 **Result: Same quality, simpler interface, standard integration!** 🚀

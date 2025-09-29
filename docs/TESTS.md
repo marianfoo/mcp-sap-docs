@@ -8,7 +8,7 @@ test/
 ├── tools/
 │   ├── run-tests.js              # Main test runner
 │   ├── search.smoke.js           # Quick validation tests
-│   └── sap_docs_search/          # Search test cases
+│   └── search/                   # Search test cases
 │       ├── search-cap-docs.js    # CAP documentation tests
 │       ├── search-cloud-sdk-js.js # Cloud SDK tests
 │       └── search-sapui5-docs.js # UI5 documentation tests
@@ -45,14 +45,14 @@ node test/tools/run-tests.js --port 3002
 ```
 ⭐️ **<document-id>** (Score: <final-score>)
    <description-preview>
-   Use in sap_docs_get
+   Use in fetch
 ```
 
 **Example:**
 ```
 ⭐️ **/cap/cds/cdl#enums** (Score: 95.42)
    Use enums to define a fixed set of values for an element...
-   Use in sap_docs_get
+   Use in fetch
 ```
 
 ### 🎨 **Context Indicators**
@@ -79,7 +79,7 @@ Found X results for 'query' 🎨 **UI5 Context**:
 export default [
   {
     name: 'Test Name',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'search term',
     expectIncludes: ['/expected/document/id'],
     validate: (results) => {

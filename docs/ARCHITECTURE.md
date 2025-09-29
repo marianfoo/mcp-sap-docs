@@ -52,8 +52,8 @@ Documentation Sources → Build Scripts → Search Artifacts → Runtime Search
 3. **Streamable HTTP** (`src/streamable-http-server.ts`): Production HTTP MCP (port 3122)
 
 ### 🔧 **MCP Tools (5 total)**
-- `sap_docs_search`: Search across all documentation
-- `sap_docs_get`: Retrieve specific documents
+- `search`: Search across all documentation
+- `fetch`: Retrieve specific documents
 - `sap_community_search`: SAP Community integration
 - `sap_help_search`: SAP Help Portal search
 - `sap_help_get`: SAP Help content retrieval

@@ -116,7 +116,7 @@ npm run start:streamable
 - **Source Processing**: Modify build scripts for new source types
 
 ### 🧪 **Tests**
-- **Test Cases**: `test/tools/sap_docs_search/` → Add new test files
+- **Test Cases**: `test/tools/search/` → Add new test files
 - **Test Runner**: `test/tools/run-tests.js` → Modify test execution
 - **Output Parsing**: `test/_utils/parseResults.js` → Update format expectations
 

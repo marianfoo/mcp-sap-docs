@@ -23,7 +23,7 @@ ABAP documentation is now fully integrated as **standard sources** across all ve
 ## 🚀 **Features**
 
 ### **✅ Standard Integration**
-- **No special tools** - uses existing `sap_docs_search` like UI5, CAP, wdi5
+- **No special tools** - uses existing `search` like UI5, CAP, wdi5
 - **63,454 total documents** indexed (up from 20,553)
 - **30.52 MB FTS5 database** for lightning-fast search
 
@@ -115,21 +115,21 @@ Query: "exception handling 7.53"
 ### **Version-Specific Queries**
 ```bash
 # Search specific ABAP versions
-sap_docs_search: "LOOP AT 7.57"          # → ABAP 7.57 docs
-sap_docs_search: "CDS views latest"      # → Latest ABAP docs  
-sap_docs_search: "class definition 7.53" # → ABAP 7.53 docs
+search: "LOOP AT 7.57"          # → ABAP 7.57 docs
+search: "CDS views latest"      # → Latest ABAP docs  
+search: "class definition 7.53" # → ABAP 7.53 docs
 ```
 
 ### **General ABAP Queries (Default 7.58)**
 ```bash
-sap_docs_search: "SELECT statements"      # → ABAP 7.58 docs
-sap_docs_search: "internal tables"       # → ABAP 7.58 docs
-sap_docs_search: "exception handling"    # → ABAP 7.58 docs
+search: "SELECT statements"      # → ABAP 7.58 docs
+search: "internal tables"       # → ABAP 7.58 docs
+search: "exception handling"    # → ABAP 7.58 docs
 ```
 
 ### **Cross-Source Results**
 ```bash
-sap_docs_search: "inline declarations"
+search: "inline declarations"
 # Returns:
 ✅ Official ABAP docs (version-specific)
 ✅ Clean ABAP style guides  

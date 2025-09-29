@@ -95,11 +95,11 @@ const content = await getCommunityPostByUrl(
 ```
 
 ### Via MCP Server
-The community search is exposed as the `sap_community_search` tool, which now **automatically returns the full content** of the top 3 most relevant posts using the efficient LiQL API batch retrieval. Individual posts can also be retrieved using `sap_docs_get` with community post IDs.
+The community search is exposed as the `sap_community_search` tool, which now **automatically returns the full content** of the top 3 most relevant posts using the efficient LiQL API batch retrieval. Individual posts can also be retrieved using `fetch` with community post IDs.
 
 **Key Behavior:**
 - **`sap_community_search`**: Returns full content of top 3 posts (search + batch retrieval in one call)
-- **`sap_docs_get`**: Retrieves individual post content by ID
+- **`fetch`**: Retrieves individual post content by ID
 
 ## Testing
 

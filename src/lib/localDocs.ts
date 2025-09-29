@@ -146,9 +146,9 @@ function formatSearchResultEntry(result: any, queryContext: string): string {
   
   if (topic) {
     formatted += `   🎯 Topic: \`${topic}\`\n`;
-    formatted += `   ✅ **Call:** \`sap_docs_get(library_id="${libraryId}", topic="${topic}")\`\n\n`;
+    formatted += `   ✅ **Call:** \`fetch(id="${libraryId}", topic="${topic}")\`\n\n`;
   } else {
-    formatted += `   ✅ **Call:** \`sap_docs_get(library_id="${libraryId}")\`\n\n`;
+    formatted += `   ✅ **Call:** \`fetch(id="${libraryId}")\`\n\n`;
   }
   
   return formatted;

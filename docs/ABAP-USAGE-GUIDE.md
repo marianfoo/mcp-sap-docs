@@ -7,17 +7,17 @@ ABAP documentation is now fully integrated into the standard MCP search system w
 ## 🔍 **How to Search ABAP Documentation**
 
 ### **Standard Interface - No Special Tools**
-Use **`sap_docs_search`** for all ABAP queries - same as UI5, CAP, wdi5!
+Use **`search`** for all ABAP queries - same as UI5, CAP, wdi5!
 
 ### **✅ General ABAP Queries (Latest + Context)**
 
 #### **Query Patterns:**
 ```javascript
-sap_docs_search: "inline declarations"
-sap_docs_search: "SELECT statements"  
-sap_docs_search: "exception handling"
-sap_docs_search: "class definition"
-sap_docs_search: "internal table operations"
+search: "inline declarations"
+search: "SELECT statements"  
+search: "exception handling"
+search: "class definition"
+search: "internal table operations"
 ```
 
 #### **What You Get:**
@@ -49,10 +49,10 @@ Found 4 results for 'inline declarations':
 
 #### **Query Patterns:**
 ```javascript
-sap_docs_search: "LOOP 7.57"                    // → ABAP 7.57 only
-sap_docs_search: "SELECT statements 7.58"       // → ABAP 7.58 only  
-sap_docs_search: "exception handling latest"    // → Latest ABAP only
-sap_docs_search: "class definition 7.53"        // → ABAP 7.53 only
+search: "LOOP 7.57"                    // → ABAP 7.57 only
+search: "SELECT statements 7.58"       // → ABAP 7.58 only  
+search: "exception handling latest"    // → Latest ABAP only
+search: "class definition 7.53"        // → ABAP 7.53 only
 ```
 
 #### **What You Get:**
@@ -84,9 +84,9 @@ Found 5 results for 'LOOP 7.57':
 ### **Standard Document Access**
 ```javascript
 // Use IDs from search results
-sap_docs_get: "/abap-docs-latest/abeninline_declarations"
-sap_docs_get: "/abap-docs-758/abenselect"  
-sap_docs_get: "/abap-docs-757/abenloop_glosry"
+fetch: "/abap-docs-latest/abeninline_declarations"
+fetch: "/abap-docs-758/abenselect"  
+fetch: "/abap-docs-757/abenloop_glosry"
 ```
 
 ### **What You Get:**
@@ -183,8 +183,8 @@ abap_get: "abap-7.58-individual-abeninline_declarations"
 ### **New Approach (Standard)**
 ```javascript
 // Uses unified tool like everything else
-sap_docs_search: "inline declarations"
-sap_docs_get: "/abap-docs-latest/abeninline_declarations"
+search: "inline declarations"
+fetch: "/abap-docs-latest/abeninline_declarations"
 ```
 
 ### **Benefits of Migration**
@@ -201,7 +201,7 @@ sap_docs_get: "/abap-docs-latest/abeninline_declarations"
 ```
 Human: "How do I handle exceptions in ABAP?"
 
-LLM uses: sap_docs_search: "exception handling"
+LLM uses: search: "exception handling"
 
 Gets: 
 ✅ Latest ABAP exception syntax
@@ -214,7 +214,7 @@ Gets:
 ```
 Human: "I'm working with ABAP 7.53, how do LOOP statements work?"
 
-LLM uses: sap_docs_search: "LOOP statements 7.53"
+LLM uses: search: "LOOP statements 7.53"
 
 Gets:
 ✅ ABAP 7.53 loop documentation only

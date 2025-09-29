@@ -65,8 +65,8 @@ curl -sS http://127.0.0.1:3122/health | jq .
 ## What you get
 
 ### 🔍 **Unified Documentation Search**
-- **sap_docs_search** – Search across all official SAP documentation sources with intelligent filtering
-- **sap_docs_get** – Retrieve complete documents/snippets with smart formatting
+- **search** – Search across all official SAP documentation sources with intelligent filtering
+- **fetch** – Retrieve complete documents/snippets with smart formatting
 
 ### 🌐 **Community & Help Portal**  
 - **sap_community_search** – Real-time SAP Community posts with full content of top 3 results
@@ -231,10 +231,10 @@ Find wdi5 testing examples for OData services
 ```
 
 **Available Tools:**
-- `sap_docs_search` - **Unified search** for all SAP development (UI5, CAP, ABAP, testing) with intelligent ABAP version filtering
+- `search` - **Unified search** for all SAP development (UI5, CAP, ABAP, testing) with intelligent ABAP version filtering
+- `fetch` - Retrieve complete documentation for any source
 - `sap_community_search` - SAP Community integration  
 - `sap_help_search` - SAP Help Portal access
-- `sap_docs_get` - Retrieve complete documentation for any source
 
 </details>
 
@@ -410,7 +410,7 @@ Open Raycast → Raycast Settings → AI → Model Context Protocol → Check "A
 
 ## What's Included
 
-This MCP server provides unified access to **comprehensive SAP development documentation** across multiple product areas. All sources are searched simultaneously through the `sap_docs_search` tool, with intelligent filtering and ranking.
+This MCP server provides unified access to **comprehensive SAP development documentation** across multiple product areas. All sources are searched simultaneously through the `search` tool, with intelligent filtering and ranking.
 
 ### 📊 Documentation Coverage Overview
 

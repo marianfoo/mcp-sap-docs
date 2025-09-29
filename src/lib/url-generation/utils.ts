@@ -211,6 +211,6 @@ export function formatSearchResult(
     }
   }
   
-  return `⭐️ **${result.id}** (Score: ${result.finalScore.toFixed(2)})\n   ${(result.text || '').substring(0, excerptLength)}${urlInfo}\n   Use in sap_docs_get\n`;
+  return `⭐️ **${result.id}** (Score: ${result.finalScore.toFixed(2)})\n   ${(result.text || '').substring(0, excerptLength)}${urlInfo}\n   Use in fetch\n`;
 }
 
