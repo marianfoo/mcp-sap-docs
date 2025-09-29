@@ -14,7 +14,7 @@ module.exports = {
         LOG_LEVEL: "DEBUG",  // Enhanced for debugging
         LOG_FORMAT: "json",
         // BM25-only search configuration
-        RETURN_K: "25"  // Centralized result limit (can override CONFIG.RETURN_K)
+        RETURN_K: "30"  // Centralized result limit (can override CONFIG.RETURN_K)
       },
       autorestart: true,
       max_restarts: 10,
@@ -43,7 +43,7 @@ module.exports = {
         LOG_LEVEL: "DEBUG",  // Enhanced for debugging
         LOG_FORMAT: "json",
         // BM25-only search configuration
-        RETURN_K: "25"  // Centralized result limit (can override CONFIG.RETURN_K)
+        RETURN_K: "30"  // Centralized result limit (can override CONFIG.RETURN_K)
       },
       autorestart: true,
       max_restarts: 10,

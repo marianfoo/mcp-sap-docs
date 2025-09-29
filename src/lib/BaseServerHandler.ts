@@ -433,7 +433,7 @@ ChatGPT COMPATIBLE:
               // Additional fields for backward compatibility
               library_id: libraryId,
               topic: topic,
-              snippet: r.text ? r.text.substring(0, 200) + '...' : '',
+              snippet: r.text ? r.text.substring(0, CONFIG.EXCERPT_LENGTH_MAIN) + '...' : '',
               score: r.finalScore,
               metadata: {
                 source: r.sourceId || 'sap-docs',
