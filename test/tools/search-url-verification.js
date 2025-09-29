@@ -4,7 +4,7 @@
 export default [
   {
     name: 'CAP CDS - Should include documentation URL',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'cds query language',
     expectIncludes: ['/cap/'],
     expectContains: ['🔗'], // Should contain URL link emoji
@@ -12,7 +12,7 @@ export default [
   },
   {
     name: 'Cloud SDK JS - Should include documentation URL',
-    tool: 'sap_docs_search', 
+    tool: 'search', 
     query: 'cloud sdk javascript remote debugging',
     expectIncludes: ['/cloud-sdk-js/'],
     expectContains: ['🔗'],
@@ -20,7 +20,7 @@ export default [
   },
   {
     name: 'SAPUI5 - Should include documentation URL',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'sapui5 button control',
     expectIncludes: ['/sapui5/'],
     expectContains: ['🔗'],
@@ -28,7 +28,7 @@ export default [
   },
   {
     name: 'wdi5 - Should include documentation URL', 
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'wdi5 locators testing',
     expectIncludes: ['/wdi5/'],
     expectContains: ['🔗'],
@@ -36,7 +36,7 @@ export default [
   },
   {
     name: 'UI5 Tooling - Should include documentation URL',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'ui5 tooling build',
     expectIncludes: ['/ui5-tooling/'],
     expectContains: ['🔗'],
@@ -44,9 +44,9 @@ export default [
   },
   {
     name: 'Search results should have consistent format with excerpts',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'button',
-    expectIncludes: ['Score:', '🔗', 'Use in sap_docs_get'],
+    expectIncludes: ['Score:', '🔗', 'Use in fetch'],
     expectPattern: /⭐️\s+\*\*[^*]+\*\*\s+\(Score:\s+[\d.]+\)/
   }
 ];

@@ -4,7 +4,7 @@ import { parseSummaryText } from '../_utils/parseResults.js';
 export default [
   {
     name: 'UI5 micro chart concept is discoverable',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'UI.Chart #SpecificationWidthColumnChart',
     validate: async ({ docsSearch }) => {
       const summary = await docsSearch('UI.Chart #SpecificationWidthColumnChart');
@@ -17,7 +17,7 @@ export default [
 
   {
     name: 'Cloud SDK AI getting started is discoverable',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'getting started with sap cloud sdk for ai',
     validate: async ({ docsSearch }) => {
       const summary = await docsSearch('getting started with sap cloud sdk for ai');
@@ -29,7 +29,7 @@ export default [
 
   {
     name: 'CAP enums query finds enums sections',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'Use enums cql cap',
     validate: async ({ docsSearch }) => {
       const summary = await docsSearch('Use enums cql cap');
@@ -40,7 +40,7 @@ export default [
 
   {
     name: 'ExtensionAPI is discoverable in UI5',
-    tool: 'sap_docs_search',
+    tool: 'search',
     query: 'extensionAPI',
     validate: async ({ docsSearch }) => {
       const summary = await docsSearch('extensionAPI');
