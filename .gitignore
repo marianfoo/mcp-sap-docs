@@ -6,3 +6,5 @@ sources
 .cache
 src_context.txt
 test_context.txt
+.mcpregistry_github_token
+.mcpregistry_registry_token

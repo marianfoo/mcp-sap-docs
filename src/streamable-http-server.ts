@@ -96,6 +96,27 @@ async function main() {
   // Create event store for resumability
   const eventStore = new InMemoryEventStore();
 
+  // Legacy SSE endpoint - redirect to MCP
+  app.all('/sse', (req: Request, res: Response) => {
+    const redirectInfo = {
+      error: "SSE endpoint deprecated",
+      message: "The /sse endpoint has been removed. Please use the modern /mcp endpoint instead.",
+      migration: {
+        old_endpoint: "/sse",
+        new_endpoint: "/mcp",
+        transport: "MCP Streamable HTTP", 
+        protocol_version: "2025-06-18"
+      },
+      documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
+      alternatives: {
+        "Local MCP Streamable HTTP": "http://127.0.0.1:3122/mcp",
+        "Public MCP Streamable HTTP": "https://mcp-sap-docs.marianzeis.de/mcp"
+      }
+    };
+    
+    res.status(410).json(redirectInfo);
+  });
+
   // Handle all MCP Streamable HTTP requests (GET, POST, DELETE) on a single endpoint
   app.all('/mcp', async (req: Request, res: Response) => {
     const requestId = `http_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -221,8 +242,8 @@ async function main() {
     }
   });
 
-  // Configure server timeouts for SSE connections
-  server.timeout = 0;           // Disable HTTP timeout for long-lived SSE connections
+  // Configure server timeouts for MCP connections
+  server.timeout = 0;           // Disable HTTP timeout for long-lived MCP connections
   server.keepAliveTimeout = 0;  // Disable keep-alive timeout
   server.headersTimeout = 0;    // Disable headers timeout
   
@@ -236,7 +257,7 @@ Endpoint: /mcp
 Methods: GET, POST, DELETE
 Usage: 
   - Initialize with POST to /mcp
-  - Establish SSE stream with GET to /mcp
+  - Establish stream with GET to /mcp
   - Send requests with POST to /mcp
   - Terminate session with DELETE to /mcp
 

@@ -1,13 +1,11 @@
 # SAP Documentation MCP Server
 
 A fast, lightweight MCP server that provides unified access to official SAP documentation (SAPUI5, CAP, OpenUI5 APIs & samples, wdi5) using efficient BM25 full-text search.
-Use it remotely (hosted URL) or run it locally and point your client to STDIO.
+Use it remotely (hosted URL) or run it locally.
 
-**Public server STDIO**: https://mcp-sap-docs.marianzeis.de/sse  
-**Public server Streamable HTTP**: https://mcp-sap-docs.marianzeis.de/mcp
-**Streamable HTTP (default: 3122, configurable via MCP_PORT)**: http://127.0.0.1:3122/mcp  
+**Public server (MCP Streamable HTTP)**: https://mcp-sap-docs.marianzeis.de/mcp  
+**Local Streamable HTTP (default: 3122, configurable via MCP_PORT)**: http://127.0.0.1:3122/mcp  
 **Local HTTP status**: http://127.0.0.1:3001/status  
-**Proxy status (SSE gateway)**: http://127.0.0.1:18080/status  
 
 ---
 
@@ -16,13 +14,7 @@ Use it remotely (hosted URL) or run it locally and point your client to STDIO.
 <details>
 <summary><b>Use the hosted server (recommended)</b></summary>
 
-Point your MCP client to the SSE URL:
-
-```
-https://mcp-sap-docs.marianzeis.de/sse
-```
-
-or the Streamable HTTP URL:
+Point your MCP client to the Streamable HTTP URL:
 
 ```
 https://mcp-sap-docs.marianzeis.de/mcp
@@ -34,8 +26,8 @@ Verify from a shell:
 # Should return JSON with api_last_activity
 curl -sS https://mcp-sap-docs.marianzeis.de/status | jq .
 
-# Should return an SSE line like: "event: endpoint" with a /messages path
-curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | head
+# Should return HTTP 410 with migration info (SSE endpoint deprecated)
+curl -i https://mcp-sap-docs.marianzeis.de/sse
 ```
 
 </details>
@@ -59,9 +51,6 @@ npm run start:streamable
 **Local health checks**
 
 ```bash
-# MCP proxy (SSE gateway)
-curl -sS http://127.0.0.1:18080/status | jq .
-
 # HTTP server
 curl -sS http://127.0.0.1:3001/status | jq .
 
@@ -88,7 +77,7 @@ curl -sS http://127.0.0.1:3122/health | jq .
 
 ## Connect from your MCP client
 
-✅ **Remote URL**: use the public SSE endpoint or Streamable HTTP endpoint
+✅ **Remote URL**: use the public MCP Streamable HTTP endpoint  
 ✅ **Local/STDIO**: run `node dist/src/server.js` and point the client to a command + args  
 ✅ **Local/Streamable HTTP**: run `npm run start:streamable` and point the client to `http://127.0.0.1:3122/mcp`
 
@@ -105,14 +94,12 @@ Below are copy-paste setups for popular clients. Each block has remote, local, a
 2. Paste the URL:
 
 ```
-https://mcp-sap-docs.marianzeis.de/sse
+https://mcp-sap-docs.marianzeis.de/mcp
 ```
 
-3. Save; Claude will perform the SSE handshake and obtain the /messages endpoint automatically.
+3. Save; Claude will use the MCP Streamable HTTP protocol for communication.
 
-(Claude documents the Remote MCP flow for SSE connectors [here](https://modelcontextprotocol.info/docs/clients/).)
-
-**Docs**: Model Context Protocol ["Connect to Remote MCP Servers"](https://modelcontextprotocol.info/docs/clients/) (shows how Claude connects to SSE).
+**Docs**: Model Context Protocol ["Connect to Remote MCP Servers"](https://modelcontextprotocol.info/docs/clients/) (shows how Claude connects to MCP servers).
 
 </details>
 
@@ -154,7 +141,7 @@ This provides better performance and supports the latest MCP features including 
 ## Cursor
 
 <details>
-<summary><b>Remote (SSE URL)</b></summary>
+<summary><b>Remote (MCP Streamable HTTP)</b></summary>
 
 Create or edit `~/.cursor/mcp.json`:
 
@@ -162,7 +149,7 @@ Create or edit `~/.cursor/mcp.json`:
 {
   "mcpServers": {
     "sap-docs-remote": {
-      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
     }
   }
 }
@@ -195,9 +182,7 @@ Create or edit `~/.cursor/mcp.json`:
 
 Eclipse users can integrate the SAP Docs MCP server with GitHub Copilot for seamless access to SAP development documentation.
 
-> ⚠️ **Important Limitation**: GitHub Copilot did **not support** Eclipse ADT (ABAP Development Tools) due to the `semanticfs` URI scheme used for ABAP development. See [GitHub Issue #171406](https://github.com/orgs/community/discussions/171406) for details.
-> 
-> **Workaround**: Make sure your Copilot Version in Eclipse is up to date to make it work!
+
 
 <details>
 <summary><b>Remote (recommended) — hosted server</b></summary>
@@ -225,7 +210,7 @@ Eclipse users can integrate the SAP Docs MCP server with GitHub Copilot for seam
    {
      "name": "SAP Docs MCP",
      "description": "Comprehensive SAP development documentation with ABAP keyword documentation",
-     "url": "https://mcp-sap-docs.marianzeis.de/sse"
+     "url": "https://mcp-sap-docs.marianzeis.de/mcp"
    }
    ```
 
@@ -301,7 +286,6 @@ Create `.vscode/mcp.json` in your workspace:
 }
 ```
 
-**Alternative (SSE)**: Use `"type": "sse"` with `"url": "https://mcp-sap-docs.marianzeis.de/sse"` if HTTP doesn't work.
 
 ### Using the Remote Server
 1. Save the `.vscode/mcp.json` file in your workspace
@@ -363,7 +347,7 @@ See Microsoft's ["Use MCP servers in VS Code"](https://code.visualstudio.com/doc
 ## Raycast
 
 <details>
-<summary><b>Remote (SSE URL)</b></summary>
+<summary><b>Remote (MCP Streamable HTTP)</b></summary>
 
 Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
 
@@ -372,7 +356,7 @@ Open Raycast → Open Command "Manage Servers (MCP) → Import following JSON
   "mcpServers": {
     "sap-docs": {
       "command": "npx",
-      "args": ["mcp-remote@latest", "https://mcp-sap-docs.marianzeis.de/sse"]
+      "args": ["mcp-remote@latest", "https://mcp-sap-docs.marianzeis.de/mcp"]
     }
   }
 }
@@ -558,22 +542,22 @@ Try these with any connected MCP client to explore the comprehensive documentati
 <details>
 <summary><b>Claude says it can't connect</b></summary>
 
-- Make sure the URL is the SSE URL:
-`https://mcp-sap-docs.marianzeis.de/sse` (not /messages, not /status).
-- Test SSE from your machine:
+- Make sure you're using the modern MCP Streamable HTTP URL:
+`https://mcp-sap-docs.marianzeis.de/mcp` (not /sse, which is deprecated).
+- Test MCP endpoint from your machine:
 
 ```bash
-curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | head
+curl -i https://mcp-sap-docs.marianzeis.de/mcp
 ```
 
-You should see `event: endpoint` and a `/messages?...` path. (This is the expected SSE handshake for remote MCP servers.)
+You should see JSON indicating MCP protocol support.
 
 </details>
 
 <details>
 <summary><b>VS Code wizard can't detect the server</b></summary>
 
-- Try adding it as URL first. If your network blocks SSE, use your local server via command:
+- Try adding it as URL first. If there are connection issues, use your local server via command:
 ```
 node <absolute-path>/dist/src/server.js
 ```
@@ -639,8 +623,8 @@ The build process creates optimized search indices for fast offline access while
 # Check server status
 curl -sS https://mcp-sap-docs.marianzeis.de/status | jq .
 
-# Test SSE connection
-curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | head
+# Test MCP endpoint
+curl -i https://mcp-sap-docs.marianzeis.de/mcp
 ```
 
 ### Local Endpoints
@@ -648,8 +632,8 @@ curl -i -H 'Accept: text/event-stream' https://mcp-sap-docs.marianzeis.de/sse | 
 # HTTP server status
 curl -sS http://127.0.0.1:3001/status | jq .
 
-# SSE proxy status  
-curl -sS http://127.0.0.1:18080/status | jq .
+# MCP Streamable HTTP server status  
+curl -sS http://127.0.0.1:3122/health | jq .
 ```
 
 ---
@@ -662,7 +646,7 @@ This project includes dual automated workflows:
 1. **Main Deployment** (on push to `main` or manual trigger)
    - SSH into server and pull latest code
    - Run enhanced setup with optimized submodule handling
-   - Restart all PM2 processes (proxy, http, streamable) with health checks
+   - Restart all PM2 processes (http, streamable) with health checks
 
 2. **Daily Documentation Updates** (4 AM UTC)
    - Update all documentation submodules to latest versions
@@ -677,12 +661,11 @@ Trigger documentation updates anytime via GitHub Actions → "Update Documentati
 ## Architecture
 
 - **MCP Server** (Node.js/TypeScript) - Exposes Resources/Tools for SAP docs, community & help portal
-- **Streamable HTTP Transport** (Latest MCP spec) - HTTP-based transport with session management and resumability
-- **SSE Proxy** (Python) - Bridges STDIO → URL for remote clients  
+- **Streamable HTTP Transport** (Latest MCP spec) - HTTP-based transport with session management and resumability  
 - **BM25 Search Engine** - SQLite FTS5 with optimized OR-logic queries for fast, relevant results
 - **Optimized Submodules** - Shallow, single-branch clones with blob filtering for minimal bandwidth
 
 ### Technical Stack
 - **Search Engine**: BM25 with SQLite FTS5 for fast full-text search with OR logic
 - **Performance**: ~15ms average query time with optimized indexing
-- **Transport**: Latest MCP protocol with HTTP/SSE support and session management
+- **Transport**: Latest MCP protocol with HTTP Streamable transport and session management

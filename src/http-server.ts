@@ -262,6 +262,28 @@ const server = createServer(async (req, res) => {
     return json(res, 200, statusResponse);
   }
 
+  // Legacy SSE endpoint - redirect to MCP
+  if (req.url === "/sse") {
+    const redirectInfo = {
+      error: "SSE endpoint deprecated",
+      message: "The /sse endpoint has been removed. Please use the modern /mcp endpoint instead.",
+      migration: {
+        old_endpoint: "/sse",
+        new_endpoint: "/mcp",
+        transport: "MCP Streamable HTTP",
+        protocol_version: "2025-06-18"
+      },
+      documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
+      alternatives: {
+        "Local MCP Streamable HTTP": "http://127.0.0.1:3122/mcp",
+        "Public MCP Streamable HTTP": "https://mcp-sap-docs.marianzeis.de/mcp"
+      }
+    };
+    
+    res.setHeader("Content-Type", "application/json");
+    return json(res, 410, redirectInfo);
+  }
+
   if (req.method === "POST" && req.url === "/mcp") {
     let body = "";
     req.on("data", (chunk) => (body += chunk.toString()));

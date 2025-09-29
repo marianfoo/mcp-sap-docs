@@ -23,7 +23,7 @@ If the file doesn't exist, create it. If it exists, add the new server to the ex
 {
   "mcpServers": {
     "sap-docs-remote": {
-      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
     }
   }
 }
@@ -39,7 +39,7 @@ If you already have other MCP servers configured, add the new server:
       "command": "some-command"
     },
     "sap-docs-remote": {
-      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
     }
   }
 }
@@ -76,7 +76,7 @@ Ask Cursor a SAP-related question to verify the connection:
 
 ### Server Not Responding
 1. Check your internet connection
-2. Verify the URL is correct: `https://mcp-sap-docs.marianzeis.de/sse`
+2. Verify the URL is correct: `https://mcp-sap-docs.marianzeis.de/mcp`
 3. Restart Cursor
 4. Check Cursor's MCP server status in settings
 
@@ -117,7 +117,7 @@ You can use both local and remote MCP servers simultaneously:
       "args": ["/path/to/local/server.js"]
     },
     "sap-docs-remote": {
-      "url": "https://mcp-sap-docs.marianzeis.de/sse"
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
     }
   }
 }
@@ -127,7 +127,7 @@ You can use both local and remote MCP servers simultaneously:
 
 - **URL**: https://mcp-sap-docs.marianzeis.de
 - **Health Check**: https://mcp-sap-docs.marianzeis.de/status
-- **Protocol**: Server-Sent Events (SSE)
+- **Protocol**: MCP Streamable HTTP
 - **Uptime**: Monitored 24/7 with automatic deployment
 - **Updates**: Automatically synced with latest documentation
 - **Environment**: Uses PM2 for process management (no Docker)
