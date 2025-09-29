@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.marianfoo/mcp-sap-docs",
+  "description": "Fast MCP server for unified SAP docs search (SAPUI5, CAP, OpenUI5, wdi5) with BM25 full-text search",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/marianfoo/mcp-sap-docs",
+    "source": "github"
+  },
+  "version": "0.3.9",
+  "packages": [
+    {
+      "registry_type": "npm",
+      "registry_base_url": "https://registry.npmjs.org",
+      "identifier": "mcp-sap-docs",
+      "version": "0.3.9",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

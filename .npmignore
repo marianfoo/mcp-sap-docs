@@ -1,0 +1,41 @@
+# Development files
+src/
+test/
+docs/
+scripts/
+.github/
+
+# Large data files that shouldn't be in NPM package
+sources/
+data/
+dist/data/
+*.sqlite
+*.db
+*.sqlite-shm
+*.sqlite-wal
+
+# Development configuration
+tsconfig.json
+vitest.config.ts
+.DS_Store
+.cache
+ecosystem.config.cjs
+setup.sh
+
+# Test and development files
+test-*.ts
+test-*.js
+test-*.http
+*_context.txt
+server.json
+
+# CI/CD and deployment
+.github/
+REMOTE_SETUP.md
+index.html
+
+# Keep these important files
+!README.md
+!LICENSE
+!package.json
+!dist/
