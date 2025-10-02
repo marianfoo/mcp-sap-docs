@@ -13,4 +13,8 @@ export const CONFIG = {
   // Excerpt lengths for different search types
   EXCERPT_LENGTH_MAIN: 400,    // Main search results excerpt length
   EXCERPT_LENGTH_COMMUNITY: 600, // Community search results excerpt length
+  
+  // Maximum content length for SAP Help and Community full content retrieval
+  // Limits help prevent token overflow and keep responses manageable (~18,750 tokens)
+  MAX_CONTENT_LENGTH: 75000,  // 75,000 characters
 };

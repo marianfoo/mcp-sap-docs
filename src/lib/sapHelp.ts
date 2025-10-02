@@ -5,6 +5,7 @@ import {
   SapHelpMetadataResponse, 
   SapHelpPageContentResponse 
 } from "./types.js";
+import { truncateContent } from "./truncate.js";
 
 const BASE = "https://help.sap.com";
 
@@ -296,7 +297,8 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
       .replace(/^\s+|\s+$/g, '') // Trim
       .trim();
 
-    return `# ${title}
+    // Build the full content with metadata
+    const fullContent = `# ${title}
 
 **Source:** SAP Help Portal
 **URL:** ${ensureAbsoluteUrl(hit.url)}
@@ -312,6 +314,11 @@ ${cleanText}
 ---
 
 *This content is from the SAP Help Portal and represents official SAP documentation.*`;
+
+    // Apply intelligent truncation if content is too large
+    const truncationResult = truncateContent(fullContent);
+    
+    return truncationResult.content;
 
   } catch (error: any) {
     throw new Error(`Failed to get SAP Help content: ${error.message}`);

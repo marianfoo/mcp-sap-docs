@@ -5,11 +5,17 @@ For tool schemas, request/response formats, and endpoints.
 ## MCP Tools (5 total)
 - **`search`**: Unified search across all documentation sources (alias: `sap_docs_search`)
 - **`fetch`**: Retrieve specific documents by ID (alias: `sap_docs_get`)
-- **`sap_community_search`**: Search SAP Community posts with full content
+- **`sap_community_search`**: Search SAP Community posts with full content (max 75k chars per post with intelligent truncation)
 - **`sap_help_search`**: Search SAP Help Portal using private APIs
-- **`sap_help_get`**: Retrieve full SAP Help page content
+- **`sap_help_get`**: Retrieve full SAP Help page content (max 75k chars with intelligent truncation)
 
 **Note**: Tool names may appear with prefixes depending on MCP client (e.g., `mcp_sap-docs-remote_search`)
+
+## Content Size Limits
+- **Maximum**: 75,000 characters (~18,750 tokens) for SAP Help and Community content
+- **Algorithm**: Intelligent truncation preserving beginning (60%) and end (20%) with clear notice
+- **Configuration**: `CONFIG.MAX_CONTENT_LENGTH` in `src/lib/config.ts`
+- **Details**: See `docs/CONTENT-SIZE-LIMITS.md`
 
 ## Server Implementations
 - **Stdio MCP**: `src/server.ts` - Main MCP server for Claude integration
@@ -47,7 +53,10 @@ For tool schemas, request/response formats, and endpoints.
 @file src/lib/localDocs.ts
 @file src/lib/sapHelp.ts
 @file src/lib/communityBestMatch.ts
+@file src/lib/truncate.ts
+@file src/lib/config.ts
 @file src/lib/types.ts
+@file docs/CONTENT-SIZE-LIMITS.md
 @file docs/LLM-FRIENDLY-IMPROVEMENTS.md
 @file docs/ARCHITECTURE.md
 @file docs/DEV.md

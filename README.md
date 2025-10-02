@@ -69,9 +69,9 @@ curl -sS http://127.0.0.1:3122/health | jq .
 - **fetch** – Retrieve complete documents/snippets with smart formatting
 
 ### 🌐 **Community & Help Portal**  
-- **sap_community_search** – Real-time SAP Community posts with full content of top 3 results
+- **sap_community_search** – Real-time SAP Community posts with full content of top 3 results (intelligently truncated to 75k chars if needed)
 - **sap_help_search** – Comprehensive search across SAP Help Portal documentation  
-- **sap_help_get** – Retrieve complete SAP Help pages with metadata
+- **sap_help_get** – Retrieve complete SAP Help pages with metadata (intelligently truncated to 75k chars if needed)
 
 ---
 

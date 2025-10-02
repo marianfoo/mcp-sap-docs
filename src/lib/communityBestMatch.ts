@@ -3,6 +3,7 @@
 // No external dependencies; best-effort selectors based on current Khoros layout.
 
 import { CONFIG } from "./config.js";
+import { truncateContent } from "./truncate.js";
 
 export interface BestMatchHit {
   title: string;
@@ -221,7 +222,7 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
       const postDate = post.post_time ? new Date(post.post_time).toLocaleDateString() : 'Unknown';
       const postUrl = post.view_href || `https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}`;
       
-      const content = `# ${post.subject}
+      const fullContent = `# ${post.subject}
 
 **Source**: SAP Community Blog Post  
 **Published**: ${postDate}  
@@ -235,7 +236,9 @@ ${post.body || post.search_snippet}
 
 *This content is from the SAP Community and represents community knowledge and experiences.*`;
 
-      results[post.id] = content;
+      // Apply intelligent truncation if content is too large
+      const truncationResult = truncateContent(fullContent);
+      results[post.id] = truncationResult.content;
     }
 
     return results;
@@ -356,7 +359,7 @@ export async function getCommunityPostByUrl(postUrl: string, userAgent?: string)
     const tagsText = tags.length > 0 ? `\n**Tags:** ${tags.join(", ")}` : "";
     const kudosText = kudos > 0 ? `\n**Kudos:** ${kudos}` : "";
     
-    return `# ${title}
+    const fullContent = `# ${title}
 
 **Source**: SAP Community Blog Post  
 **Author**: ${author}  
@@ -370,6 +373,10 @@ ${content}
 ---
 
 *This content is from the SAP Community and represents community knowledge and experiences.*`;
+
+    // Apply intelligent truncation if content is too large
+    const truncationResult = truncateContent(fullContent);
+    return truncationResult.content;
   } catch (error) {
     console.warn('Failed to get community post:', error);
     return null;
