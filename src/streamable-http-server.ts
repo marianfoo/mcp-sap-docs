@@ -110,7 +110,7 @@ async function main() {
         old_endpoint: "/sse",
         new_endpoint: "/mcp",
         transport: "MCP Streamable HTTP", 
-        protocol_version: "2025-06-18"
+        protocol_version: "2025-07-09"
       },
       documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
       alternatives: {
@@ -147,29 +147,48 @@ async function main() {
         });
       } else if (!sessionId && req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
         // New initialization request - create new transport
+        const cleanupTransport = (
+          sessionId: string | undefined,
+          trigger: "onsessionclosed" | "onclose",
+          context: Record<string, unknown> = {}
+        ) => {
+          if (!sessionId) {
+            return;
+          }
+
+          const hadTransport = Boolean(transports[sessionId]);
+
+          if (hadTransport) {
+            delete transports[sessionId];
+          }
+
+          logger.logTransportEvent("session_closed", sessionId, {
+            ...context,
+            trigger,
+            transportCount: Object.keys(transports).length,
+            ...(hadTransport ? {} : { note: "session already cleaned up" })
+          });
+        };
+
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           eventStore, // Enable resumability
           onsessioninitialized: (sessionId: string) => {
             // Store the transport by session ID when session is initialized
-            logger.logTransportEvent('session_initialized', sessionId, { 
+            logger.logTransportEvent('session_initialized', sessionId, {
               requestId,
               transportCount: Object.keys(transports).length + 1
             });
             transports[sessionId] = transport;
+          },
+          onsessionclosed: (sessionId: string) => {
+            cleanupTransport(sessionId, 'onsessionclosed');
           }
         });
-        
+
         // Set up onclose handler to clean up transport when closed
         transport.onclose = () => {
-          const sid = transport.sessionId;
-          if (sid && transports[sid]) {
-            logger.logTransportEvent('session_closed', sid, { 
-              requestId,
-              transportCount: Object.keys(transports).length - 1
-            });
-            delete transports[sid];
-          }
+          cleanupTransport(transport.sessionId, 'onclose', { requestId });
         };
         
         // Connect the transport to the MCP server
@@ -235,7 +254,7 @@ async function main() {
       version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',
-      protocol: '2025-06-18'
+      protocol: '2025-07-09'
     });
   });
 
@@ -256,7 +275,7 @@ async function main() {
   console.log(`
 ==============================================
 MCP STREAMABLE HTTP SERVER
-Protocol version: 2025-06-18
+Protocol version: 2025-07-09
 
 Endpoint: /mcp
 Methods: GET, POST, DELETE
