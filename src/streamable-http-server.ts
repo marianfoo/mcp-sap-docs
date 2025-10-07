@@ -142,6 +142,29 @@ async function main() {
         });
       } else if (!sessionId && req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
         // New initialization request - create new transport
+        const cleanupTransport = (
+          sessionId: string | undefined,
+          trigger: "onsessionclosed" | "onclose",
+          context: Record<string, unknown> = {}
+        ) => {
+          if (!sessionId) {
+            return;
+          }
+
+          const hadTransport = Boolean(transports[sessionId]);
+
+          if (hadTransport) {
+            delete transports[sessionId];
+          }
+
+          logger.logTransportEvent("session_closed", sessionId, {
+            ...context,
+            trigger,
+            transportCount: Object.keys(transports).length,
+            ...(hadTransport ? {} : { note: "session already cleaned up" })
+          });
+        };
+
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           eventStore, // Enable resumability
@@ -154,31 +177,13 @@ async function main() {
             transports[sessionId] = transport;
           },
           onsessionclosed: (sessionId: string) => {
-            if (transports[sessionId]) {
-              delete transports[sessionId];
-              logger.logTransportEvent('session_closed', sessionId, {
-                trigger: 'onsessionclosed',
-                transportCount: Object.keys(transports).length
-              });
-            } else {
-              logger.logTransportEvent('session_closed', sessionId, {
-                trigger: 'onsessionclosed',
-                note: 'session already cleaned up'
-              });
-            }
+            cleanupTransport(sessionId, 'onsessionclosed');
           }
         });
-        
+
         // Set up onclose handler to clean up transport when closed
         transport.onclose = () => {
-          const sid = transport.sessionId;
-          if (sid && transports[sid]) {
-            logger.logTransportEvent('session_closed', sid, { 
-              requestId,
-              transportCount: Object.keys(transports).length - 1
-            });
-            delete transports[sid];
-          }
+          cleanupTransport(transport.sessionId, 'onclose', { requestId });
         };
         
         // Connect the transport to the MCP server
