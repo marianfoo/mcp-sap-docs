@@ -4,18 +4,23 @@ import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 
 function createServer() {
+  const serverOptions: NonNullable<ConstructorParameters<typeof Server>[1]> & {
+    protocolVersions?: string[];
+  } = {
+    protocolVersions: ["2025-07-09"],
+    capabilities: {
+      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
+      tools: {},      // Enable tools capability
+      prompts: {}     // Enable prompts capability for 2025-07-09 protocol
+    }
+  };
+
   const srv = new Server({
     name: "Local SAP Docs",
     description:
       "Offline SAPUI5 & CAP documentation server with SAP Community, SAP Help Portal, and ABAP Keyword Documentation integration",
     version: "0.1.0"
-  }, {
-    capabilities: { 
-      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
-      tools: {},      // Enable tools capability
-      prompts: {}     // Enable prompts capability for 2025-06-18 protocol
-    }
-  });
+  }, serverOptions);
 
   // Configure server with shared handlers
   BaseServerHandler.configureServer(srv);

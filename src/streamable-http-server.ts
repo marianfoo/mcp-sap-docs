@@ -56,17 +56,22 @@ class InMemoryEventStore {
 }
 
 function createServer() {
+  const serverOptions: NonNullable<ConstructorParameters<typeof Server>[1]> & {
+    protocolVersions?: string[];
+  } = {
+    protocolVersions: ["2025-07-09"],
+    capabilities: {
+      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
+      tools: {}       // Enable tools capability
+    }
+  };
+
   const srv = new Server({
     name: "SAP Docs Streamable HTTP",
     description:
       "SAP documentation server with Streamable HTTP transport - supports SAPUI5, CAP, wdi5, SAP Community, SAP Help Portal, and ABAP Keyword Documentation integration",
     version: VERSION
-  }, {
-    capabilities: { 
-      // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
-      tools: {}       // Enable tools capability 
-    }
-  });
+  }, serverOptions);
 
   // Configure server with shared handlers
   BaseServerHandler.configureServer(srv);
