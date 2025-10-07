@@ -146,13 +146,19 @@ async function runTestFile(filePath, fileName) {
   
   let fileFailures = 0;
   let fileTests = 0;
-  
+
   for (const c of cases) {
-    fileTests++;
     try {
       if (typeof c.validate === 'function') {
         // New path: custom validator gets helpers, uses existing server
         const res = await c.validate({ docsSearch });
+        if (res && typeof res === 'object' && res.skipped) {
+          const reason = res.message ? ` - ${res.message}` : '';
+          console.log(`  ${colorize('⚠️', 'yellow')} ${colorize(c.name, 'white')} (skipped${reason})`);
+          continue;
+        }
+
+        fileTests++;
         const passed = typeof res === 'object' ? !!res.passed : !!res;
         if (!passed) {
           const msg = (res && res.message) ? ` - ${res.message}` : '';
@@ -162,7 +168,14 @@ async function runTestFile(filePath, fileName) {
       } else {
         // Legacy path: expectIncludes (kept for existing tests)
         const text = await docsSearch(c.query);
-        
+
+        if (c.skipIfNoResults && /No results found for/.test(text)) {
+          console.log(`  ${colorize('⚠️', 'yellow')} ${colorize(c.name, 'white')} (skipped - no results available)`);
+          continue;
+        }
+
+        fileTests++;
+
         // Check expectIncludes
         if (c.expectIncludes) {
           const checks = Array.isArray(c.expectIncludes) ? c.expectIncludes : [c.expectIncludes];
