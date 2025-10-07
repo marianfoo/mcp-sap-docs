@@ -62,9 +62,10 @@ function createServer() {
       "SAP documentation server with Streamable HTTP transport - supports SAPUI5, CAP, wdi5, SAP Community, SAP Help Portal, and ABAP Keyword Documentation integration",
     version: VERSION
   }, {
-    capabilities: { 
+    capabilities: {
       // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
-      tools: {}       // Enable tools capability 
+      tools: {},      // Enable tools capability
+      prompts: {}     // Enable prompts capability for 2025-06-18 protocol
     }
   });
 

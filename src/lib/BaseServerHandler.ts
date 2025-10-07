@@ -180,7 +180,11 @@ export class BaseServerHandler {
     // DISABLED: Resources capability causes 60,000+ resources which breaks Cursor
     // this.setupResourceHandlers(srv);
     this.setupToolHandlers(srv);
-    // this.setupPromptHandlers(srv); // Temporarily disabled to fix session init
+
+    const capabilities = (srv as unknown as { _capabilities?: { prompts?: object } })._capabilities;
+    if (capabilities?.prompts) {
+      this.setupPromptHandlers(srv);
+    }
   }
 
   /**
@@ -695,7 +699,7 @@ ChatGPT COMPATIBLE:
         prompts: [
           {
             name: "sap_search_help",
-            displayName: "SAP Documentation Search Helper",
+            title: "SAP Documentation Search Helper",
             description: "Helps users construct effective search queries for SAP documentation",
             arguments: [
               {
@@ -712,7 +716,7 @@ ChatGPT COMPATIBLE:
           },
           {
             name: "sap_troubleshoot",
-            displayName: "SAP Issue Troubleshooting Guide",
+            title: "SAP Issue Troubleshooting Guide",
             description: "Guides users through troubleshooting common SAP development issues",
             arguments: [
               {

@@ -37,7 +37,7 @@ async function main() {
   });
   
   await srv.connect(new StdioServerTransport());
-  console.error("📚 MCP server ready (stdio) with Resources and Tools support.");
+  console.error("📚 MCP server ready (stdio) with Tools and Prompts support.");
   
   // Log successful startup
   logger.info("MCP SAP Docs server ready and connected", {
