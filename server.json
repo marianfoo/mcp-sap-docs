@@ -7,13 +7,13 @@
     "url": "https://github.com/marianfoo/mcp-sap-docs",
     "source": "github"
   },
-  "version": "0.3.9",
+  "version": "0.3.15",
   "packages": [
     {
       "registry_type": "npm",
       "registry_base_url": "https://registry.npmjs.org",
       "identifier": "mcp-sap-docs",
-      "version": "0.3.9",
+      "version": "0.3.15",
       "transport": {
         "type": "stdio"
       }
