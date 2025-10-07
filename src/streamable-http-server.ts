@@ -105,7 +105,7 @@ async function main() {
         old_endpoint: "/sse",
         new_endpoint: "/mcp",
         transport: "MCP Streamable HTTP", 
-        protocol_version: "2025-06-18"
+        protocol_version: "2025-07-09"
       },
       documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
       alternatives: {
@@ -147,11 +147,25 @@ async function main() {
           eventStore, // Enable resumability
           onsessioninitialized: (sessionId: string) => {
             // Store the transport by session ID when session is initialized
-            logger.logTransportEvent('session_initialized', sessionId, { 
+            logger.logTransportEvent('session_initialized', sessionId, {
               requestId,
               transportCount: Object.keys(transports).length + 1
             });
             transports[sessionId] = transport;
+          },
+          onsessionclosed: (sessionId: string) => {
+            if (transports[sessionId]) {
+              delete transports[sessionId];
+              logger.logTransportEvent('session_closed', sessionId, {
+                trigger: 'onsessionclosed',
+                transportCount: Object.keys(transports).length
+              });
+            } else {
+              logger.logTransportEvent('session_closed', sessionId, {
+                trigger: 'onsessionclosed',
+                note: 'session already cleaned up'
+              });
+            }
           }
         });
         
@@ -230,7 +244,7 @@ async function main() {
       version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',
-      protocol: '2025-06-18'
+      protocol: '2025-07-09'
     });
   });
 
@@ -251,7 +265,7 @@ async function main() {
   console.log(`
 ==============================================
 MCP STREAMABLE HTTP SERVER
-Protocol version: 2025-06-18
+Protocol version: 2025-07-09
 
 Endpoint: /mcp
 Methods: GET, POST, DELETE

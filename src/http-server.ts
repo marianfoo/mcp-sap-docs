@@ -271,7 +271,7 @@ const server = createServer(async (req, res) => {
         old_endpoint: "/sse",
         new_endpoint: "/mcp",
         transport: "MCP Streamable HTTP",
-        protocol_version: "2025-06-18"
+        protocol_version: "2025-07-09"
       },
       documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
       alternatives: {
