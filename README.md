@@ -203,7 +203,7 @@ Eclipse users can integrate the SAP Docs MCP server with GitHub Copilot for seam
    - Open the Copilot chat by pressing <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>I</kbd>
    - In the chat area click on the "Configure Tools..." icon
 
-4. **Add SAP Docs MCP Server**
+3. **Add SAP Docs MCP Server**
    Add the following to the "Server Configurations" and click on "Apply"
    ```json
    {
@@ -216,7 +216,7 @@ Eclipse users can integrate the SAP Docs MCP server with GitHub Copilot for seam
    }
    ```
 
-6. **Verify Configuration**
+4. **Verify Configuration**
    - After clicking "Apply" the server should appear in your MCP servers list
    - Status should show as "Connected" when active
 
