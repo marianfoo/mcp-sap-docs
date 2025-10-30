@@ -10,7 +10,7 @@ import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.3.19";
+const VERSION = "0.3.20";
 
 
 // Simple in-memory event store for resumability
