@@ -255,7 +255,7 @@ const server = createServer(async (req, res) => {
         platform: process.platform,
         pid: process.pid,
         port: Number(process.env.PORT || 3001),
-        bind: "127.0.0.1",
+        bind: process.env.HOST || "127.0.0.1",
       },
     };
 
@@ -316,8 +316,9 @@ const server = createServer(async (req, res) => {
   
   // Start server
   const PORT = Number(process.env.PORT || 3001);
-  // Bind to 127.0.0.1 to keep local-only
-  server.listen(PORT, "127.0.0.1", () => {
-    console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
+  const HOST = process.env.HOST || "127.0.0.1";
+  // Bind address configurable via HOST env var (default: 127.0.0.1 for local-only)
+  server.listen(PORT, HOST, () => {
+    console.log(`📚 HTTP server running on http://${HOST}:${PORT} (status: /status, health: /healthz, ready: /readyz)`);
   });
 })();
