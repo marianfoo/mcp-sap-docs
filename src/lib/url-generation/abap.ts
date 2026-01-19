@@ -5,16 +5,27 @@
  * Supports two library types:
  * - Standard ABAP (on-premise, full syntax): /abap-docs-standard
  * - ABAP Cloud (BTP, restricted syntax): /abap-docs-cloud
+ * 
+ * URL Schema: /doc/{index}/version/en-US/{filename}.html
+ * Note: File extension is .html (not .htm), consistent with SAP's current URL structure
+ * 
+ * Version info:
+ * - Standard ABAP: abapdocu_latest_index_htm/latest - on-premise latest (content is currently 7.58)
+ * - ABAP Cloud: abapdocu_cp_index_htm/CLOUD - BTP version (9.16+, 8.1x for S/4HANA 2025)
  */
 
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
 import { DocUrlConfig } from '../metadata.js';
 
-// Base URLs for ABAP documentation
+// Base URLs for ABAP documentation (without trailing slash)
+// Schema: https://help.sap.com/doc/{index}/{version}/en-US/{filename}.html
 const ABAP_BASE_URLS = {
-  // Standard ABAP - on-premise, full syntax (latest version)
+  // Standard ABAP - on-premise, full syntax (latest on-premise version, currently 7.58)
+  // URL: https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABENABAP.html
   standard: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US',
-  // ABAP Cloud - BTP, restricted syntax
+  
+  // ABAP Cloud - BTP, restricted syntax (9.16+ for public cloud, 8.1x for S/4HANA 2025)
+  // URL: https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/ABENABAP.html
   cloud: 'https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US'
 } as const;
 

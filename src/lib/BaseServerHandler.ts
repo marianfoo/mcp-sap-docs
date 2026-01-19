@@ -432,7 +432,7 @@ ChatGPT COMPATIBLE:
             const topic = r.id.startsWith(libraryId) ? r.id.slice(libraryId.length + 1) : '';
             
             const config = getDocUrlConfig(libraryId);
-            const docUrl = config ? generateDocumentationUrl(libraryId, '', r.text, config) : null;
+            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', r.text, config) : null;
             
             return {
               // ChatGPT-required format: id, title, url

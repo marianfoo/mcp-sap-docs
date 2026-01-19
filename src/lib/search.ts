@@ -1,7 +1,7 @@
 // Simple BM25-only search using FTS5 with metadata-driven configuration
 import { searchFTS } from "./searchDb.js";
 import { CONFIG } from "./config.js";
-import { loadMetadata, getSourceBoosts, expandQueryTerms, getAllLibraryMappings } from "./metadata.js";
+import { loadMetadata, getSourceBoosts, expandQueryTerms } from "./metadata.js";
 
 export type SearchResult = {
   id: string;
@@ -9,18 +9,17 @@ export type SearchResult = {
   bm25: number;
   sourceId: string;
   path: string;
+  relFile: string;
   finalScore: number;
 };
 
-// Helper to extract source ID from library_id or document path using metadata
+// Helper to extract source ID from library_id or document path
+// Returns the raw source ID (e.g., 'abap-docs-standard') for boost lookups
 function extractSourceId(libraryIdOrPath: string): string {
   if (libraryIdOrPath.startsWith('/')) {
     const parts = libraryIdOrPath.split('/');
     if (parts.length > 1) {
-      const sourceId = parts[1];
-      // Use metadata-driven library mappings
-      const mappings = getAllLibraryMappings();
-      return mappings[sourceId] || sourceId;
+      return parts[1]; // Return raw source ID without mapping
     }
   }
   return libraryIdOrPath;
@@ -47,6 +46,9 @@ export async function search(
   
   // Determine which ABAP library to use: 'cloud', 'standard', or null (show standard by default)
   const requestedAbapLibrary = cloudMatch ? 'cloud' : (standardMatch ? 'standard' : null);
+  
+  // Check if query explicitly mentions ABAP (for extra boosting of official docs)
+  const isExplicitAbapQuery = query.match(/\babap\b/i) !== null;
   
   // Search with all query variants (union approach)
   for (const variant of queryVariants) {
@@ -100,6 +102,12 @@ export async function search(
     const sourceId = extractSourceId(r.libraryId || r.id);
     let boost = sourceBoosts[sourceId] || 0;
     
+    // Extra boost for official ABAP docs when "abap" is explicitly in the query
+    // This prioritizes official documentation over community guides and style guides
+    if (isExplicitAbapQuery && r.id.includes('/abap-docs-')) {
+      boost += 2.0; // Strong boost for official ABAP keyword documentation
+    }
+    
     // Additional boost for library-specific queries
     if (requestedAbapLibrary === 'cloud' && r.id.includes('/abap-docs-cloud/')) {
       boost += 1.0; // Extra boost for cloud when explicitly requested
@@ -113,6 +121,7 @@ export async function search(
       bm25: r.bm25Score,
       sourceId,
       path: r.id,
+      relFile: r.relFile || '',
       finalScore: (-r.bm25Score) * (1 + boost) // Convert to descending with boost
     };
   });
