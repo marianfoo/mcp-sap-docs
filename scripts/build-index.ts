@@ -215,73 +215,19 @@ const SOURCES: SourceConfig[] = [
   },
   {
     repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.58", "md"),
-    id: "/abap-docs-758",
-    name: "ABAP Keyword Documentation (7.58)",
-    description: "Official ABAP language reference and syntax documentation (version 7.58) - individual files optimized for LLM consumption",
+    absDir: join("sources", "abap-docs", "docs", "standard", "md"),
+    id: "/abap-docs-standard",
+    name: "ABAP Keyword Documentation (Standard)",
+    description: "Official ABAP language reference for on-premise systems (full syntax) - individual files optimized for LLM consumption",
     filePattern: "*.md",
     type: "markdown" as const
   },
   {
     repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.57", "md"),
-    id: "/abap-docs-757",
-    name: "ABAP Keyword Documentation (7.57)",
-    description: "Official ABAP language reference and syntax documentation (version 7.57) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.56", "md"),
-    id: "/abap-docs-756",
-    name: "ABAP Keyword Documentation (7.56)",
-    description: "Official ABAP language reference and syntax documentation (version 7.56) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.55", "md"),
-    id: "/abap-docs-755",
-    name: "ABAP Keyword Documentation (7.55)",
-    description: "Official ABAP language reference and syntax documentation (version 7.55) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.54", "md"),
-    id: "/abap-docs-754",
-    name: "ABAP Keyword Documentation (7.54)",
-    description: "Official ABAP language reference and syntax documentation (version 7.54) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.53", "md"),
-    id: "/abap-docs-753",
-    name: "ABAP Keyword Documentation (7.53)",
-    description: "Official ABAP language reference and syntax documentation (version 7.53) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "7.52", "md"),
-    id: "/abap-docs-752",
-    name: "ABAP Keyword Documentation (7.52)",
-    description: "Official ABAP language reference and syntax documentation (version 7.52) - individual files optimized for LLM consumption",
-    filePattern: "*.md",
-    type: "markdown" as const
-  },
-  {
-    repoName: "abap-docs",
-    absDir: join("sources", "abap-docs", "docs", "latest", "md"),
-    id: "/abap-docs-latest",
-    name: "ABAP Keyword Documentation (Latest)",
-    description: "Official ABAP language reference and syntax documentation (latest version) - individual files optimized for LLM consumption",
+    absDir: join("sources", "abap-docs", "docs", "cloud", "md"),
+    id: "/abap-docs-cloud",
+    name: "ABAP Keyword Documentation (Cloud)",
+    description: "Official ABAP language reference for BTP/Cloud (restricted syntax) - individual files optimized for LLM consumption",
     filePattern: "*.md",
     type: "markdown" as const
   }
@@ -755,7 +701,24 @@ async function main() {
                 path.basename(rel, ".md");
         
         // Enhanced description from frontmatter or content
-        if (frontmatter?.description) {
+        // For ABAP docs, prefer actual content over generic frontmatter description
+        const isAbapDocs = src.id.includes('abap-docs-standard') || src.id.includes('abap-docs-cloud');
+        
+        if (isAbapDocs) {
+          // Extract meaningful content from ABAP docs (skip navigation links and metadata)
+          const contentLines = lines.filter(l => {
+            const trimmed = l.trim();
+            return trimmed && 
+                   !trimmed.startsWith('#') && 
+                   !trimmed.startsWith('[') && 
+                   !trimmed.startsWith('``') &&
+                   !trimmed.startsWith('|') &&
+                   trimmed.length > 20;
+          });
+          description = contentLines.slice(0, 3).join(' ').substring(0, 400).trim() || 
+                        frontmatter?.description || 
+                        `${title} - ABAP language reference`;
+        } else if (frontmatter?.description) {
           description = frontmatter.description;
         } else if (frontmatter?.synopsis && content.includes("{{ $frontmatter.synopsis }}")) {
           description = frontmatter.synopsis;
@@ -763,6 +726,16 @@ async function main() {
           // Fallback to content extraction
           const rawDescription = lines.find((l) => l.trim() && !l.startsWith("#"))?.trim() || "";
           description = rawDescription;
+        }
+        
+        // Extract keywords from frontmatter (especially important for ABAP docs)
+        let markdownKeywords: string[] = [];
+        if (frontmatter?.keywords && Array.isArray(frontmatter.keywords)) {
+          markdownKeywords = frontmatter.keywords;
+        }
+        // Add title as a keyword for better searchability
+        if (title && !markdownKeywords.includes(title.toLowerCase())) {
+          markdownKeywords.push(title.toLowerCase());
         }
         
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
@@ -773,6 +746,17 @@ async function main() {
         if (content.includes('##')) {
           extractMarkdownSections(content, lines, src, rel, docs);
         }
+        
+        // Push markdown doc with keywords
+        docs.push({ 
+          id, 
+          title, 
+          description, 
+          snippetCount, 
+          relFile: rel,
+          type: src.type,
+          keywords: markdownKeywords.length > 0 ? markdownKeywords : undefined
+        });
       } else if (src.type === "jsdoc") {
         // Handle JavaScript files with JSDoc
         const jsDocInfo = extractJSDocInfo(raw, path.basename(absPath));
@@ -841,19 +825,6 @@ async function main() {
         
       } else {
         continue; // Skip unknown file types
-      }
-
-      // For markdown files, still use the basic structure
-      if (src.type === "markdown") {
-
-        docs.push({ 
-          id, 
-          title, 
-          description, 
-          snippetCount, 
-          relFile: rel,
-          type: src.type
-        });
       }
     }
 

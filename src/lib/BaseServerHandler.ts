@@ -326,8 +326,10 @@ USAGE PATTERN:
 
 FUNCTION NAME: search
 
-COVERS: ABAP (all versions), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
-AUTO-DETECTS: ABAP versions from query (e.g. "LOOP 7.57", defaults to 7.58)
+COVERS: ABAP (Standard & Cloud), UI5, CAP, wdi5, OpenUI5 APIs, Cloud SDK
+ABAP LIBRARIES:
+• Standard ABAP (default): Full syntax for on-premise systems
+• ABAP Cloud: Restricted syntax for BTP (add "cloud" or "btp" to query)
 
 TYPICAL WORKFLOW:
 1. search(query="your search terms") 
@@ -337,18 +339,20 @@ QUERY TIPS:
 • Be specific: "CAP action binary parameter" not just "CAP"
 • Include error codes: "415 error CAP action"
 • Use technical terms: "LargeBinary MediaType XMLHttpRequest"
-• For ABAP: Include version like "7.58" or "latest"`,
+• For ABAP Cloud: Add "cloud" or "btp" to query (e.g., "SELECT cloud")
+• For Standard ABAP: Default behavior, no modifier needed`,
             inputSchema: {
               type: "object",
               properties: {
                 query: {
                   type: "string",
-                  description: "Search terms using natural language. Be specific and include technical terms.",
+                  description: "Search terms using natural language. Be specific and include technical terms. For ABAP Cloud (BTP), add 'cloud' or 'btp' to query. Standard ABAP is the default.",
                   examples: [
                     "CAP binary data LargeBinary MediaType",
                     "UI5 button properties",
                     "wdi5 testing locators", 
-                    "ABAP SELECT statements 7.58",
+                    "ABAP SELECT statements",
+                    "ABAP LOOP cloud",
                     "415 error CAP action parameter"
                   ]
                 }
@@ -379,7 +383,8 @@ ChatGPT COMPATIBLE:
                     "/cap/guides/domain-modeling",
                     "/sapui5/controls/button-properties", 
                     "/openui5-api/sap/m/Button",
-                    "/abap-docs-758/inline-declarations",
+                    "/abap-docs-standard/inline-declarations",
+                    "/abap-docs-cloud/inline-declarations",
                     "community-12345"
                   ]
                 }
@@ -414,7 +419,7 @@ ChatGPT COMPATIBLE:
           if (topResults.length === 0) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: false });
             return createErrorResponse(
-              `No results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP with versions ("SELECT 7.58"), or include error codes ("415 error").`,
+              `No results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP queries ("SELECT", "LOOP cloud" for ABAP Cloud), or include error codes ("415 error").`,
               timing.requestId
             );
           }
@@ -427,7 +432,7 @@ ChatGPT COMPATIBLE:
             const topic = r.id.startsWith(libraryId) ? r.id.slice(libraryId.length + 1) : '';
             
             const config = getDocUrlConfig(libraryId);
-            const docUrl = config ? generateDocumentationUrl(libraryId, '', r.text, config) : null;
+            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', r.text, config) : null;
             
             return {
               // ChatGPT-required format: id, title, url
@@ -462,7 +467,7 @@ ChatGPT COMPATIBLE:
             if (!res.results.length) {
               logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: true });
               return createErrorResponse(
-                res.error || `No fallback results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP with versions ("SELECT 7.58"), or include error codes.`,
+                res.error || `No fallback results for "${query}". Try UI5 controls ("button", "table"), CAP topics ("actions", "binary"), testing ("wdi5", "e2e"), ABAP queries ("SELECT", "LOOP cloud" for ABAP Cloud), or include error codes.`,
                 timing.requestId
               );
             }
@@ -766,7 +771,8 @@ Here are some tips for effective SAP documentation searches:
 - Use terms like "deployment", "configuration"
 
 **For ABAP:**
-- Include version number (e.g., "7.58", "latest")
+- Standard ABAP (on-premise, full syntax) is the default
+- Add "cloud" or "btp" to search ABAP Cloud (restricted syntax)
 - Use specific statement types (e.g., "SELECT", "LOOP", "MODIFY")
 - Include object types (e.g., "class", "method", "interface")
 
@@ -815,7 +821,7 @@ Let me search the SAP documentation for similar issues:
 - Verify database connections
 
 **For ABAP Issues:**
-- Include ABAP version in search
+- Standard ABAP is default; add "cloud" or "btp" for ABAP Cloud
 - Look for syntax or runtime errors
 - Check object dependencies
 
