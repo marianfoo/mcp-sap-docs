@@ -45,15 +45,11 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   // DSAG ABAP Leitfaden with custom GitHub Pages URL pattern
   '/dsag-abap-leitfaden': DsagUrlGenerator,
   
-  // ABAP Keyword Documentation with SAP help.sap.com URLs (all versions)
-  '/abap-docs-758': AbapUrlGenerator,
-  '/abap-docs-757': AbapUrlGenerator,
-  '/abap-docs-756': AbapUrlGenerator,
-  '/abap-docs-755': AbapUrlGenerator,
-  '/abap-docs-754': AbapUrlGenerator,
-  '/abap-docs-753': AbapUrlGenerator,
-  '/abap-docs-752': AbapUrlGenerator,
-  '/abap-docs-latest': AbapUrlGenerator,
+  // ABAP Keyword Documentation with SAP help.sap.com URLs
+  // Standard ABAP (on-premise, full syntax) - default
+  '/abap-docs-standard': AbapUrlGenerator,
+  // ABAP Cloud (BTP, restricted syntax)
+  '/abap-docs-cloud': AbapUrlGenerator,
   
   // Generic sources
   '/ui5-tooling': GenericUrlGenerator,
