@@ -14,16 +14,14 @@ ABAP documentation is **fully integrated** into the standard `search` tool with 
 - Same proven architecture as other documentation sources
 - Consistent experience across all SAP development
 
-### **Multi-Version Support (8 Versions)**
-- **Latest** (default) - `/abap-docs-latest` - Most current features
-- **7.58** - `/abap-docs-758` - Current stable
-- **7.57** - `/abap-docs-757` - Recent stable
-- **7.56 - 7.52** - `/abap-docs-756` through `/abap-docs-752` - Historical versions
-- **Total**: 40,761+ curated ABAP files
+### **ABAP Language Version Support**
+- **Latest** (default) - `/abap-docs-latest` - Most current *Standard ABAP* documentation
+- **Cloud** - `/abap-docs-cloud` - Most current *ABAP Cloud* documentation
+- **Total**: 13,163+ curated ABAP files
 
 ### **Intelligent Version Filtering**
-- **Latest by default**: General queries show only latest ABAP version
-- **Version auto-detection**: "LOOP 7.57" automatically filters to ABAP 7.57
+- **Latest by default**: General queries show latest Standard ABAP version
+- **Cloud on request**: Queries including "cloud" show ABAP Cloud version
 - **Smart result limiting**: 4-5 focused results vs 25 crowded duplicates
 - **Context boosting**: Requested versions get 2.0x score multiplier
 
@@ -39,12 +37,11 @@ search: "class definition"             # → Latest ABAP OOP + examples
 
 **Result**: 4-5 focused results including latest ABAP docs, Clean ABAP guidelines, and cheat sheets.
 
-### **Version-Specific Queries (Targeted)**
+### **ABAP Cloud-Specific Queries**
 ```
-search: "LOOP 7.57"                    # → ABAP 7.57 only + related sources
-search: "SELECT statements 7.58"       # → ABAP 7.58 only + related sources
+search: "Cloud LOOP"                   # → ABAP Cloud only + related sources
+search: "SELECT statements cloud"      # → ABAP Cloud only + related sources
 search: "exception handling latest"    # → Latest ABAP explicitly
-search: "class definition 7.53"        # → ABAP 7.53 only + related sources
 ```
 
 **Result**: 5-8 targeted results with dramatically boosted scores for requested version.
@@ -68,41 +65,40 @@ Located in `src/metadata.json`:
 {
   "sources": [
     { "id": "abap-docs-latest", "boost": 1.0 },     // Highest priority
-    { "id": "abap-docs-758", "boost": 0.05 },       // Background availability
-    { "id": "abap-docs-757", "boost": 0.02 },       // Background availability
-    // ... 7.56-7.52 with 0.01 boost
+    { "id": "abap-docs-cloud", "boost": 0.8 },      // Background availability
+    // ... 
   ],
   "contextBoosts": {
-    "7.58": { "/abap-docs-758": 2.0 },              // Massive boost when requested
-    "7.57": { "/abap-docs-757": 2.0 },
-    "latest": { "/abap-docs-latest": 1.5 }
+    "ABAP": {
+      "/abap-docs-standard": 1.0,
+      "/abap-docs-cloud": 0.8,
+      "/abap-cheat-sheets": 0.8,
+      "/sap-styleguides": 0.7,
+      "/dsag-abap-leitfaden": 0.6,
+      "/cap": 0.2
+    },
+    "ABAP Cloud": {
+      "/abap-docs-cloud": 1.5,
+      "/abap-docs-standard": 0.3,
+      "/abap-cheat-sheets": 0.6,
+      "/cap": 0.4
+    },
+    "Standard ABAP": {
+      "/abap-docs-standard": 1.5,
+      "/abap-docs-cloud": 0.2,
+      "/abap-cheat-sheets": 0.6,
+      "/dsag-abap-leitfaden": 0.5
+    },
+    // ...
   }
-}
-```
-
-### **Search Logic (src/lib/localDocs.ts)**
-```typescript
-// Version detection
-const versionMatch = query.match(/\b(7\.\d{2}|latest)\b/i);
-
-if (!versionMatch) {
-  // General queries: Show ONLY latest ABAP
-  results = results.filter(r => 
-    !r.id.includes('/abap-docs-') || r.id.includes('/abap-docs-latest/')
-  );
-} else {
-  // Version-specific: Show ONLY requested version
-  results = results.filter(r => 
-    !r.id.includes('/abap-docs-') || r.id.includes(`/abap-docs-${versionId}/`)
-  );
 }
 ```
 
 ### **URL Generation (src/lib/url-generation/abap.ts)**
 Automatic version-specific URL generation:
 ```typescript
-"/abap-docs-757/abenloop.md" 
-→ "https://help.sap.com/doc/abapdocu_757_index_htm/7.57/en-US/abenloop.htm"
+"/abap-docs-cloud/abenloop.md" 
+→ "https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abenloop.htm"
 
 "/abap-docs-latest/abenselect.md"
 → "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abenselect.htm"
@@ -150,8 +146,8 @@ Every ABAP file includes:
 
 | Metric | Value |
 |--------|-------|
-| **Total ABAP Files** | 40,761+ (curated) |
-| **Versions Supported** | 8 (7.52-7.58 + latest) |
+| **Total ABAP Files** | 13,186+ (curated) |
+| **Versions Supported** | 2 (cloud + latest standard) |
 | **Database Size** | ~33MB (includes all sources) |
 | **Default Results** | 4-5 focused (vs 25 crowded) |
 | **Noise Reduction** | 80%+ cleaner results |
@@ -167,8 +163,8 @@ abap_get: "abap-7.58-individual-abeninline_declarations"
 
 **After:**
 ```
-search: "inline declarations"                # → Latest ABAP + context
-search: "inline declarations 7.57"           # → ABAP 7.57 specific
+search: "inline declarations"                # → Latest Standard ABAP + context
+search: "inline declarations cloud"          # → ABAP Cloud specific
 fetch: "/abap-docs-latest/abeninline_declarations"
 ```
 
@@ -194,13 +190,6 @@ search: "inline declarations"
 search: "SELECT statements"
 search: "class definition"
 # Always returns latest ABAP + best practices
-```
-
-### **Version-Specific Development**
-```
-search: "LOOP variations 7.57"
-search: "NEW operator 7.54"
-# Returns only requested version + related sources
 ```
 
 ### **Troubleshooting & Best Practices**
