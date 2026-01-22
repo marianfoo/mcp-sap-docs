@@ -49,10 +49,8 @@ Found 4 results for 'inline declarations':
 
 #### **Query Patterns:**
 ```javascript
-search: "LOOP 7.57"                    // → ABAP 7.57 only
-search: "SELECT statements 7.58"       // → ABAP 7.58 only  
-search: "exception handling latest"    // → Latest ABAP only
-search: "class definition 7.53"        // → ABAP 7.53 only
+search: "LOOP AT cloud"         # → ABAP Cloud docs
+search: "CDS views latest"      # → Latest Standard ABAP docs  
 ```
 
 #### **What You Get:**
@@ -63,15 +61,15 @@ search: "class definition 7.53"        // → ABAP 7.53 only
 
 #### **Example Result:**
 ```
-Found 5 results for 'LOOP 7.57':
+Found 5 results for 'LOOP cloud':
 
-⭐️ /abap-docs-757/abenloop_glosry (Score: 14.35) - Boosted 7.57 docs
+⭐️ /abap-docs-cloud/abenloop_glosry (Score: 14.35) - Boosted 7.57 docs
    Loops - This section describes the loops defined using DO-ENDDO, WHILE-ENDWHILE
    
-⭐️ /abap-docs-757/abenabap_loops (Score: 14.08) - Boosted 7.57 docs  
+⭐️ /abap-docs-cloud/abenabap_loops (Score: 14.08) - Boosted 7.57 docs  
    ABAP Loops - Loop processing and control structures
    
-⭐️ /abap-docs-757/abapexit_loop (Score: 13.53) - Boosted 7.57 docs
+⭐️ /abap-docs-cloud/abapexit_loop (Score: 13.53) - Boosted 7.57 docs
    EXIT, loop - Exits a loop completely with EXIT statement
    
 ⭐️ Style guides and cheat sheets for additional context
@@ -85,8 +83,8 @@ Found 5 results for 'LOOP 7.57':
 ```javascript
 // Use IDs from search results
 fetch: "/abap-docs-latest/abeninline_declarations"
-fetch: "/abap-docs-758/abenselect"  
-fetch: "/abap-docs-757/abenloop_glosry"
+fetch: "/abap-docs-cloud/abenselect"  
+fetch: "/abap-docs-cloud/abenloop_glosry"
 ```
 
 ### **What You Get:**
@@ -97,18 +95,12 @@ fetch: "/abap-docs-757/abenloop_glosry"
 
 ---
 
-## **🎯 Supported ABAP Versions**
+## **🎯 Supported ABAP Language Versions**
 
 | Version | Library ID | Default Boost | When Shown |
 |---------|------------|---------------|------------|
-| **Latest** | `/abap-docs-latest` | 1.0 | Always (default) |
-| **7.58** | `/abap-docs-758` | 0.05 | When "7.58" in query |
-| **7.57** | `/abap-docs-757` | 0.02 | When "7.57" in query |
-| **7.56** | `/abap-docs-756` | 0.01 | When "7.56" in query |
-| **7.55** | `/abap-docs-755` | 0.01 | When "7.55" in query |
-| **7.54** | `/abap-docs-754` | 0.01 | When "7.54" in query |
-| **7.53** | `/abap-docs-753` | 0.01 | When "7.53" in query |
-| **7.52** | `/abap-docs-752` | 0.01 | When "7.52" in query |
+| **Standard** | `/abap-docs-latest` | 1.0 | Always (default) |
+| **Cloud** | `/abap-docs-cloud` | 0.8 | On request |
 
 ### **Context Boosting**
 When versions are mentioned in queries, they get **2.0x boost** for perfect targeting.
@@ -126,17 +118,6 @@ When versions are mentioned in queries, they get **2.0x boost** for perfect targ
 "ABAP object-oriented programming"          → Latest ABAP + OOP examples
 
 // Expected: 4-5 clean, focused results
-```
-
-### **Version-Specific Development**
-```javascript
-// Version-targeted queries (specific version only)
-"LOOP variations in 7.57"                   → ABAP 7.57 + related sources only
-"SELECT features in 7.58"                   → ABAP 7.58 + related sources only
-"What's new in ABAP latest?"                → Latest ABAP + feature highlights
-"Exception handling in 7.53"               → ABAP 7.53 + related sources only
-
-// Expected: 5-8 targeted results, dramatically boosted scores
 ```
 
 ### **Cross-Source Discovery**
@@ -159,12 +140,12 @@ When versions are mentioned in queries, they get **2.0x boost** for perfect targ
 
 ### **Version Management**
 - **Latest by default** - always current unless specified otherwise
-- **Smart targeting** - specific versions only when requested
+- **Smart targeting** - specific ABAP Language Versions only when requested
 - **Automatic detection** - no need to specify version parameters manually
 - **Clean results** - no version clutter or noise
 
 ### **Content Quality**  
-- **40,761 curated files** - irrelevant content filtered out
+- **13,163 curated files** - irrelevant content filtered out
 - **Meaningful frontmatter** - structured metadata for better AI understanding
 - **Official attribution** - complete source linking to help.sap.com
 - **LLM-optimized** - perfect file sizes and content structure
@@ -212,12 +193,12 @@ Gets:
 
 ### **For Version-Specific Development**
 ```
-Human: "I'm working with ABAP 7.53, how do LOOP statements work?"
+Human: "I'm working with Standard ABAP, how do LOOP statements work?"
 
-LLM uses: search: "LOOP statements 7.53"
+LLM uses: search: "LOOP statements latest"
 
 Gets:
-✅ ABAP 7.53 loop documentation only
+✅ ABAP loop documentation only
 ✅ Version-specific features and limitations
 ✅ Related style guides and examples
 ✅ No confusion from other versions

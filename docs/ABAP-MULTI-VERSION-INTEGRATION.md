@@ -8,15 +8,9 @@ ABAP documentation is now fully integrated as **standard sources** across all ve
 
 | Version | Files | Avg Size | Status |
 |---------|-------|----------|--------|
-| 7.58 | 6,088 | 5,237B | ✅ Active (default) |
-| latest | 6,089 | 5,059B | ✅ Active (boost: 0.90) |  
-| 7.57 | 5,808 | 5,026B | ✅ Active (boost: 0.95) |
-| 7.56 | 5,605 | 4,498B | ✅ Active (boost: 0.90) |
-| 7.55 | 5,154 | 4,146B | ✅ Active (boost: 0.85) |
-| 7.54 | 4,905 | 4,052B | ✅ Active (boost: 0.80) |
-| 7.53 | 4,680 | 3,992B | ✅ Active (boost: 0.75) |
-| 7.52 | 4,572 | 3,931B | ✅ Active (boost: 0.70) |
-| **Total** | **42,901** | **4,493B** | **8 versions** |
+| latest | 7,913 | 5,237B | ✅ Active (default) |
+| cloud | 5,250 | 5,059B | ✅ Active |  
+| **Total** | **13,163** | **4,493B** | **8 versions** |
 
 ---
 
@@ -32,19 +26,17 @@ ABAP documentation is now fully integrated as **standard sources** across all ve
 #### **Query Examples:**
 ```bash
 # Version auto-detection from queries
-"LOOP 7.57"                    → Searches ABAP 7.57 specifically
-"SELECT latest"                → Searches latest ABAP version
-"exception handling 7.53"      → Searches ABAP 7.53 specifically
-"inline declarations"          → Searches ABAP 7.58 (default)
-"class definition 7.56"        → Searches ABAP 7.56 specifically
+"SELECT latest"                → Searches latest Standard ABAP version
+"exception handling cloud"     → Searches ABAP Cloud specifically
+"inline declarations"          → Searches Standard ABAP (default)
 ```
 
 #### **Results Show Correct Versions:**
 ```
-Query: "LOOP 7.57"
-✅ /abap-docs-757/abapcheck_loop (Score: 15.60)
-✅ /abap-docs-757/abapexit_loop (Score: 15.60)
-✅ /abap-docs-757/abenabap_loops (Score: 15.60)
+Query: "LOOP cloud"
+✅ /abap-docs-cloud/abapcheck_loop (Score: 15.60)
+✅ /abap-docs-cloud/abapexit_loop (Score: 15.60)
+✅ /abap-docs-cloud/abenabap_loops (Score: 15.60)
 
 Query: "SELECT latest"  
 ✅ /abap-docs-latest/abenfree_selections (Score: 12.19)
@@ -56,8 +48,8 @@ Query: "SELECT latest"
 Finds related content across all SAP sources:
 
 ```
-Query: "exception handling 7.53"
-✅ ABAP 7.53 official docs (/abap-docs-753/)
+Query: "exception handling"
+✅ ABAP official docs (/abap-docs-latest/)
 ✅ Clean ABAP style guides (/sap-styleguides/)  
 ✅ ABAP cheat sheets (/abap-cheat-sheets/)
 ```
@@ -75,14 +67,8 @@ Query: "exception handling 7.53"
 ```json
 {
   "sources": [
-    { "id": "abap-docs-758", "boost": 0.95, "tags": ["abap", "7.58"] },
-    { "id": "abap-docs-latest", "boost": 0.90, "tags": ["abap", "latest"] },
-    { "id": "abap-docs-757", "boost": 0.95, "tags": ["abap", "7.57"] },
-    { "id": "abap-docs-756", "boost": 0.90, "tags": ["abap", "7.56"] },
-    { "id": "abap-docs-755", "boost": 0.85, "tags": ["abap", "7.55"] },
-    { "id": "abap-docs-754", "boost": 0.80, "tags": ["abap", "7.54"] },
-    { "id": "abap-docs-753", "boost": 0.75, "tags": ["abap", "7.53"] },
-    { "id": "abap-docs-752", "boost": 0.70, "tags": ["abap", "7.52"] }
+    { "id": "abap-docs-cloud", "boost": 0.8, "tags": ["abap", "cloud"] },
+    { "id": "abap-docs-latest", "boost": 1.0, "tags": ["abap", "latest"] },
   ]
 }
 ```
@@ -90,19 +76,17 @@ Query: "exception handling 7.53"
 ### **Context Boosting Strategy**
 ```typescript
 "ABAP": {
-  "/abap-docs-758": 1.0,      // Highest priority for general ABAP
-  "/abap-docs-latest": 0.98,  // Latest features
-  "/abap-docs-757": 0.95,     // Recent stable
-  "/abap-docs-756": 0.90,     // Stable
-  // ... decreasing boost for older versions
+  "/abap-docs-latest": 1.0,      // Highest priority for standard ABAP
+  "/abap-docs-cloud": 0.8,       // Latest ABAP Cloud features
+  // ... decreasing boost for other sources
 }
 ```
 
 ### **URL Generation per Version**
 ```typescript
 // Automatic version-specific URLs
-"/abap-docs-757/abenloop.md" 
-→ "https://help.sap.com/doc/abapdocu_757_index_htm/7.57/en-US/abenloop.htm"
+"/abap-docs-cloud/abenloop.md" 
+→ "https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US/abenloop.htm"
 
 "/abap-docs-latest/abenselect.md"
 → "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abenselect.htm"
@@ -114,17 +98,16 @@ Query: "exception handling 7.53"
 
 ### **Version-Specific Queries**
 ```bash
-# Search specific ABAP versions
-search: "LOOP AT 7.57"          # → ABAP 7.57 docs
-search: "CDS views latest"      # → Latest ABAP docs  
-search: "class definition 7.53" # → ABAP 7.53 docs
+# Search specific ABAP Language Versions
+search: "LOOP AT cloud"         # → ABAP Cloud docs
+search: "CDS views latest"      # → Latest Standard ABAP docs  
 ```
 
-### **General ABAP Queries (Default 7.58)**
+### **General ABAP Queries (Default latest)**
 ```bash
-search: "SELECT statements"      # → ABAP 7.58 docs
-search: "internal tables"       # → ABAP 7.58 docs
-search: "exception handling"    # → ABAP 7.58 docs
+search: "SELECT statements"      # → Latest Standard ABAP docs
+search: "internal tables"       # → Latest Standard ABAP docs
+search: "exception handling"    # → Latest Standard ABAP docs
 ```
 
 ### **Cross-Source Results**

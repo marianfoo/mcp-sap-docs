@@ -10,13 +10,30 @@ ABAP documentation is now integrated as a **standard source** in the MCP system,
 ```json
 // src/metadata.json
 {
-  "id": "abap-docs",
-  "type": "documentation", 
-  "boost": 0.95,
-  "tags": ["abap", "keyword-documentation", "language-reference"],
-  "libraryId": "/abap-docs",
-  "sourcePath": "abap-docs/docs/7.58/md",
-  "baseUrl": "https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US"
+  "id": "abap-docs-standard",
+  "type": "documentation",
+  "lang": "en",
+  "boost": 1.0,
+  "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "standard", "on-premise"],
+  "description": "Official ABAP Keyword Documentation (Standard ABAP - On-Premise)",
+  "libraryId": "/abap-docs-standard",
+  "sourcePath": "abap-docs/docs/standard/md",
+  "baseUrl": "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US",
+  "pathPattern": "/{file}",
+  "anchorStyle": "sap-help"
+},
+{
+  "id": "abap-docs-cloud",
+  "type": "documentation",
+  "lang": "en",
+  "boost": 0.8,
+  "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "cloud", "btp", "restricted"],
+  "description": "Official ABAP Keyword Documentation (ABAP Cloud - BTP, Restricted Syntax)",
+  "libraryId": "/abap-docs-cloud",
+  "sourcePath": "abap-docs/docs/cloud/md",
+  "baseUrl": "https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US",
+  "pathPattern": "/{file}",
+  "anchorStyle": "sap-help"
 }
 ```
 
@@ -25,11 +42,21 @@ ABAP documentation is now integrated as a **standard source** in the MCP system,
 // scripts/build-index.ts
 {
   repoName: "abap-docs",
-  absDir: join("sources", "abap-docs", "docs", "7.58", "md"),
-  id: "/abap-docs", 
-  name: "ABAP Keyword Documentation",
-  filePattern: "*.md",  // Individual files, not bundles!
-  type: "markdown"
+  absDir: join("sources", "abap-docs", "docs", "standard", "md"),
+  id: "/abap-docs-standard",
+  name: "ABAP Keyword Documentation (Standard)",
+  description: "Official ABAP language reference for on-premise systems (full syntax) - individual files optimized for LLM consumption",
+  filePattern: "*.md",
+  type: "markdown" as const
+},
+{
+  repoName: "abap-docs",
+  absDir: join("sources", "abap-docs", "docs", "cloud", "md"),
+  id: "/abap-docs-cloud",
+  name: "ABAP Keyword Documentation (Cloud)",
+  description: "Official ABAP language reference for BTP/Cloud (restricted syntax) - individual files optimized for LLM consumption",
+  filePattern: "*.md",
+  type: "markdown" as const
 }
 ```
 
@@ -39,7 +66,7 @@ ABAP documentation is now integrated as a **standard source** in the MCP system,
 export class AbapUrlGenerator extends BaseUrlGenerator {
   generateUrl(context): string {
     // Converts: abeninline_declarations.md 
-    // To: https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US/abeninline_declarations.htm
+    // To: https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abeninline_declarations.htm
   }
 }
 ```
@@ -68,17 +95,17 @@ Uses the **standard `search`** tool - no special ABAP tools needed!
 
 ### **📄 File Structure** 
 ```
-sources/abap-docs/docs/7.58/md/
+sources/abap-docs/docs/latest/md/
 ├── abeninline_declarations.md (3KB) ← Perfect for LLMs!
 ├── abenselect.md (5KB) ← Individual statement docs
 ├── abenloop.md (4KB) ← Focused content  
 ├── abenclass.md (8KB) ← OOP documentation
-└── ... 6,000+ more individual files
+└── ... 7,000+ more individual files
 ```
 
 ### **🔗 URL Generation**
-- `abeninline_declarations.md` → `https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US/abeninline_declarations.htm`
-- Works across all ABAP versions (7.52-7.58, latest)
+- `abeninline_declarations.md` → `https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abeninline_declarations.htm`
+- Works across Standard ABAP and ABAP Cloud versions
 - Direct links to official SAP documentation
 
 ## **Setup Instructions**
@@ -133,14 +160,14 @@ curl -X POST http://localhost:3000/search \
 ```
 Found 5 results for 'ABAP inline declarations':
 
-⚡ **Inline Declarations (ABAP 7.58)**
+⚡ **Inline Declarations (Standard ABAP)**
    Data declarations directly in ABAP statements for cleaner code...
-   🔗 https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US/abeninline_declarations.htm
+   🔗 https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abeninline_declarations.htm
    📋 3KB | individual | beginner
 
-⚡ **DATA - Inline Declaration (ABAP 7.58)** 
+⚡ **DATA - Inline Declaration (Standard ABAP)** 
    Creating data objects inline using DATA() operator...
-   🔗 https://help.sap.com/doc/abapdocu_758_index_htm/7.58/en-US/abendata_inline.htm
+   🔗 https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/abendata_inline.htm
    📋 2KB | individual | intermediate
 ```
 
@@ -152,7 +179,7 @@ Found 5 results for 'ABAP inline declarations':
 - **Consistent behavior** with other documentation
 
 ### ✅ **Perfect LLM Experience** 
-- **6,000+ individual files** (1-10KB each)
+- **13,163+ individual files** (1-10KB each)
 - **Direct SAP documentation URLs** for attribution
 - **Clean markdown** optimized for context windows
 
@@ -164,31 +191,11 @@ Found 5 results for 'ABAP inline declarations':
 ### ✅ **Easy Maintenance**
 - **Standard build process** - same as other sources
 - **No complex bundling** - simple file-based approach
-- **Version support** - easy to add 7.57, 7.56, etc.
-
-## **Multi-Version Support** (Future)
-
-To add more ABAP versions:
-
-```typescript
-// Add to build-index.ts
-{
-  repoName: "abap-docs",
-  absDir: join("sources", "abap-docs", "docs", "7.57", "md"),
-  id: "/abap-docs-757",
-  name: "ABAP Keyword Documentation 7.57"
-},
-{
-  repoName: "abap-docs", 
-  absDir: join("sources", "abap-docs", "docs", "latest", "md"),
-  id: "/abap-docs-latest",
-  name: "ABAP Keyword Documentation (Latest)"
-}
-```
+- **Version support** - ABAP Language Versions
 
 ## **Performance Characteristics**
 
-- **Index Size**: ~6,000 documents (vs 42,901 with specialized system)
+- **Index Size**: ~13,163 documents (vs 42,901 with specialized system)
 - **Search Speed**: ~50ms (standard FTS5 performance)
 - **File Sizes**: 1-10KB each (perfect for LLM consumption)
 - **Memory Usage**: Standard - no special caching needed
