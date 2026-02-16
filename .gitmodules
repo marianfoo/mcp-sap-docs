@@ -66,3 +66,15 @@
 	path = sources/abap-docs
 	url = https://github.com/marianfoo/abap-docs.git
 	branch = main
+[submodule "sources/abap-platform-rap-opensap"]
+	path = sources/abap-platform-rap-opensap
+	url = https://github.com/SAP-samples/abap-platform-rap-opensap.git
+	branch = main
+[submodule "sources/cloud-abap-rap"]
+	path = sources/cloud-abap-rap
+	url = https://github.com/SAP-samples/cloud-abap-rap.git
+	branch = main
+[submodule "sources/abap-platform-reuse-services"]
+	path = sources/abap-platform-reuse-services
+	url = https://github.com/SAP-samples/abap-platform-reuse-services.git
+	branch = main

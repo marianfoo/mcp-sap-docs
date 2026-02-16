@@ -1,0 +1,32 @@
+# Git (keep .gitmodules for submodule init!)
+.git
+.gitignore
+.gitattributes
+
+# Development
+.vscode
+.cursor
+*.md
+!README.md
+
+# Test files
+test/
+*.test.ts
+*.test.js
+test-*.ts
+test-*.js
+test-*.http
+vitest.config.ts
+
+# Build artifacts (will be created in container)
+dist/
+node_modules/
+
+# Data (will be created during build)
+data/
+
+# Misc
+.cursorignore
+.npmignore
+ecosystem.config.cjs
+.github/

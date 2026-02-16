@@ -1,0 +1,55 @@
+name: Sync Upstream to ABAP Main
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run sync without pushing"
+        required: false
+        default: false
+        type: boolean
+      target_branch:
+        description: "Target branch in abap-mcp-server"
+        required: false
+        default: "main"
+        type: string
+
+concurrency:
+  group: sync-to-abap-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip-sync]')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout upstream repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Sync to abap-mcp-server
+        env:
+          ABAP_REPO_SYNC_TOKEN: ${{ secrets.ABAP_REPO_SYNC_TOKEN }}
+          SOURCE_SHA: ${{ github.sha }}
+          TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          SYNC_GIT_EMAIL: action@github.com
+          SYNC_GIT_NAME: github-actions[bot]
+        run: |
+          set -euo pipefail
+          if [ -z "${ABAP_REPO_SYNC_TOKEN}" ] && [ "${DRY_RUN}" != "1" ]; then
+            echo "Missing ABAP_REPO_SYNC_TOKEN secret."
+            exit 1
+          fi
+          bash scripts/sync-to-abap.sh

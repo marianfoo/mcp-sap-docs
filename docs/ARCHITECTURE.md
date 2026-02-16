@@ -1,168 +1,133 @@
-# 🏗️ SAP Docs MCP Architecture
+# Architecture
 
-## System Overview
+## Overview
+
+`mcp-sap-docs` is now a single upstream codebase with configuration-driven variant behavior.
+
+- Upstream: `mcp-sap-docs`
+- Downstream sync target: `abap-mcp-server`
+- Variant switch:
+  - env `MCP_VARIANT`
+  - fallback `.mcp-variant`
+  - default `sap-docs`
+
+## High-Level Flow
 
 ```mermaid
-graph TD
-    A[User Query] --> B[MCP Server]
-    B --> C[Search Pipeline]
-    C --> D[FTS5 SQLite]
-    C --> E[Metadata APIs]
-    D --> F[BM25 Scoring]
-    E --> F
-    F --> G[Context Awareness]
-    G --> H[Result Formatting]
-    H --> I[Formatted Response]
-    
-    J[Documentation Sources] --> K[Build Index]
-    K --> L[dist/data/index.json]
-    K --> M[dist/data/docs.sqlite]
-    L --> C
-    M --> D
-    
-    N[src/metadata.json] --> E
+flowchart LR
+  A[User / MCP Client] --> B[Server Runtime]
+  B --> C[BaseServerHandler]
+  C --> D[Unified Search]
+  D --> E[Local FTS Index]
+  D --> F[SAP Help]
+  D --> G[SAP Community]
+  D --> H[Software Heroes]
+  C --> I[fetch]
+  C --> J[abap_feature_matrix]
+  C --> K[abap_lint - abap only]
 ```
 
-## Core Components
+## Variant Layer
 
-### 🔍 **Search Pipeline**
-1. **Query Processing**: Parse and expand user queries with synonyms/acronyms
-2. **FTS5 Search**: Fast SQLite full-text search using BM25 algorithm
-3. **Metadata Integration**: Apply source boosts, context awareness, and mappings
-4. **Result Formatting**: Structure results with scores, context indicators, and source attribution
+Variant configuration lives in:
 
-### 📊 **Data Flow**
-```
-Documentation Sources → Build Scripts → Search Artifacts → Runtime Search
-     (12 sources)      →   (2 files)   →   (index.json +   →  (BM25 + 
-                                            docs.sqlite)        metadata)
-```
+- `config/variants/sap-docs.json`
+- `config/variants/abap.json`
 
-### 🎯 **Metadata-Driven Configuration**
-- **Single Source**: `src/metadata.json` contains all source configurations
-- **Type-Safe APIs**: 12 functions in `src/lib/metadata.ts` for configuration access
-- **Runtime Loading**: Metadata loaded once at startup with graceful fallbacks
-- **Zero Code Changes**: Add new sources by updating metadata.json only
+Variant controls:
 
-## Server Architecture
+- source allowlist
+- allowed submodule paths
+- enabled tools
+- server identity (name/description)
+- default ports
+- PM2 process names
+- deploy path hints
+- metadata path
 
-### 🖥️ **Three Server Modes**
-1. **Stdio MCP** (`src/server.ts`): Main server for Claude/LLM integration
-2. **HTTP Server** (`src/http-server.ts`): Development and status monitoring (port 3001)
-3. **Streamable HTTP** (`src/streamable-http-server.ts`): Production HTTP MCP (port 3122)
+## Search Architecture
 
-### 🔧 **MCP Tools (5 total)**
-- `search`: Search across all documentation
-- `fetch`: Retrieve specific documents
-- `sap_community_search`: SAP Community integration
-- `sap_help_search`: SAP Help Portal search
-- `sap_help_get`: SAP Help content retrieval
+`src/lib/search.ts` implements the shared search surface.
 
-## Performance Characteristics
+Inputs:
 
-### ⚡ **Search Performance**
-- **Sub-second**: FTS5 provides fast full-text search
-- **Scalable**: Performance consistent as documentation grows
-- **Efficient**: BM25-only approach eliminates ML model overhead
-- **Reliable**: No external dependencies for core search
+- `query`
+- `k`
+- `includeOnline`
+- `includeSamples`
+- `abapFlavor`
+- `sources`
 
-### 📈 **Resource Usage**
-- **Memory**: ~50-100MB for index and metadata
-- **Disk**: ~3.5MB SQLite database + ~2MB JSON index
-- **CPU**: Minimal - BM25 scoring is computationally light
-- **Network**: Only for community/help portal integrations
+Pipeline:
 
-## Documentation Sources (12 total)
+1. Local FTS candidate search
+2. Metadata boosts + context scoring
+3. Optional online retrieval (Help / Community / Software Heroes)
+4. Reciprocal Rank Fusion (RRF)
+5. URL and source dedupe
 
-### 📚 **Primary Sources**
-- **SAPUI5**: Frontend framework documentation
-- **CAP**: Cloud Application Programming model
-- **OpenUI5 API**: Control API documentation
-- **wdi5**: Testing framework documentation
+Behavior notes:
 
-### 🔧 **Supporting Sources**
-- **Cloud SDK (JS/Java)**: SAP Cloud SDK documentation
-- **Cloud SDK AI (JS/Java)**: AI-enhanced SDK documentation
-- **UI5 Tooling**: Build and development tools
-- **UI5 Web Components**: Modern web components
-- **Cloud MTA Build Tool**: Multi-target application builder
+- `abapFlavor` primarily filters official ABAP docs libraries
+- non-ABAP libraries remain available (for `sap-docs` profile)
+- `includeSamples=false` suppresses sample-heavy sources
 
-## Context Awareness
+## Tool Surface
 
-### 🎯 **Context Detection**
-- **UI5 Context** 🎨: Controls, Fiori, frontend development
-- **CAP Context** 🏗️: CDS, entities, services, backend
-- **wdi5 Context** 🧪: Testing, automation, browser testing
-- **Mixed Context** 🔀: Cross-platform or unclear intent
+`src/lib/BaseServerHandler.ts` registers tools.
 
-### 📊 **Intelligent Scoring**
-- **Source Boosts**: Context-specific score adjustments
-- **Library Mappings**: Resolve source IDs to canonical names
-- **Query Expansion**: Synonyms and acronyms for better recall
-- **Penalty System**: Reduce off-context results
+Shared:
 
-## Build Process
+- `search`
+- `fetch`
+- `abap_feature_matrix`
 
-### 🔨 **Enhanced Build Pipeline**
-```bash
-npm run build:tsc    # TypeScript compilation → dist/src/
-npm run build:index  # Sources → dist/data/index.json
-npm run build:fts    # Index → dist/data/docs.sqlite  
-npm run build        # Complete pipeline (tsc + index + fts)
-```
+Variant-gated:
 
-### 📦 **Submodule Management**
-```bash
-npm run setup        # Complete setup with enhanced submodule handling
-npm run setup:submodules  # Submodule sync and update only
+- `abap_lint` enabled only when `abap` profile allows it
+
+## Build and Setup
+
+Build scripts remain shared but variant-aware:
+
+- `setup.sh`: only initialize variant submodules
+- `scripts/build-index.ts`: include only variant libraries
+- `scripts/build-fts.ts`: index only variant libraries
+
+## Runtime Modes
+
+- `src/server.ts` (stdio)
+- `src/http-server.ts` (status/dev HTTP)
+- `src/streamable-http-server.ts` (streamable MCP HTTP)
+
+Each runtime reads server identity and default ports from variant config.
+
+## One-Way Sync Architecture
+
+```mermaid
+flowchart TD
+  U[mcp-sap-docs main push] --> W[sync-to-abap-main workflow]
+  W --> S[scripts/sync-to-abap.sh]
+  S --> C[clone abap-mcp-server]
+  C --> R[sync tracked files]
+  R --> O[apply ABAP overlay]
+  O --> V[set .mcp-variant=abap]
+  V --> P[push to abap-mcp-server/main]
+  P --> D[abap deploy workflow]
 ```
 
-The enhanced setup script provides:
-- **Shallow Clones**: `--depth 1` with `--filter=blob:none` for minimal size
-- **Single Branch**: Only fetch the target branch (main/master)
-- **Repository Compaction**: Aggressive GC and storage optimization  
-- **Fallback Handling**: Auto-retry with master if branch fails
-- **Skip Nested**: `SKIP_NESTED_SUBMODULES=1` for deployment speed
+Key points:
 
-### 📦 **Deployment Artifacts**
-- `dist/data/index.json`: Structured documentation index
-- `dist/data/docs.sqlite`: FTS5 search database
-- `dist/src/`: Compiled TypeScript server code
-- `src/metadata.json`: Runtime configuration
+- one-way only (upstream to downstream)
+- downstream deployment remains push-driven in ABAP repo
+- skip marker: `[skip-sync]`
 
-## Production Deployment
+## Docker and PM2
 
-### 🚀 **PM2 Configuration**
-- **3 Processes**: Proxy (18080), HTTP (3001), Streamable (3122)
-- **Health Monitoring**: Multiple endpoints for status checks
-- **Auto-restart**: Configurable restart policies
-- **Logging**: Structured JSON logging in production
+- `Dockerfile` supports variant build arg and runtime env
+- `ecosystem.config.cjs` resolves process names/ports/path from variant config
 
-### 🔄 **CI/CD Pipeline**
-1. **GitHub Actions**: Triggered on main branch push
-2. **SSH Deployment**: Connect to production server
-3. **Build Process**: Run complete build pipeline
-4. **PM2 Restart**: Restart all processes with new code
-5. **Health Validation**: Verify all endpoints responding
+## Source of Truth
 
-## Key Design Principles
-
-### 🎯 **Simplicity First**
-- **BM25-Only**: No complex ML models or external dependencies
-- **SQLite**: Single-file database for easy deployment
-- **Metadata-Driven**: Configuration without code changes
-
-### 🔒 **Reliability**
-- **Graceful Fallbacks**: Handle missing data and errors elegantly
-- **Type Safety**: Comprehensive TypeScript interfaces
-- **Testing**: Smoke tests and integration validation
-
-### 📈 **Performance**
-- **Fast Search**: Sub-second response times
-- **Efficient Indexing**: Optimized FTS5 schema
-- **Minimal Resources**: Low memory and CPU usage
-
-### 🔧 **Maintainability**
-- **Single Source of Truth**: Centralized configuration
-- **Clear Separation**: Distinct layers for search, metadata, and presentation
-- **Comprehensive Documentation**: Architecture, APIs, and deployment guides
+All functional changes should be implemented in `mcp-sap-docs` first.
+`abap-mcp-server` is synchronized output + ABAP-specific identity/deployment context.

@@ -3,6 +3,7 @@ import fg from "fast-glob";
 import fs from "fs/promises";
 import path, { join } from "path";
 import matter from "gray-matter";
+import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 
 interface DocEntry {
   id: string;              // "/sapui5/<rel-path>", "/cap/<rel-path>", "/openui5-api/<rel-path>", or "/openui5-samples/<rel-path>"
@@ -230,8 +231,38 @@ const SOURCES: SourceConfig[] = [
     description: "Official ABAP language reference for BTP/Cloud (restricted syntax) - individual files optimized for LLM consumption",
     filePattern: "*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "abap-platform-rap-opensap",
+    absDir: join("sources", "abap-platform-rap-opensap"),
+    id: "/abap-platform-rap-opensap",
+    name: "RAP openSAP Course Samples",
+    description: "Building Apps with ABAP RESTful Application Programming - openSAP course samples",
+    filePattern: "**/*.{md,abap,cds}",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-abap-rap",
+    absDir: join("sources", "cloud-abap-rap"),
+    id: "/cloud-abap-rap",
+    name: "ABAP Cloud + RAP Examples",
+    description: "RAP development examples in ABAP Cloud environment (BTP)",
+    filePattern: "**/*.{md,abap,cds}",
+    type: "markdown" as const
+  },
+  {
+    repoName: "abap-platform-reuse-services",
+    absDir: join("sources", "abap-platform-reuse-services"),
+    id: "/abap-platform-reuse-services",
+    name: "RAP Reuse Services",
+    description: "RAP reuse services examples - Number Ranges, Change Documents, Mail, Adobe Forms",
+    filePattern: "**/*.{md,abap,cds}",
+    type: "markdown" as const
   }
 ];
+
+const ALLOWED_SOURCE_IDS = new Set(getAllowedSources());
+const ACTIVE_SOURCES = SOURCES.filter((source) => ALLOWED_SOURCE_IDS.has(source.id));
 
 // Extract meaningful content from ABAP documentation files
 function extractAbapContent(content: string, filename: string): { title: string; description: string; snippetCount: number } {
@@ -657,9 +688,10 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
 
 async function main() {
   await fs.mkdir("dist/data", { recursive: true });
+  console.log("Using MCP variant " + getVariantName() + " with " + ACTIVE_SOURCES.length + " active source bundles.");
   const all: Record<string, LibraryBundle> = {};
 
-  for (const src of SOURCES) {
+  for (const src of ACTIVE_SOURCES) {
     const patterns = [src.filePattern];
     if (src.exclude) {
       patterns.push(`!${src.exclude}`);

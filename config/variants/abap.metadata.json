@@ -1,0 +1,265 @@
+{
+  "version": 2,
+  "updated_at": "2026-01-29",
+  "description": "ABAP/RAP-focused MCP server configuration for ADT (Eclipse) usage",
+  
+  "sources": [
+    {
+      "id": "abap-docs-standard",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 1.0,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "standard", "on-premise"],
+      "description": "Official ABAP Keyword Documentation (Standard ABAP - On-Premise, full syntax)",
+      "libraryId": "/abap-docs-standard",
+      "sourcePath": "abap-docs/docs/standard/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-docs-cloud",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.8,
+      "tags": ["abap", "keyword-documentation", "language-reference", "syntax", "programming", "cloud", "btp", "restricted"],
+      "description": "Official ABAP Keyword Documentation (ABAP Cloud - BTP, restricted syntax)",
+      "libraryId": "/abap-docs-cloud",
+      "sourcePath": "abap-docs/docs/cloud/md",
+      "baseUrl": "https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US",
+      "pathPattern": "/{file}",
+      "anchorStyle": "sap-help"
+    },
+    {
+      "id": "abap-cheat-sheets",
+      "type": "documentation",
+      "lang": "en", 
+      "boost": 0.7,
+      "tags": ["abap", "syntax", "cheat-sheets", "examples", "rap", "cds"],
+      "description": "ABAP Cheat Sheets - practical examples and code snippets for ABAP and RAP",
+      "libraryId": "/abap-cheat-sheets",
+      "sourcePath": "abap-cheat-sheets",
+      "baseUrl": "https://github.com/SAP-samples/abap-cheat-sheets/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-styleguides",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.6,
+      "tags": ["abap", "clean-code", "style-guide", "best-practices", "code-review"],
+      "description": "SAP Clean ABAP Style Guide - coding standards and best practices",
+      "libraryId": "/sap-styleguides", 
+      "sourcePath": "sap-styleguides",
+      "baseUrl": "https://github.com/SAP/styleguides/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "dsag-abap-leitfaden",
+      "type": "documentation",
+      "lang": "de",
+      "boost": 0.5,
+      "tags": ["abap", "leitfaden", "best-practices", "german", "dsag", "clean-core"],
+      "description": "DSAG ABAP Development Guidelines (German) - comprehensive ABAP best practices",
+      "libraryId": "/dsag-abap-leitfaden",
+      "sourcePath": "dsag-abap-leitfaden/docs",
+      "baseUrl": "https://1dsag.github.io/ABAP-Leitfaden",
+      "pathPattern": "/{file}/",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "abap-fiori-showcase",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.8,
+      "tags": ["fiori-elements", "abap", "rap", "annotations", "odata-v4", "showcase", "cds"],
+      "description": "ABAP RAP Fiori Elements Feature Showcase - annotations and UI patterns",
+      "libraryId": "/abap-fiori-showcase",
+      "sourcePath": "abap-fiori-showcase",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-fiori-feature-showcase/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "abap-platform-rap-opensap",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.7,
+      "tags": ["rap", "abap", "samples", "opensap", "course", "tutorial"],
+      "description": "RAP openSAP Course Samples - Building Apps with ABAP RESTful Application Programming",
+      "libraryId": "/abap-platform-rap-opensap",
+      "sourcePath": "abap-platform-rap-opensap",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-rap-opensap/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-abap-rap",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.7,
+      "tags": ["rap", "abap", "cloud", "btp", "samples", "examples"],
+      "description": "ABAP Cloud + RAP Examples - RAP development in ABAP Cloud environment",
+      "libraryId": "/cloud-abap-rap",
+      "sourcePath": "cloud-abap-rap",
+      "baseUrl": "https://github.com/SAP-samples/cloud-abap-rap/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "abap-platform-reuse-services",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.6,
+      "tags": ["rap", "abap", "reuse", "services", "number-range", "change-documents"],
+      "description": "RAP Reuse Services - Number Ranges, Change Documents, Mail, Adobe Forms",
+      "libraryId": "/abap-platform-reuse-services",
+      "sourcePath": "abap-platform-reuse-services",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-reuse-services/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    }
+  ],
+  
+  "synonyms": [
+    { "from": "abap", "to": ["advanced business application programming", "sap programming"] },
+    { "from": "abap cloud", "to": ["abap btp", "cloud abap", "restricted abap", "abap steampunk"] },
+    { "from": "standard abap", "to": ["on-premise abap", "full abap", "classic abap"] },
+    { "from": "rap", "to": ["restful application programming", "abap restful", "behavior definition"] },
+    { "from": "cds", "to": ["core data services", "data definition", "ddl"] },
+    { "from": "clean-code", "to": ["clean code", "best practices", "style guide"] },
+    { "from": "style-guide", "to": ["styleguide", "coding standards", "best practices"] },
+    { "from": "leitfaden", "to": ["guidelines", "guide", "best practices"] },
+    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development"] },
+    { "from": "fiori-elements", "to": ["fiori elements", "annotations", "odata"] },
+    { "from": "annotations", "to": ["cds annotations", "odata annotations", "fiori annotations"] },
+    { "from": "behavior", "to": ["behavior definition", "behavior implementation", "bdef"] },
+    { "from": "select", "to": ["select statement", "open sql", "abap sql"] },
+    { "from": "loop", "to": ["loop at", "internal table", "iteration"] },
+    { "from": "class", "to": ["abap class", "oo abap", "object oriented"] },
+    { "from": "interface", "to": ["abap interface", "intf"] },
+    { "from": "bopf", "to": ["business object processing framework"] }
+  ],
+  
+  "acronyms": {
+    "ABAP": ["Advanced Business Application Programming", "sap programming"],
+    "RAP": ["RESTful Application Programming", "abap restful", "business object"],
+    "CDS": ["Core Data Services", "data definition"],
+    "BTP": ["Business Technology Platform", "cloud"],
+    "OData": ["Open Data Protocol", "rest", "api"],
+    "BOPF": ["Business Object Processing Framework"],
+    "DSAG": ["Deutschsprachige SAP-Anwendergruppe", "german sap user group"],
+    "ADT": ["ABAP Development Tools", "eclipse"],
+    "BDEF": ["Behavior Definition"],
+    "EML": ["Entity Manipulation Language"],
+    "SADL": ["Service Adaptation Definition Language"]
+  },
+
+  "contextBoosts": {
+    "ABAP": {
+      "/abap-docs-standard": 1.0,
+      "/abap-docs-cloud": 0.8,
+      "/abap-cheat-sheets": 0.8,
+      "/sap-styleguides": 0.7,
+      "/dsag-abap-leitfaden": 0.6,
+      "/abap-fiori-showcase": 0.5,
+      "/abap-platform-rap-opensap": 0.5,
+      "/cloud-abap-rap": 0.5,
+      "/abap-platform-reuse-services": 0.4
+    },
+    "ABAP Cloud": {
+      "/abap-docs-cloud": 1.5,
+      "/abap-docs-standard": 0.3,
+      "/abap-cheat-sheets": 0.6,
+      "/cloud-abap-rap": 1.0,
+      "/abap-platform-rap-opensap": 0.7
+    },
+    "Standard ABAP": {
+      "/abap-docs-standard": 1.5,
+      "/abap-docs-cloud": 0.2,
+      "/abap-cheat-sheets": 0.6,
+      "/dsag-abap-leitfaden": 0.5
+    },
+    "RAP": {
+      "/abap-fiori-showcase": 1.0,
+      "/abap-cheat-sheets": 0.8,
+      "/abap-platform-rap-opensap": 1.0,
+      "/cloud-abap-rap": 1.0,
+      "/abap-platform-reuse-services": 0.8,
+      "/abap-docs-cloud": 0.6,
+      "/abap-docs-standard": 0.4
+    },
+    "CDS": {
+      "/abap-cheat-sheets": 1.0,
+      "/abap-fiori-showcase": 0.9,
+      "/abap-docs-cloud": 0.7,
+      "/abap-docs-standard": 0.7
+    },
+    "Clean Code": {
+      "/sap-styleguides": 1.0,
+      "/dsag-abap-leitfaden": 0.8,
+      "/abap-cheat-sheets": 0.4
+    },
+    "DSAG": {
+      "/dsag-abap-leitfaden": 1.0,
+      "/abap-cheat-sheets": 0.5,
+      "/sap-styleguides": 0.3
+    },
+    "Fiori Elements": {
+      "/abap-fiori-showcase": 1.0,
+      "/abap-cheat-sheets": 0.6,
+      "/abap-platform-rap-opensap": 0.5
+    },
+    "cloud": {
+      "/abap-docs-cloud": 2.0,
+      "/cloud-abap-rap": 1.5,
+      "/abap-docs-standard": 0.2
+    },
+    "btp": {
+      "/abap-docs-cloud": 1.5,
+      "/cloud-abap-rap": 1.2
+    },
+    "on-premise": {
+      "/abap-docs-standard": 1.5,
+      "/abap-docs-cloud": 0.1
+    },
+    "samples": {
+      "/abap-platform-rap-opensap": 1.2,
+      "/cloud-abap-rap": 1.2,
+      "/abap-platform-reuse-services": 1.0,
+      "/abap-cheat-sheets": 0.8
+    },
+    "reuse": {
+      "/abap-platform-reuse-services": 1.5,
+      "/abap-cheat-sheets": 0.5
+    }
+  },
+
+  "libraryMappings": {
+    "abap-docs-standard": "abap-docs",
+    "abap-docs-cloud": "abap-docs",
+    "abap-cheat-sheets": "abap-cheat-sheets",
+    "sap-styleguides": "sap-styleguides",
+    "dsag-abap-leitfaden": "dsag-abap-leitfaden",
+    "abap-fiori-showcase": "abap-fiori-showcase",
+    "abap-platform-rap-opensap": "abap-platform-rap-opensap",
+    "cloud-abap-rap": "cloud-abap-rap",
+    "abap-platform-reuse-services": "abap-platform-reuse-services"
+  },
+
+  "contextEmojis": {
+    "ABAP": "💻",
+    "ABAP Cloud": "☁️",
+    "Standard ABAP": "🏢",
+    "RAP": "⚡",
+    "CDS": "📊",
+    "Clean Code": "✨",
+    "DSAG": "🇩🇪",
+    "Fiori Elements": "📱",
+    "samples": "📝",
+    "reuse": "♻️",
+    "MIXED": "🔀"
+  }
+}

@@ -13,7 +13,7 @@
     "start:streamable": "node dist/src/streamable-http-server.js",
     "inspect": "npx @modelcontextprotocol/inspector",
     "test": "npm run test:url-generation && npm run test:integration",
-    "test:url-generation": "npm run build:tsc && npx vitest run test/comprehensive-url-generation.test.ts test/prompts.test.ts",
+    "test:url-generation": "npm run build:tsc && npx vitest run test/comprehensive-url-generation.test.ts test/prompts.test.ts test/software-heroes-afm.test.ts",
     "test:url-generation:debug": "npm run build:tsc && DEBUG_TESTS=true npx vitest run test/comprehensive-url-generation.test.ts",
     "test:mcp-urls": "npm run build:tsc && npx vitest run test/mcp-search-url-verification.test.ts",
     "test:integration": "npm run build && node test/tools/run-tests.js",
@@ -23,19 +23,21 @@
     "test:urls:status": "npm run build:tsc && npx tsx test/url-status.ts",
     "check-version": "node scripts/check-version.js",
     "setup": "bash setup.sh",
-    "setup:submodules": "bash -lc 'git submodule sync --recursive && git submodule update --init --recursive --depth 1 && git submodule status --recursive'"
+    "setup:submodules": "bash -lc 'git submodule sync --recursive && git submodule update --init --recursive --depth 1 && git submodule status --recursive'",
+    "test:software-heroes": "npm run build:tsc && npx vitest run test/software-heroes-afm.test.ts test/software-heroes-content-search.test.ts"
   },
   "ts-node": {
     "esm": true
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.19.0",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "fast-glob": "^3.3.2",
     "gray-matter": "^4.0.3",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@abaplint/core": "^2.115.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -45,5 +47,17 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.4",
     "vitest": "^2.1.5"
+  },
+  "description": "Offline SAP documentation MCP server with unified local + online search",
+  "homepage": "https://github.com/marianfoo/mcp-sap-docs#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marianfoo/mcp-sap-docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marianfoo/mcp-sap-docs/issues"
+  },
+  "bin": {
+    "mcp-sap-docs": "dist/src/server.js"
   }
 }

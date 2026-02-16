@@ -1,0 +1,41 @@
+{
+  "id": "abap",
+  "description": "ABAP-focused profile",
+  "sourceAllowlist": [
+    "/abap-docs-standard",
+    "/abap-docs-cloud",
+    "/abap-cheat-sheets",
+    "/sap-styleguides",
+    "/dsag-abap-leitfaden",
+    "/abap-fiori-showcase",
+    "/abap-platform-rap-opensap",
+    "/cloud-abap-rap",
+    "/abap-platform-reuse-services"
+  ],
+  "submodulePaths": [
+    "sources/abap-docs",
+    "sources/abap-cheat-sheets",
+    "sources/sap-styleguides",
+    "sources/dsag-abap-leitfaden",
+    "sources/abap-fiori-showcase",
+    "sources/abap-platform-rap-opensap",
+    "sources/cloud-abap-rap",
+    "sources/abap-platform-reuse-services"
+  ],
+  "tools": {
+    "abapLint": true,
+    "abapFeatureMatrix": true
+  },
+  "server": {
+    "stdioName": "mcp-abap-community-server",
+    "stdioDescription": "ABAP/RAP-focused MCP server for ADT (Eclipse) - search documentation, lint code",
+    "streamableName": "ABAP MCP Streamable HTTP",
+    "streamableDescription": "ABAP/RAP MCP server with Streamable HTTP transport - supports ABAP Keyword Documentation, Cheat Sheets, Styleguides, and RAP examples",
+    "httpStatusPort": 3002,
+    "streamablePort": 3124,
+    "pm2HttpName": "abap-mcp-http",
+    "pm2StreamableName": "abap-mcp-streamable",
+    "deployPath": "/opt/mcp-sap/abap-mcp-server"
+  },
+  "metadataPath": "config/variants/abap.metadata.json"
+}

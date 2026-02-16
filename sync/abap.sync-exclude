@@ -1,0 +1,12 @@
+.git
+.cursor/
+.github/workflows/*
+sync/
+.mcpregistry_github_token
+.mcpregistry_registry_token
+.DS_Store
+test/results/
+test/generate-search-results*.ts
+test-search-debug.ts
+test/abaplint-safety.test.ts
+docs/MCP-REGISTRY-PUBLISHING.md

@@ -1,289 +1,141 @@
-# 🛠️ Development Guide
+# Development Guide
 
-## Quick Start
+This guide describes the current development model for `mcp-sap-docs`.
 
-### 🚀 **Initial Setup**
+## Scope
+
+`mcp-sap-docs` is the upstream repository for two runtime profiles:
+
+- `sap-docs` (broad SAP docs)
+- `abap` (ABAP-focused, reduced sources, `abap_lint` enabled)
+
+Both profiles use the same code and scripts.
+
+## Prerequisites
+
+- Node.js 22+
+- npm
+- git (for submodules)
+- sqlite runtime support via `better-sqlite3`
+
+## Initial Setup
+
 ```bash
-# Clone and install
-git clone <repo-url>
-cd sap-docs-mcp
-npm install
-
-# Run enhanced setup (submodules + build)
+npm ci
 npm run setup
-
-# Start development server
-npm run start:http
+npm run build
 ```
 
-### 🧪 **Run Tests**
-```bash
-npm run test:smoke    # Quick validation
-npm run test:fast     # Skip build, test only
-npm run test          # Full build + test
-```
+The setup script is variant-aware:
+
+- resolves variant from `MCP_VARIANT` -> `.mcp-variant` -> `sap-docs`
+- initializes only submodules allowed by that variant
 
 ## Common Commands
 
-### 📦 **Build Commands**
 ```bash
-npm run build:tsc       # Compile TypeScript
-npm run build:index     # Build documentation index
-npm run build:fts       # Build FTS5 search database  
-npm run build           # Complete build pipeline (tsc + index + fts)
-```
+# build
+npm run build:tsc
+npm run build:index
+npm run build:fts
+npm run build
 
-### 🖥️ **Server Commands**
-```bash
-npm start                    # MCP stdio server (for Claude)
-npm run start:http           # HTTP development server (port 3001)
-npm run start:streamable     # Streamable HTTP server (port 3122)
-```
-
-### 🧪 **Test Commands**  
-```bash
-npm run test:smoke      # Quick smoke tests
-npm run test:fast       # Test without rebuild
-npm run test            # Full test suite
-npm run test:community  # SAP Community search tests
-npm run inspect         # MCP protocol inspector
-```
-
-## Environment Variables
-
-### 🔧 **Core Configuration**
-```bash
-RETURN_K=25                    # Number of search results (default: 25)
-LOG_LEVEL=INFO                 # Logging level (ERROR, WARN, INFO, DEBUG)
-LOG_FORMAT=json                # Log format (json or text)
-NODE_ENV=production            # Environment mode
-```
-
-### 🗄️ **Database & Paths**
-```bash
-DB_PATH=dist/data/docs.sqlite  # FTS5 database path
-METADATA_PATH=src/metadata.json # Metadata configuration path
-```
-
-### 🌐 **Server Configuration**
-```bash
-PORT=3001                      # HTTP server port
-MCP_PORT=3122                  # Streamable HTTP MCP port
-```
-
-## Development Servers
-
-### 📡 **1. Stdio MCP Server** (Main)
-```bash
-npm run start:stdio
-# For Claude/LLM integration via stdio transport
-```
-
-### 🌐 **2. HTTP Development Server**
-```bash
+# runtime
+npm start
 npm run start:http
-# Access: http://localhost:3001
-# Endpoints: /status, /healthz, /readyz, /mcp
+npm run start:streamable
+
+# tests
+npm run test:url-generation
+npm run test:integration
+npm run test:software-heroes
+npm run test
 ```
 
-### 🔄 **3. Streamable HTTP Server**
+## Variant Matrix During Development
+
+Run both profiles before merging:
+
 ```bash
-npm run start:streamable  
-# Access: http://localhost:3122
-# Endpoints: /mcp, /health
+MCP_VARIANT=sap-docs npm run setup
+MCP_VARIANT=sap-docs npm run build
+
+MCP_VARIANT=abap npm run setup
+MCP_VARIANT=abap npm run build
 ```
 
-## Where to Change Things
+## Search Contract
 
-### 🔍 **Search Behavior**
-- **Query Processing**: `src/lib/searchDb.ts` → `toMatchQuery()`
-- **Search Logic**: `src/lib/search.ts` → `search()`
-- **Result Formatting**: `src/lib/localDocs.ts` → `searchLibraries()`
+The `search` tool contract is shared for both profiles:
 
-### ⚙️ **Configuration**
-- **Source Settings**: `src/metadata.json` → Add/modify sources
-- **Core Config**: `src/lib/config.ts` → System settings
-- **Metadata APIs**: `src/lib/metadata.ts` → Configuration access
+- `query`
+- `k`
+- `includeOnline`
+- `includeSamples`
+- `abapFlavor`
+- `sources`
 
-### 🛠️ **MCP Tools**
-- **Tool Definitions**: `src/server.ts` → `ListToolsRequestSchema`
-- **Tool Handlers**: `src/server.ts` → `CallToolRequestSchema`
-- **HTTP Endpoints**: `src/http-server.ts` → `/mcp` handler
+Online search sources (when `includeOnline=true`):
 
-### 🏗️ **Build Process**
-- **Index Building**: `scripts/build-index.ts`
-- **FTS Database**: `scripts/build-fts.ts`
-- **Source Processing**: Modify build scripts for new source types
+- SAP Help
+- SAP Community
+- Software Heroes content search
 
-### 🧪 **Tests**
-- **Test Cases**: `test/tools/search/` → Add new test files
-- **Test Runner**: `test/tools/run-tests.js` → Modify test execution
-- **Output Parsing**: `test/_utils/parseResults.js` → Update format expectations
+`fetch` remains shared and unchanged.
 
-### 🚀 **Deployment**
-- **PM2 Config**: `ecosystem.config.cjs` → Process configuration
-- **GitHub Actions**: `.github/workflows/deploy-mcp-sap-docs.yml`
-- **Setup Script**: `setup.sh` → Deployment automation
+## Tool Gating by Variant
 
-## Adding New Documentation Sources
+Defined in `config/variants/*.json` and enforced by `src/lib/variant.ts` + `src/lib/BaseServerHandler.ts`:
 
-### 1. **Update Metadata** (`src/metadata.json`)
-```json
-{
-  "id": "new-source",
-  "type": "documentation",
-  "libraryId": "/new-source",
-  "sourcePath": "new-source/docs",
-  "baseUrl": "https://example.com/docs",
-  "pathPattern": "/{file}",
-  "anchorStyle": "github",
-  "boost": 0.05,
-  "tags": ["new", "documentation"],
-  "description": "New documentation source"
-}
-```
+- Both: `search`, `fetch`, `abap_feature_matrix`
+- ABAP-only: `abap_lint`
 
-### 2. **Add Context Boosts** (if needed)
-```json
-"contextBoosts": {
-  "New Context": {
-    "/new-source": 1.0,
-    "/other-source": 0.3
-  }
-}
-```
+## Key Files
 
-### 3. **Add Library Mapping** (if needed)
-```json
-"libraryMappings": {
-  "new-source-alias": "new-source"
-}
-```
+- Variant resolution: `src/lib/variant.ts`
+- Variant profiles: `config/variants/sap-docs.json`, `config/variants/abap.json`
+- Tool handlers: `src/lib/BaseServerHandler.ts`
+- Unified search: `src/lib/search.ts`
+- Runtime config: `src/lib/config.ts`
+- Metadata access: `src/lib/metadata.ts`
+- Build index: `scripts/build-index.ts`
+- Build FTS: `scripts/build-fts.ts`
+- Setup/submodules: `setup.sh`
+- Sync automation: `scripts/sync-to-abap.sh`
+- Sync workflow: `.github/workflows/sync-to-abap-main.yml`
 
-### 4. **No Code Changes Required!**
-The metadata APIs automatically handle the new source.
+## One-Way Sync Workflow (Upstream -> ABAP Repo)
 
-## Debugging
+1. Push lands in `mcp-sap-docs/main`
+2. `sync-to-abap-main.yml` executes
+3. `scripts/sync-to-abap.sh` clones `abap-mcp-server`
+4. Tracked files sync with excludes + overlay
+5. `.mcp-variant` forced to `abap`
+6. ABAP package identity patched
+7. Commit pushed to `abap-mcp-server/main`
 
-### 🔍 **Search Issues**
+Required secret:
+
+- `ABAP_REPO_SYNC_TOKEN`
+
+Commit message controls:
+
+- `[skip-sync]` to skip automated sync
+
+## Deployment Notes
+
+- PM2 config (`ecosystem.config.cjs`) is variant-aware
+- ABAP deploy workflow remains in `abap-mcp-server` and is triggered by pushes to its `main`
+
+## Debugging Tips
+
 ```bash
-# Test specific queries
-node -e "
-import { search } from './dist/src/lib/search.js';
-const results = await search('your query');
-console.log(JSON.stringify(results, null, 2));
-"
+# verify active variant
+cat .mcp-variant
 
-# Check FTS database
-sqlite3 dist/data/docs.sqlite "SELECT * FROM docs WHERE docs MATCH 'your query' LIMIT 5;"
-```
+# explicit variant run
+MCP_VARIANT=abap npm run start:streamable
 
-### 📊 **Metadata Issues**
-```bash
-# Test metadata loading
-node -e "
-import { loadMetadata, getSourceBoosts } from './dist/src/lib/metadata.js';
-loadMetadata();
-console.log('Boosts:', getSourceBoosts());
-"
-```
-
-### 🌐 **Server Issues**
-```bash
-# Check server health
-curl http://localhost:3001/status
-curl http://localhost:3122/health
-
-# Test search endpoint
-curl -X POST http://localhost:3001/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"role": "user", "content": "wizard"}'
-```
-
-## Performance Optimization
-
-### ⚡ **Search Performance**
-- **FTS5 Tuning**: Modify `scripts/build-fts.ts` for different indexing strategies
-- **Query Optimization**: Adjust `toMatchQuery()` in `src/lib/searchDb.ts`
-- **Result Limits**: Configure `RETURN_K` environment variable
-
-### 💾 **Memory Usage**
-- **Index Size**: Monitor `dist/data/` artifact sizes
-- **Metadata Loading**: Lazy loading in `src/lib/metadata.ts`
-- **Process Monitoring**: Use PM2 monitoring features
-
-## Common Issues
-
-### ❌ **Build Failures**
-```bash
-# Clean and rebuild
-rm -rf dist/
-npm run build:all
-```
-
-### ❌ **Search Returns No Results**
-```bash
-# Check if database exists
-ls -la dist/data/docs.sqlite
-
-# Verify index content
-sqlite3 dist/data/docs.sqlite "SELECT COUNT(*) FROM docs;"
-```
-
-### ❌ **Metadata Loading Errors**
-```bash
-# Validate JSON syntax
-node -e "JSON.parse(require('fs').readFileSync('src/metadata.json', 'utf8'))"
-
-# Check file permissions
-ls -la src/metadata.json
-```
-
-### ❌ **Server Won't Start**
-```bash
-# Check port availability
-lsof -i :3001
-lsof -i :3122
-
-# Kill conflicting processes
-lsof -ti:3001 | xargs kill -9
-```
-
-## Best Practices
-
-### 📝 **Code Changes**
-1. **Update Cursor Rules**: Modify `.cursor/rules/` when changing architecture
-2. **Test First**: Run smoke tests before committing
-3. **Metadata Over Code**: Use metadata.json for configuration changes
-4. **Type Safety**: Use metadata APIs, never direct JSON access
-
-### 🧪 **Testing**
-1. **Smoke Tests**: Always run before deployment
-2. **Integration Tests**: Test full MCP tool workflows
-3. **Performance Tests**: Monitor search response times
-4. **Output Validation**: Ensure format consistency
-
-### 🚀 **Deployment**
-1. **Build Validation**: Ensure all artifacts generated
-2. **Health Checks**: Verify all endpoints after deployment
-3. **Rollback Plan**: Keep previous artifacts for quick rollback
-4. **Monitoring**: Watch logs and performance metrics
-
-## Useful Development Tools
-
-### 🔧 **VS Code Extensions**
-- **REST Client**: Use `test-search.http` for API testing
-- **SQLite Viewer**: Inspect FTS5 database content
-- **JSON Schema**: Validate metadata.json structure
-
-### 📊 **Monitoring**
-```bash
-# PM2 monitoring
-pm2 monit
-
-# Log streaming
-pm2 logs mcp-sap-http --lines 100
-
-# Process status
-pm2 status
+# inspect tool list from integration tests or MCP inspector
+npm run inspect
 ```

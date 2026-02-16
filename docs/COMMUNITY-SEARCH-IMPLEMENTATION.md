@@ -1,3 +1,9 @@
+> Historical documentation note
+>
+> This file is kept for background and milestone history.
+> For the current architecture and operational model, start with:
+> README.md, docs/ARCHITECTURE.md, docs/DEV.md, docs/TESTS.md, and docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md.
+
 # SAP Community Search Implementation
 
 ## Overview

@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
+import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 
 type Doc = {
   id: string;
@@ -28,6 +29,7 @@ type LibraryBundle = {
 const DATA_DIR = path.join(process.cwd(), "dist", "data");
 const SRC = path.join(DATA_DIR, "index.json");
 const DST = path.join(DATA_DIR, "docs.sqlite");
+const ALLOWED_LIBRARY_IDS = new Set(getAllowedSources());
 
 function libFromId(id: string): string {
   // id looks like "/sapui5/..." etc.
@@ -48,6 +50,8 @@ function main() {
   
   console.log(`📖 Reading index from ${SRC}...`);
   const raw = JSON.parse(fs.readFileSync(SRC, "utf8")) as Record<string, LibraryBundle>;
+
+  console.log("Using MCP variant " + getVariantName() + " with " + ALLOWED_LIBRARY_IDS.size + " allowed library IDs.");
 
   // Fresh DB
   if (fs.existsSync(DST)) {
@@ -87,6 +91,9 @@ function main() {
   let totalDocs = 0;
   const tx = db.transaction(() => {
     for (const lib of Object.values(raw)) {
+      if (!ALLOWED_LIBRARY_IDS.has(lib.id)) {
+        continue;
+      }
       for (const d of lib.docs) {
         const libraryId = libFromId(d.id);
         const keywords = safeText(d.keywords);

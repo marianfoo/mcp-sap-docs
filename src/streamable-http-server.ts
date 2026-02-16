@@ -8,9 +8,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
+import { getVariantConfig } from "./lib/variant.js";
 
 // Version will be updated by deployment script
 const VERSION = "0.3.21";
+const variant = getVariantConfig();
 
 
 // Simple in-memory event store for resumability
@@ -67,9 +69,8 @@ function createServer() {
   };
 
   const srv = new Server({
-    name: "SAP Docs Streamable HTTP",
-    description:
-      "SAP documentation server with Streamable HTTP transport - supports SAPUI5, CAP, wdi5, SAP Community, SAP Help Portal, and ABAP Keyword Documentation integration",
+    name: variant.server.streamableName,
+    description: variant.server.streamableDescription,
     version: VERSION
   }, serverOptions);
 
@@ -83,7 +84,7 @@ async function main() {
   // Initialize search system with metadata
   BaseServerHandler.initializeMetadata();
 
-  const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 3122;
+  const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : variant.server.streamablePort;
   
   // Create Express application
   const app = express();
@@ -114,7 +115,7 @@ async function main() {
       },
       documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
       alternatives: {
-        "Local MCP Streamable HTTP": "http://127.0.0.1:3122/mcp",
+        "Local MCP Streamable HTTP": "http://127.0.0.1:" + variant.server.streamablePort + "/mcp",
         "Public MCP Streamable HTTP": "https://mcp-sap-docs.marianzeis.de/mcp"
       }
     };
@@ -250,7 +251,7 @@ async function main() {
   app.get('/health', (req: Request, res: Response) => {
     res.json({
       status: 'healthy',
-      service: 'mcp-sap-docs-streamable',
+      service: variant.server.pm2StreamableName,
       version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',

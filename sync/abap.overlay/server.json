@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.marianfoo/mcp-abap-community-server",
+  "description": "Dedicated ABAP/RAP MCP server for ADT (Eclipse) - unified search across ABAP documentation with local linting",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/marianfoo/abap-mcp-server",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registry_type": "npm",
+      "registry_base_url": "https://registry.npmjs.org",
+      "identifier": "mcp-abap-community-server",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

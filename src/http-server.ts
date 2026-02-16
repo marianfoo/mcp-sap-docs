@@ -6,8 +6,10 @@ import { execSync } from "child_process";
 import { searchLibraries } from "./lib/localDocs.js";
 import { search } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
-import { loadMetadata, getDocUrlConfig } from "./lib/metadata.js";
+import { getDocUrlConfig } from "./lib/metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
+import { getAllowedSubmodulePaths, getVariantConfig } from "./lib/variant.js";
+import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +23,7 @@ try {
   console.warn("Could not read package.json:", error instanceof Error ? error.message : "Unknown error");
 }
 const buildTimestamp = new Date().toISOString();
+const variant = getVariantConfig();
 
 // ---- helpers ----------------------------------------------------------------
 function safeExec(cmd: string, cwd?: string) {
@@ -160,24 +163,13 @@ const server = createServer(async (req, res) => {
 
     // docs/search status
     const sourcesRoot = join(__dirname, "../../sources");
-    const knownSources = [
-      "sapui5-docs",
-      "cap-docs",
-      "openui5",
-      "wdi5",
-      "ui5-tooling",
-      "cloud-mta-build-tool",
-      "ui5-webcomponents",
-      "cloud-sdk",
-      "cloud-sdk-ai"
-    ];
+    const knownSources = getAllowedSubmodulePaths().map((entry) => entry.replace(/^sources\//, ""));
     const presentSources = existsSync(sourcesRoot)
       ? readdirSync(sourcesRoot, { withFileTypes: true })
           .filter((e) => e.isDirectory())
           .map((e) => e.name)
       : [];
 
-    const toCheck = knownSources.filter((s) => presentSources.includes(s));
     const resources: Record<string, any> = {};
     let totalResources = 0;
 
@@ -254,7 +246,7 @@ const server = createServer(async (req, res) => {
         nodeVersion: process.version,
         platform: process.platform,
         pid: process.pid,
-        port: Number(process.env.PORT || 3001),
+        port: Number(process.env.PORT || variant.server.httpStatusPort),
         bind: "127.0.0.1",
       },
     };
@@ -303,19 +295,12 @@ const server = createServer(async (req, res) => {
   return json(res, 404, { error: "Not Found", path: req.url, method: req.method });
 });
 
-// Initialize search system with metadata
+// Initialize search system with metadata and start server
 (async () => {
-  console.log('🔧 Initializing BM25 search system...');
-  try {
-    loadMetadata();
-    console.log('✅ Search system ready with metadata');
-  } catch (error) {
-    console.warn('⚠️ Metadata loading failed, using defaults');
-    console.log('✅ Search system ready');
-  }
-  
+  BaseServerHandler.initializeMetadata();
+
   // Start server
-  const PORT = Number(process.env.PORT || 3001);
+  const PORT = Number(process.env.PORT || variant.server.httpStatusPort);
   // Bind to 127.0.0.1 to keep local-only
   server.listen(PORT, "127.0.0.1", () => {
     console.log(`📚 HTTP server running on http://127.0.0.1:${PORT} (status: /status, health: /healthz, ready: /readyz)`);

@@ -2,6 +2,9 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
+import { getVariantConfig } from "./lib/variant.js";
+
+const variant = getVariantConfig();
 
 function createServer() {
   const serverOptions: NonNullable<ConstructorParameters<typeof Server>[1]> & {
@@ -16,9 +19,8 @@ function createServer() {
   };
 
   const srv = new Server({
-    name: "Local SAP Docs",
-    description:
-      "Offline SAPUI5 & CAP documentation server with SAP Community, SAP Help Portal, and ABAP Keyword Documentation integration",
+    name: variant.server.stdioName,
+    description: variant.server.stdioDescription,
     version: "0.1.0"
   }, serverOptions);
 
