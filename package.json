@@ -1,6 +1,6 @@
 {
   "name": "mcp-sap-docs",
-  "version": "0.3.21",
+  "version": "0.3.22",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

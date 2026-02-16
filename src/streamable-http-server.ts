@@ -11,7 +11,7 @@ import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig } from "./lib/variant.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.3.21";
+const VERSION = "0.3.22";
 const variant = getVariantConfig();
 
 
