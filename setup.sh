@@ -44,13 +44,8 @@ fi
 
 printf '  → Active MCP variant: %s\n' "$VARIANT_NAME"
 
-declare -A ALLOWED_SUBMODULES=()
-if [ -n "$ALLOWED_SUBMODULE_PATHS" ]; then
-  while IFS= read -r allowedPath; do
-    [ -z "$allowedPath" ] && continue
-    ALLOWED_SUBMODULES["$allowedPath"]=1
-  done <<< "$ALLOWED_SUBMODULE_PATHS"
-fi
+# Store allowed paths as newline-delimited string (bash 3.2 compatible, no associative arrays)
+ALLOWED_SUBMODULES_LIST="$ALLOWED_SUBMODULE_PATHS"
 
 # Collect submodules from .gitmodules
 printf '  → Ensuring variant submodules are present (shallow, single branch)...\n'
@@ -64,7 +59,7 @@ while IFS= read -r line; do
   [ -z "$path" ] && continue
   [ -z "$url" ] && continue
 
-  if [ "${#ALLOWED_SUBMODULES[@]}" -gt 0 ] && [ -z "${ALLOWED_SUBMODULES[$path]+x}" ]; then
+  if [ -n "$ALLOWED_SUBMODULES_LIST" ] && ! printf '%s\n' "$ALLOWED_SUBMODULES_LIST" | grep -qxF "$path"; then
     printf '    • %s (skipped for variant %s)\n' "$path" "$VARIANT_NAME"
     continue
   fi
