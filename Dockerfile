@@ -22,18 +22,35 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Initialize git repo (needed for submodules in Docker context)
-# and fetch submodules with shallow clone for speed
-# Preserve .gitmodules by backing it up before git init
-RUN if [ -f .gitmodules ]; then cp .gitmodules /tmp/.gitmodules.bak; fi && \
-    printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
-    git init && \
-    if [ -f /tmp/.gitmodules.bak ]; then mv /tmp/.gitmodules.bak .gitmodules; fi && \
-    git config --global advice.detachedHead false && \
-    git submodule sync --recursive && \
-    SUBMODULE_PATHS="$(node --input-type=module -e 'import fs from \"node:fs\"; const v=(process.env.MCP_VARIANT||\"sap-docs\").trim(); const cfg=JSON.parse(fs.readFileSync(\"config/variants/\" + v + \".json\", \"utf8\")); console.log((cfg.submodulePaths||[]).join(\" \"));')" && \
-    if [ -n "$SUBMODULE_PATHS" ]; then git submodule update --init --depth 1 --jobs 4 $SUBMODULE_PATHS; fi && \
-    git submodule update --init --recursive --depth 1 --jobs 4
+# Resolve variant-specific sources and clone them shallowly.
+# We avoid `git submodule update <path>` because this container build runs in a fresh
+# git repo that does not have gitlinks/index entries for those paths.
+RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
+    SUBMODULE_PATHS="$(node --input-type=module -e 'import fs from "node:fs"; const v=(process.env.MCP_VARIANT||"sap-docs").trim(); const cfg=JSON.parse(fs.readFileSync("config/variants/" + v + ".json", "utf8")); for (const p of (cfg.submodulePaths||[])) console.log(p);')" && \
+    git config -f .gitmodules --get-regexp 'submodule\..*\.path' | while read -r key path; do \
+      name="${key#submodule.}"; \
+      name="${name%.path}"; \
+      url="$(git config -f .gitmodules "submodule.${name}.url" || true)"; \
+      branch="$(git config -f .gitmodules "submodule.${name}.branch" || echo main)"; \
+      [ -z "$path" ] && continue; \
+      [ -z "$url" ] && continue; \
+      if [ -n "$SUBMODULE_PATHS" ]; then \
+        case " $SUBMODULE_PATHS " in \
+          *" $path "*) ;; \
+          *) continue ;; \
+        esac; \
+      fi; \
+      mkdir -p "$(dirname "$path")"; \
+      GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch "$branch" "$url" "$path" || { \
+        echo "clone failed for $path on branch $branch, retrying with master"; \
+        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch master "$url" "$path" || true; \
+      }; \
+    done && \
+    for path in $SUBMODULE_PATHS; do \
+      if [ -d "$path/.git" ]; then \
+        git -C "$path" submodule update --init --recursive --depth 1 || true; \
+      fi; \
+    done
 
 # Build TypeScript and FTS5 index
 RUN npm run build

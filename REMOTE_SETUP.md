@@ -78,6 +78,29 @@ docker build --build-arg MCP_VARIANT=abap -t abap-mcp-server .
 docker run --rm -p 3124:3124 -e MCP_VARIANT=abap -e MCP_PORT=3124 abap-mcp-server
 ```
 
+Offline-only usage:
+
+```bash
+# Keep runtime local and call search with includeOnline=false
+docker run --rm -p 3122:3122 \
+  -e MCP_VARIANT=sap-docs \
+  -e MCP_PORT=3122 \
+  -e MCP_HOST=0.0.0.0 \
+  mcp-sap-docs
+
+# Strict offline (air-gapped container)
+docker run --rm --network none -p 3122:3122 \
+  -e MCP_VARIANT=sap-docs \
+  -e MCP_PORT=3122 \
+  -e MCP_HOST=0.0.0.0 \
+  mcp-sap-docs
+```
+
+Important:
+
+- `search` defaults to `includeOnline=true`; set `includeOnline=false` to use only local offline index sources.
+- `--network none` hard-enforces offline behavior at container level.
+
 ## 5. One-Way Sync to `abap-mcp-server`
 
 Automated in upstream via:

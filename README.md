@@ -60,6 +60,50 @@ Ranking and filtering highlights:
 - `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries while keeping non-ABAP sources
 - `sources` can restrict offline libraries explicitly
 
+## Offline-Only Mode
+
+`search` includes online sources by default. To run offline-only, use:
+
+- local index/submodules only (`npm run setup` + `npm run build`)
+- `includeOnline=false` in each `search` request
+
+Example `search` request body:
+
+```json
+{
+  "query": "RAP draft",
+  "k": 8,
+  "includeOnline": false
+}
+```
+
+### Docker (offline-only)
+
+Run the container with host binding and call `search` with `includeOnline=false`:
+
+```bash
+docker run --rm -p 3122:3122 \
+  -e MCP_VARIANT=sap-docs \
+  -e MCP_PORT=3122 \
+  -e MCP_HOST=0.0.0.0 \
+  mcp-sap-docs
+```
+
+For strict air-gapped execution, disable container networking:
+
+```bash
+docker run --rm --network none -p 3122:3122 \
+  -e MCP_VARIANT=sap-docs \
+  -e MCP_PORT=3122 \
+  -e MCP_HOST=0.0.0.0 \
+  mcp-sap-docs
+```
+
+Notes:
+
+- With `--network none`, online fetches are impossible by runtime isolation.
+- Startup may log warnings for online prefetch attempts (for example ABAP feature matrix); this does not prevent offline `search` usage.
+
 ## Quick Start (Local)
 
 ```bash
