@@ -107,6 +107,15 @@ Defined in `config/variants/*.json` and enforced by `src/lib/variant.ts` + `src/
 - Sync automation: `scripts/sync-to-abap.sh`
 - Sync workflow: `.github/workflows/sync-to-abap-main.yml`
 
+## Environment Variables (Software Heroes)
+
+| Variable | Default | Description |
+|---|---|---|
+| `SOFTWARE_HEROES_CLIENT` | `ABAPMCPSERVER` | Client identifier sent in API headers |
+| `SOFTWARE_HEROES_TIMEOUT_MS` | `10000` | Request timeout (ms) |
+| `SOFTWARE_HEROES_CACHE_TTL_MS` | `86400000` | In-memory cache TTL (ms, default 24 h) |
+| `SOFTWARE_HEROES_AFM_CACHE_PATH` | `dist/data/abap-feature-matrix.json` | Disk cache path for the ABAP Feature Matrix |
+
 ## One-Way Sync Workflow (Upstream -> ABAP Repo)
 
 1. Push lands in `mcp-sap-docs/main`

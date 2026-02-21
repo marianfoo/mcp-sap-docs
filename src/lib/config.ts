@@ -35,4 +35,7 @@ export const CONFIG = {
   // Cache TTL in milliseconds (default: 24 hours = 86400000ms)
   // Cache is in-server (process-local) and resets on restart/deploy
   SOFTWARE_HEROES_CACHE_TTL_MS: Number(process.env.SOFTWARE_HEROES_CACHE_TTL_MS || 86400000),
+
+  // Disk cache path for the ABAP Feature Matrix (survives server restarts)
+  SOFTWARE_HEROES_AFM_CACHE_PATH: process.env.SOFTWARE_HEROES_AFM_CACHE_PATH || "dist/data/abap-feature-matrix.json",
 };

@@ -1,9 +1,12 @@
 // ABAP Feature Matrix from Software Heroes
 // Fetch, parse, and search the ABAP Feature Matrix HTML content
-// Always fetches full English content and caches it locally
+// Always fetches full English content and caches it locally (memory + disk)
 // No external HTML parsing dependencies - uses regex-based best-effort parsing
 
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { callSoftwareHeroesApi, TtlCache, decodeEntities, stripTags } from "./core.js";
+import { CONFIG } from "../config.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,6 +69,31 @@ const matrixCache = new TtlCache<ParsedFeatureMatrix>(24 * 60 * 60 * 1000);
 const CACHE_KEY = "abap-feature-matrix-en";
 
 // ---------------------------------------------------------------------------
+// Disk Cache (survives server restarts, no TTL – last-resort fallback)
+// ---------------------------------------------------------------------------
+
+/** Write parsed matrix to disk as JSON */
+export async function writeDiskCache(
+  matrix: ParsedFeatureMatrix,
+  cachePath = CONFIG.SOFTWARE_HEROES_AFM_CACHE_PATH
+): Promise<void> {
+  await mkdir(dirname(cachePath), { recursive: true });
+  await writeFile(cachePath, JSON.stringify(matrix), "utf-8");
+}
+
+/** Read previously-persisted matrix from disk (returns undefined on any error) */
+export async function readDiskCache(
+  cachePath = CONFIG.SOFTWARE_HEROES_AFM_CACHE_PATH
+): Promise<ParsedFeatureMatrix | undefined> {
+  try {
+    const raw = await readFile(cachePath, "utf-8");
+    return JSON.parse(raw) as ParsedFeatureMatrix;
+  } catch {
+    return undefined;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HTML Parsing Utilities (decodeEntities & stripTags imported from core.ts)
 // ---------------------------------------------------------------------------
 
@@ -121,7 +149,9 @@ async function fetchAbapFeatureMatrixHtml(): Promise<string> {
 
   // The HTML content may be in 'content', 'data', or 'screen[0].content'
   // The Feature Matrix API returns it in screen[].content with id="id_matrix_out"
-  let html = response.content || response.data || "";
+  // Guard against data being a JSON array (returned by START_SEARCH_JSON, not this method)
+  const dataStr = typeof response.data === "string" ? response.data : "";
+  let html = response.content || dataStr || "";
   
   // Check screen array for content (API response format)
   if (!html && response.screen && response.screen.length > 0) {
@@ -272,31 +302,92 @@ export function parseAbapFeatureMatrix(html: string): ParsedFeatureMatrix {
 // ---------------------------------------------------------------------------
 
 /**
- * Get the parsed feature matrix from cache or fetch from API
+ * Get the parsed feature matrix (memory cache -> API -> disk fallback)
  */
 async function getFeatureMatrix(): Promise<ParsedFeatureMatrix> {
-  // Check cache first
+  // 1. In-memory cache (fast path)
   const cached = matrixCache.get(CACHE_KEY);
   if (cached) {
     console.log("✅ [FeatureMatrix] Using cached matrix");
     return cached;
   }
 
-  // Fetch and parse
-  console.log("🌐 [FeatureMatrix] Fetching from API...");
-  const html = await fetchAbapFeatureMatrixHtml();
-  const matrix = parseAbapFeatureMatrix(html);
-  
-  // Cache the parsed result
-  matrixCache.set(CACHE_KEY, matrix);
-  console.log(`✅ [FeatureMatrix] Cached ${countFeatures(matrix)} features across ${matrix.sections.length} sections`);
-  
-  return matrix;
+  // 2. Try live API
+  try {
+    console.log("🌐 [FeatureMatrix] Fetching from API...");
+    const html = await fetchAbapFeatureMatrixHtml();
+    const matrix = parseAbapFeatureMatrix(html);
+
+    matrixCache.set(CACHE_KEY, matrix);
+    console.log(`✅ [FeatureMatrix] Cached ${countFeatures(matrix)} features across ${matrix.sections.length} sections`);
+
+    // Persist to disk (fire-and-forget)
+    writeDiskCache(matrix).catch(err =>
+      console.error("⚠️ [FeatureMatrix] Failed to write disk cache:", err)
+    );
+
+    return matrix;
+  } catch (apiError) {
+    console.error("⚠️ [FeatureMatrix] API fetch failed, trying disk fallback:", apiError);
+  }
+
+  // 3. Disk fallback
+  const diskMatrix = await readDiskCache();
+  if (diskMatrix) {
+    matrixCache.set(CACHE_KEY, diskMatrix);
+    console.log(`📂 [FeatureMatrix] Loaded ${countFeatures(diskMatrix)} features from disk cache`);
+    return diskMatrix;
+  }
+
+  throw new Error(
+    "ABAP Feature Matrix unavailable: API fetch failed and no disk cache exists"
+  );
 }
 
 /** Count total features in matrix */
 function countFeatures(matrix: ParsedFeatureMatrix): number {
   return matrix.tables.reduce((sum, table) => sum + table.rows.length, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Startup Prefetch
+// ---------------------------------------------------------------------------
+
+/**
+ * Prefetch the ABAP Feature Matrix at server startup.
+ * Tries the live API first; on failure falls back to the disk cache.
+ * Never throws – errors are logged so the server always starts.
+ */
+export async function prefetchFeatureMatrix(): Promise<void> {
+  try {
+    console.log("🚀 [FeatureMatrix] Prefetching matrix at startup...");
+    const html = await fetchAbapFeatureMatrixHtml();
+    const matrix = parseAbapFeatureMatrix(html);
+
+    matrixCache.set(CACHE_KEY, matrix);
+    await writeDiskCache(matrix);
+    console.log(
+      `✅ [FeatureMatrix] Prefetched and persisted ${countFeatures(matrix)} features across ${matrix.sections.length} sections`
+    );
+    return;
+  } catch (apiError) {
+    console.error("⚠️ [FeatureMatrix] Prefetch API call failed:", apiError);
+  }
+
+  // Fallback: load from disk if available
+  try {
+    const diskMatrix = await readDiskCache();
+    if (diskMatrix) {
+      matrixCache.set(CACHE_KEY, diskMatrix);
+      console.log(
+        `📂 [FeatureMatrix] Prefetch loaded ${countFeatures(diskMatrix)} features from disk cache`
+      );
+    } else {
+      console.warn("⚠️ [FeatureMatrix] No disk cache available; matrix will be fetched on first use");
+    }
+  } catch (diskError) {
+    console.error("⚠️ [FeatureMatrix] Disk cache read failed during prefetch:", diskError);
+  }
 }
 
 // ---------------------------------------------------------------------------

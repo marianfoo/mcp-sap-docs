@@ -81,6 +81,22 @@ JSON results directly. This avoids HTML parsing entirely — only entity decodin
 needed on the `HEAD` and `TEXT` fields. The legacy `START_SEARCH` HTML parser is
 retained for backward compatibility but is no longer the primary path.
 
+### ABAP Feature Matrix
+
+`src/lib/softwareHeroes/abapFeatureMatrix.ts` fetches the full English matrix via
+`CUST_API` and caches it locally.
+
+Caching strategy (three tiers):
+
+1. **In-memory** (`TtlCache`, 24 h TTL) — fastest path.
+2. **Live API** — tried on cache miss; on success the result is also persisted to disk.
+3. **Disk fallback** (`dist/data/abap-feature-matrix.json`) — loaded when the API is
+   unreachable. Has no TTL; serves as a last-resort offline source.
+
+At server startup, `prefetchFeatureMatrix()` is called fire-and-forget to pre-warm
+both caches so the first tool call is instant. If the API is down, the disk cache is
+loaded instead. The server always starts regardless of fetch outcome.
+
 ## Tool Surface
 
 `src/lib/BaseServerHandler.ts` registers tools.

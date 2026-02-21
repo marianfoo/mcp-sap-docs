@@ -10,6 +10,7 @@ import { getDocUrlConfig } from "./lib/metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
 import { getAllowedSubmodulePaths, getVariantConfig } from "./lib/variant.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
+import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -298,6 +299,9 @@ const server = createServer(async (req, res) => {
 // Initialize search system with metadata and start server
 (async () => {
   BaseServerHandler.initializeMetadata();
+
+  // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
+  prefetchFeatureMatrix();
 
   // Start server
   const PORT = Number(process.env.PORT || variant.server.httpStatusPort);

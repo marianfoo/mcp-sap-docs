@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig } from "./lib/variant.js";
+import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 
 const variant = getVariantConfig();
 
@@ -33,6 +34,9 @@ function createServer() {
 async function main() {
   // Initialize search system with metadata
   BaseServerHandler.initializeMetadata();
+
+  // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
+  prefetchFeatureMatrix();
   
   const srv = createServer();
   

@@ -1,15 +1,18 @@
 /**
- * Tests for Software Heroes ABAP Feature Matrix parsing and search
+ * Tests for Software Heroes ABAP Feature Matrix parsing, search,
+ * and offline disk cache.
  * These tests use a fixture HTML file and do NOT make network calls.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
   parseAbapFeatureMatrix,
   searchAbapFeatureMatrix,
+  writeDiskCache,
+  readDiskCache,
   ParsedFeatureMatrix,
   FeatureMatch,
 } from '../dist/src/lib/softwareHeroes/abapFeatureMatrix.js';
@@ -219,5 +222,48 @@ describe('Edge cases', () => {
     const result = parseAbapFeatureMatrix(html);
     // Should not throw, may have empty or partial results
     expect(result).toBeDefined();
+  });
+});
+
+describe('Disk cache (writeDiskCache / readDiskCache)', () => {
+  const tmpDir = path.join(__dirname, '.tmp-afm-test');
+  const tmpCachePath = path.join(tmpDir, 'afm-cache.json');
+
+  afterAll(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should round-trip a parsed matrix through disk cache', async () => {
+    const fixturePath = path.join(__dirname, 'fixtures', 'abap-feature-matrix-sample.html');
+    const html = fs.readFileSync(fixturePath, 'utf-8');
+    const matrix = parseAbapFeatureMatrix(html);
+
+    await writeDiskCache(matrix, tmpCachePath);
+    const loaded = await readDiskCache(tmpCachePath);
+
+    expect(loaded).toBeDefined();
+    expect(loaded!.sections).toEqual(matrix.sections);
+    expect(loaded!.legend).toEqual(matrix.legend);
+    expect(loaded!.tables.length).toBe(matrix.tables.length);
+
+    // Spot-check a feature row survived serialization
+    const origRow = matrix.tables[0].rows[0];
+    const loadedRow = loaded!.tables[0].rows[0];
+    expect(loadedRow.feature).toBe(origRow.feature);
+    expect(loadedRow.statusByRelease).toEqual(origRow.statusByRelease);
+  });
+
+  it('should return undefined when disk cache file does not exist', async () => {
+    const missing = path.join(tmpDir, 'nonexistent', 'missing.json');
+    const result = await readDiskCache(missing);
+    expect(result).toBeUndefined();
+  });
+
+  it('should create intermediate directories when writing', async () => {
+    const nested = path.join(tmpDir, 'deep', 'nested', 'dir', 'cache.json');
+    const matrix: ParsedFeatureMatrix = { legend: {}, sections: [], tables: [] };
+    await writeDiskCache(matrix, nested);
+    const loaded = await readDiskCache(nested);
+    expect(loaded).toEqual(matrix);
   });
 });

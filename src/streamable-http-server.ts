@@ -9,6 +9,7 @@ import {
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig } from "./lib/variant.js";
+import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 
 // Version will be updated by deployment script
 const VERSION = "0.3.22";
@@ -83,6 +84,9 @@ function createServer() {
 async function main() {
   // Initialize search system with metadata
   BaseServerHandler.initializeMetadata();
+
+  // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
+  prefetchFeatureMatrix();
 
   const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : variant.server.streamablePort;
   
