@@ -72,6 +72,15 @@ Behavior notes:
 - non-ABAP libraries remain available (for `sap-docs` profile)
 - `includeSamples=false` suppresses sample-heavy sources
 
+## Software Heroes Integration
+
+### Content Search
+
+`src/lib/softwareHeroes/contentSearch.ts` uses `START_SEARCH_JSON` to get structured
+JSON results directly. This avoids HTML parsing entirely — only entity decoding is
+needed on the `HEAD` and `TEXT` fields. The legacy `START_SEARCH` HTML parser is
+retained for backward compatibility but is no longer the primary path.
+
 ## Tool Surface
 
 `src/lib/BaseServerHandler.ts` registers tools.

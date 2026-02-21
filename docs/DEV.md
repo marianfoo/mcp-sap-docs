@@ -79,7 +79,7 @@ Online search sources (when `includeOnline=true`):
 
 - SAP Help
 - SAP Community
-- Software Heroes content search
+- Software Heroes content search (via `START_SEARCH_JSON`, structured JSON)
 
 `fetch` remains shared and unchanged.
 
@@ -98,6 +98,9 @@ Defined in `config/variants/*.json` and enforced by `src/lib/variant.ts` + `src/
 - Unified search: `src/lib/search.ts`
 - Runtime config: `src/lib/config.ts`
 - Metadata access: `src/lib/metadata.ts`
+- Software Heroes core/client: `src/lib/softwareHeroes/core.ts`
+- Software Heroes content search: `src/lib/softwareHeroes/contentSearch.ts`
+- ABAP Feature Matrix: `src/lib/softwareHeroes/abapFeatureMatrix.ts`
 - Build index: `scripts/build-index.ts`
 - Build FTS: `scripts/build-fts.ts`
 - Setup/submodules: `setup.sh`

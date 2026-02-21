@@ -1,7 +1,14 @@
 // Software Heroes Content Search
-// Search articles, pages, code, and feed from software-heroes.com using START_SEARCH API
+// Search articles, pages, code, and feed from software-heroes.com using START_SEARCH_JSON API
+// Uses structured JSON response to avoid HTML parsing entirely.
 
-import { callSoftwareHeroesApi, SoftwareHeroesApiOptions, decodeEntities, stripTags } from "./core.js";
+import {
+  callSoftwareHeroesApi,
+  SoftwareHeroesApiOptions,
+  SoftwareHeroesSearchJsonItem,
+  decodeEntities,
+  stripTags,
+} from "./core.js";
 import { SearchResponse, SearchResult } from "../types.js";
 
 // ---------------------------------------------------------------------------
@@ -23,12 +30,12 @@ export interface SoftwareHeroesSearchOptions extends SoftwareHeroesApiOptions {
   sortOrder?: "DATE_DESC" | "DATE_ASC" | "RELEVANCE";
 }
 
-/** Parsed search result from HTML */
+/** Normalised search hit used internally and in tests */
 export interface ParsedSearchHit {
   title: string;
   snippet: string;
   url: string;
-  /** Content type indicator (e.g., "article", "feed", "page") */
+  /** Content type indicator (e.g., "article", "page") */
   kind?: string;
 }
 
@@ -39,54 +46,74 @@ export interface ParsedSearchHit {
 const BASE_URL = "https://software-heroes.com";
 
 // ---------------------------------------------------------------------------
-// HTML Parsing Utilities (decodeEntities & stripTags imported from core.ts)
+// Shared URL helper
 // ---------------------------------------------------------------------------
 
-/** Make a relative URL absolute */
-const absolutizeUrl = (href: string): string => {
-  if (!href) return "";
-  if (href.startsWith("http://") || href.startsWith("https://")) {
-    return href;
+/** Make a relative path or numeric page ID into an absolute URL */
+const absolutizeUrl = (link: string): string => {
+  if (!link) return "";
+  // Already absolute
+  if (link.startsWith("http://") || link.startsWith("https://")) return link;
+  // Numeric page ID → e.g. "1768" → "https://software-heroes.com/1768"
+  if (/^\d+$/.test(link)) return `${BASE_URL}/${link}`;
+  // Relative path → ensure single leading slash
+  const cleanPath = link.startsWith("/") ? link : "/" + link;
+  return BASE_URL + cleanPath;
+};
+
+// ---------------------------------------------------------------------------
+// JSON Parser (START_SEARCH_JSON) — primary path, no HTML parsing required
+// ---------------------------------------------------------------------------
+
+/** Map TYPE field returned by START_SEARCH_JSON to a human-readable kind string */
+const typeToKind = (type: string): string => {
+  switch (type) {
+    case "B": return "article"; // Blog post
+    case "P": return "page";
+    default:  return "article";
   }
-  // Ensure leading slash for relative URLs
-  const cleanHref = href.startsWith("/") ? href : "/" + href;
-  return BASE_URL + cleanHref;
 };
 
-/** Derive content kind from icon class or URL path */
-const deriveKind = (iconText: string, url: string): string => {
-  // Check icon type first
-  const iconLower = iconText.toLowerCase();
-  if (iconLower.includes("rss_feed")) return "feed";
-  if (iconLower.includes("school")) return "article";
-  if (iconLower.includes("insert_drive_file")) return "page";
-  if (iconLower.includes("code")) return "code";
-  
-  // Fall back to URL path analysis
-  if (url.includes("/blog/")) return "article";
-  if (url.includes("/feed")) return "feed";
-  
-  return "article"; // default
-};
+/**
+ * Parse the structured JSON array returned by START_SEARCH_JSON into
+ * the shared ParsedSearchHit format.
+ *
+ * TEXT fields may contain HTML entities (e.g. &amp;, &#39;) but no HTML tags,
+ * so only decodeEntities is needed — no tag stripping required.
+ */
+export function parseSoftwareHeroesSearchJson(
+  items: SoftwareHeroesSearchJsonItem[]
+): ParsedSearchHit[] {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .filter((item) => item.HEAD)
+    .map((item) => ({
+      title: decodeEntities(item.HEAD),
+      snippet: decodeEntities(item.TEXT ?? ""),
+      url: absolutizeUrl(item.LINK),
+      kind: typeToKind(item.TYPE),
+    }));
+}
 
 // ---------------------------------------------------------------------------
-// HTML Parser
+// Legacy HTML Parser (START_SEARCH)
 // ---------------------------------------------------------------------------
 
 /**
- * Parse search result HTML from Software Heroes START_SEARCH response
- * Best-effort regex-based parsing (no external HTML parser dependency)
- * 
+ * Parse search result HTML from the legacy Software Heroes START_SEARCH response.
+ * Best-effort regex-based parsing (no external HTML parser dependency).
+ *
  * @param html - HTML content from screen[].content where id="id_search_out"
  * @returns Array of parsed search hits
+ * @deprecated Prefer START_SEARCH_JSON + parseSoftwareHeroesSearchJson — no HTML parsing required.
  */
 export function parseSoftwareHeroesSearchHtml(html: string): ParsedSearchHit[] {
   const results: ParsedSearchHit[] = [];
-  
+
   if (!html) return results;
 
-  // Split on card boundaries - each result is in a cls_app_card div
-  // Use a regex to find each card block
+  // Split on card boundaries — each result lives in a cls_app_card div
   const cardRegex = /<div\s+class="cls_app_card">([\s\S]*?)(?=<div\s+class="cls_app_card">|$)/gi;
   let match;
 
@@ -97,44 +124,38 @@ export function parseSoftwareHeroesSearchHtml(html: string): ParsedSearchHit[] {
     // Extract title from <h4>...</h4>
     const titleMatch = cardHtml.match(/<h4[^>]*>([\s\S]*?)<\/h4>/i);
     const title = titleMatch ? stripTags(titleMatch[1]) : "";
-    
+
     if (!title) continue; // Skip cards without titles
 
     // Extract snippet from <p>...</p>
     const snippetMatch = cardHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
     const snippet = snippetMatch ? stripTags(snippetMatch[1]) : "";
 
-    // Extract URL from <a href="..."> inside cls_app_buttons
-    // Look for the href in the buttons section
+    // Extract URL from <a href="..."> inside cls_app_buttons, with fallback to any href
     const buttonsMatch = cardHtml.match(/<div[^>]*class="[^"]*cls_app_buttons[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
     let url = "";
     if (buttonsMatch) {
       const hrefMatch = buttonsMatch[1].match(/href="([^"]+)"/i);
-      if (hrefMatch) {
-        url = absolutizeUrl(decodeEntities(hrefMatch[1]));
-      }
+      if (hrefMatch) url = absolutizeUrl(decodeEntities(hrefMatch[1]));
     }
-    
-    // Fallback: look for any href in the card if buttons section didn't have one
     if (!url) {
       const anyHrefMatch = cardHtml.match(/href="([^"]+)"/i);
-      if (anyHrefMatch) {
-        url = absolutizeUrl(decodeEntities(anyHrefMatch[1]));
-      }
+      if (anyHrefMatch) url = absolutizeUrl(decodeEntities(anyHrefMatch[1]));
     }
 
-    // Extract icon type for kind derivation
+    // Derive kind from icon class text, fall back to URL path analysis
     const iconMatch = cardHtml.match(/<div[^>]*class="[^"]*cls_icon[^"]*cls_app_icon[^"]*"[^>]*>([^<]*)</i);
-    const iconText = iconMatch ? iconMatch[1] : "";
-    
-    const kind = deriveKind(iconText, url);
+    const iconText = (iconMatch ? iconMatch[1] : "").toLowerCase();
+    let kind: string;
+    if (iconText.includes("rss_feed"))              kind = "feed";
+    else if (iconText.includes("school"))           kind = "article";
+    else if (iconText.includes("insert_drive_file")) kind = "page";
+    else if (iconText.includes("code"))             kind = "code";
+    else if (url.includes("/blog/"))                kind = "article";
+    else if (url.includes("/feed"))                 kind = "feed";
+    else                                            kind = "article";
 
-    results.push({
-      title,
-      snippet,
-      url,
-      kind,
-    });
+    results.push({ title, snippet, url, kind });
   }
 
   return results;
@@ -145,10 +166,11 @@ export function parseSoftwareHeroesSearchHtml(html: string): ParsedSearchHit[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Search Software Heroes content using the START_SEARCH API method
- * 
+ * Search Software Heroes content using the START_SEARCH_JSON API method.
+ * Returns structured JSON directly — no HTML parsing required.
+ *
  * @param query - Search query string
- * @param options - Search options (language, filters, etc.)
+ * @param options - Search options (language, filters, sort)
  * @returns SearchResponse compatible with the unified search pipeline
  */
 export async function searchSoftwareHeroesContent(
@@ -169,7 +191,7 @@ export async function searchSoftwareHeroesContent(
   try {
     // Sanitize query: trim whitespace and newlines which break the API
     const sanitizedQuery = query.trim();
-    
+
     // Build request data parameters matching the API format
     const dataParams: Record<string, string> = {
       id_user: "",
@@ -188,8 +210,8 @@ export async function searchSoftwareHeroesContent(
       id_search_sort: sortOrder,
     };
 
-    // Call the API
-    const response = await callSoftwareHeroesApi("START_SEARCH", dataParams, {
+    // START_SEARCH_JSON returns structured data[] instead of HTML in screen[]
+    const response = await callSoftwareHeroesApi("START_SEARCH_JSON", dataParams, {
       client,
       timeoutMs,
     });
@@ -201,20 +223,17 @@ export async function searchSoftwareHeroesContent(
       };
     }
 
-    // Find the search output screen item
-    const searchOutput = response.screen?.find(
-      (item) => item.id === "id_search_out"
-    );
+    // data is a SoftwareHeroesSearchJsonItem[] for START_SEARCH_JSON
+    const jsonItems = response.data as SoftwareHeroesSearchJsonItem[] | undefined;
 
-    if (!searchOutput?.content) {
+    if (!Array.isArray(jsonItems) || jsonItems.length === 0) {
       return {
         results: [],
-        error: "No search results returned from Software Heroes",
+        error: `No results found on Software Heroes for "${sanitizedQuery}"`,
       };
     }
 
-    // Parse the HTML content
-    const hits = parseSoftwareHeroesSearchHtml(searchOutput.content);
+    const hits = parseSoftwareHeroesSearchJson(jsonItems);
 
     if (hits.length === 0) {
       return {
@@ -247,9 +266,7 @@ export async function searchSoftwareHeroesContent(
       `✅ [SoftwareHeroes] Found ${results.length} content results for "${query}"`
     );
 
-    return {
-      results,
-    };
+    return { results };
   } catch (error: any) {
     console.warn(`❌ [SoftwareHeroes] Content search error: ${error.message}`);
     return {

@@ -1,6 +1,9 @@
 /**
- * Tests for Software Heroes Content Search HTML parsing
- * These tests use a fixture HTML file and do NOT make network calls.
+ * Tests for Software Heroes Content Search parsing:
+ *   - parseSoftwareHeroesSearchJson (primary JSON path, no HTML required)
+ *   - parseSoftwareHeroesSearchHtml (legacy HTML path, kept for backward compat)
+ *
+ * Neither suite makes network calls.
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
@@ -9,6 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
   parseSoftwareHeroesSearchHtml,
+  parseSoftwareHeroesSearchJson,
   ParsedSearchHit,
 } from "../dist/src/lib/softwareHeroes/contentSearch.js";
 
@@ -257,6 +261,85 @@ describe("Software Heroes Content Search Parsing", () => {
       `;
       const results = parseSoftwareHeroesSearchHtml(html);
       expect(results[0].title).toBe("Bold and italic title");
+    });
+  });
+
+  describe("parseSoftwareHeroesSearchJson (START_SEARCH_JSON)", () => {
+    it("should parse a basic array of items", () => {
+      const items = [
+        { TYPE: "B", HEAD: "RAP Tutorial", TEXT: "Learn RAP fast.", LINK: "/en/blog/rap-tutorial", DATE: "2026-01-01", TIME: "06:00:00" },
+        { TYPE: "P", HEAD: "Resources", TEXT: "Useful links.", LINK: "1768", DATE: "2025-11-01", TIME: "10:00:00" },
+      ];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results.length).toBe(2);
+    });
+
+    it("should map TYPE B to kind article", () => {
+      const items = [{ TYPE: "B", HEAD: "Blog Post", TEXT: "Snippet.", LINK: "/en/blog/x", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].kind).toBe("article");
+    });
+
+    it("should map TYPE P to kind page", () => {
+      const items = [{ TYPE: "P", HEAD: "A Page", TEXT: "Content.", LINK: "1234", DATE: "2025-06-01", TIME: "08:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].kind).toBe("page");
+    });
+
+    it("should absolutize relative LINK paths", () => {
+      const items = [{ TYPE: "B", HEAD: "Title", TEXT: "", LINK: "/en/blog/some-slug", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].url).toBe("https://software-heroes.com/en/blog/some-slug");
+    });
+
+    it("should absolutize numeric page ID LINKs", () => {
+      const items = [{ TYPE: "P", HEAD: "Title", TEXT: "", LINK: "1768", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].url).toBe("https://software-heroes.com/1768");
+    });
+
+    it("should preserve already absolute URLs", () => {
+      const items = [{ TYPE: "B", HEAD: "Title", TEXT: "", LINK: "https://software-heroes.com/en/blog/x", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].url).toBe("https://software-heroes.com/en/blog/x");
+    });
+
+    it("should decode HTML entities in HEAD", () => {
+      const items = [{ TYPE: "B", HEAD: "CDS &amp; Annotations", TEXT: "", LINK: "/en/blog/cds", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].title).toBe("CDS & Annotations");
+    });
+
+    it("should decode HTML entities in TEXT", () => {
+      const items = [{ TYPE: "B", HEAD: "Title", TEXT: "It&#39;s &amp; fine &nbsp; here", LINK: "/en/blog/x", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].snippet).toContain("It's");
+      expect(results[0].snippet).toContain("&");
+    });
+
+    it("should skip items without HEAD", () => {
+      const items = [
+        { TYPE: "B", HEAD: "", TEXT: "snippet", LINK: "/en/blog/x", DATE: "2026-01-01", TIME: "06:00:00" },
+        { TYPE: "B", HEAD: "Valid", TEXT: "snippet", LINK: "/en/blog/y", DATE: "2026-01-01", TIME: "06:00:00" },
+      ];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results.length).toBe(1);
+      expect(results[0].title).toBe("Valid");
+    });
+
+    it("should return empty array for empty input", () => {
+      expect(parseSoftwareHeroesSearchJson([])).toEqual([]);
+    });
+
+    it("should return empty array for non-array input", () => {
+      expect(parseSoftwareHeroesSearchJson(null as any)).toEqual([]);
+      expect(parseSoftwareHeroesSearchJson(undefined as any)).toEqual([]);
+    });
+
+    it("should default unknown TYPE to article", () => {
+      const items = [{ TYPE: "X", HEAD: "Title", TEXT: "", LINK: "/en/x", DATE: "2026-01-01", TIME: "06:00:00" }];
+      const results = parseSoftwareHeroesSearchJson(items as any);
+      expect(results[0].kind).toBe("article");
     });
   });
 

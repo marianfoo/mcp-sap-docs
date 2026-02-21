@@ -24,13 +24,33 @@ export interface SoftwareHeroesScreenItem {
   action?: string;
 }
 
+/**
+ * Single search result item returned by START_SEARCH_JSON.
+ * Using this method avoids the need to parse HTML from START_SEARCH.
+ */
+export interface SoftwareHeroesSearchJsonItem {
+  /** Content type: "B" = blog/article, "P" = page */
+  TYPE: "B" | "P" | string;
+  /** Title of the result */
+  HEAD: string;
+  /** Snippet text (may contain HTML entities like &amp; but no HTML tags) */
+  TEXT: string;
+  /** Relative URL path (e.g., "/en/blog/slug") or numeric page ID (e.g., "1768") */
+  LINK: string;
+  /** Publication date (YYYY-MM-DD) */
+  DATE: string;
+  /** Publication time (HH:MM:SS) */
+  TIME: string;
+}
+
 export interface SoftwareHeroesApiResponse {
   status: boolean;
   msg: string;
   icon?: string;
-  data?: string;
+  /** String payload for plain methods; structured array for START_SEARCH_JSON */
+  data?: string | SoftwareHeroesSearchJsonItem[];
   content?: string;
-  /** Screen items returned by methods like START_SEARCH */
+  /** Screen items returned by methods like START_SEARCH (HTML-based, legacy) */
   screen?: SoftwareHeroesScreenItem[];
 }
 
