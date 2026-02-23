@@ -25,7 +25,8 @@
     "check-version": "node scripts/check-version.js",
     "setup": "bash setup.sh",
     "setup:submodules": "bash -lc 'git submodule sync --recursive && git submodule update --init --recursive --depth 1 && git submodule status --recursive'",
-    "test:software-heroes": "npm run build:tsc && npx vitest run test/software-heroes-afm.test.ts test/software-heroes-content-search.test.ts"
+    "test:software-heroes": "npm run build:tsc && npx vitest run test/software-heroes-afm.test.ts test/software-heroes-content-search.test.ts",
+    "test:fetch-sap-help": "npm run build:tsc && npx vitest run test/fetch-sap-help.test.ts"
   },
   "ts-node": {
     "esm": true

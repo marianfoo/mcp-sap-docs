@@ -18,6 +18,7 @@ import {
   type DocUrlConfig 
 } from "./metadata.js";
 import { generateDocumentationUrl as generateUrl } from "./url-generation/index.js";
+import { getSapHelpContent } from "./sapHelp.js";
 
 // Use the new URL generation system
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
@@ -1396,6 +1397,11 @@ export async function fetchLibraryDocumentation(
   // Check if this is a community post ID
   if (libraryIdOrDocId.startsWith('community-')) {
     return await getCommunityPost(libraryIdOrDocId);
+  }
+
+  // Check if this is a SAP Help result ID
+  if (libraryIdOrDocId.startsWith('sap-help-')) {
+    return await getSapHelpContent(libraryIdOrDocId);
   }
 
   const index = await loadIndex();
