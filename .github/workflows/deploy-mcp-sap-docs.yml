@@ -210,7 +210,7 @@ jobs:
             echo "✅ Memory OK: ${AVAILABLE_MB_MEM}MB available"
 
             echo "==> Stop MCP services gracefully before build"
-            pm2 stop mcp-sap-http mcp-sap-streamable || true
+            pm2 stop --silent mcp-sap-http mcp-sap-streamable || true
             sleep 3
             
             echo "==> Run setup (shallow, single-branch submodules + build)"
@@ -229,9 +229,9 @@ jobs:
 
             echo "==> (Re)start MCP services with BM25 search support"
             # HTTP status on 127.0.0.1:3001; Streamable HTTP on 127.0.0.1:3122
-            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http       || pm2 restart mcp-sap-http
-            pm2 start /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-streamable || pm2 restart mcp-sap-streamable
-            pm2 save
+            pm2 start --silent /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-http       || pm2 restart --silent mcp-sap-http
+            pm2 start --silent /opt/mcp-sap/mcp-sap-docs/ecosystem.config.cjs --only mcp-sap-streamable || pm2 restart --silent mcp-sap-streamable
+            pm2 save --silent
 
             echo "==> Enhanced health checks with database verification"
             sleep 5
