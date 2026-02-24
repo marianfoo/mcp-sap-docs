@@ -12,7 +12,7 @@ import { getVariantConfig } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.3.24";
+const VERSION = "0.3.25";
 const variant = getVariantConfig();
 
 
