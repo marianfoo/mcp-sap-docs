@@ -12,9 +12,10 @@
 
 ## What This Variant Provides
 
-- Unified ABAP/RAP search (`search`)
-- Document retrieval (`fetch`)
+- Unified ABAP/RAP search (`search`) — searches offline docs + optional online sources (SAP Help, SAP Community, Software Heroes)
+- Document retrieval (`fetch`) — retrieve full document or community post content by ID
 - ABAP feature matrix lookup (`abap_feature_matrix`)
+- SAP Community search (`sap_community_search`) — dedicated community-only search for troubleshooting, error messages, and workarounds not found via `search`
 - Local ABAP linting (`abap_lint`)
 
 Search parameters:

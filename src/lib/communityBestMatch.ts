@@ -1,6 +1,6 @@
 // src/lib/communityBestMatch.ts
-// Scrape SAP Community search "Best Match" results directly from the HTML page.
-// No external dependencies; best-effort selectors based on current Khoros layout.
+// Search SAP Community via the Khoros LiQL API (JSON).
+// The previous HTML-scraping approach was blocked by AWS WAF bot detection.
 
 import { CONFIG } from "./config.js";
 import { truncateContent } from "./truncate.js";
@@ -19,140 +19,160 @@ export interface BestMatchHit {
 type Options = {
   includeBlogs?: boolean; // default true
   limit?: number;         // default 20
+  minKudos?: number;      // default 1; set 0 for broad search, higher for quality filter (max ~10)
   userAgent?: string;     // optional UA override
 };
 
-const BASE = "https://community.sap.com";
+const LIQL_BASE = "https://community.sap.com/api/2.0/search";
 
-const buildSearchUrl = (q: string, includeBlogs = true) => {
-  const params = new URLSearchParams({
-    collapse_discussion: "true",
-    q,
-  });
-  if (includeBlogs) {
-    params.set("filter", "includeBlogs");
-    params.set("include_blogs", "true");
-  }
-  // "tab/message" view surfaces posts sorted by Best Match by default
-  return `${BASE}/t5/forums/searchpage/tab/message?${params.toString()}`;
-};
-
-const decodeEntities = (s = "") =>
-  s
+const stripTags = (html = "") =>
+  html
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-const stripTags = (html = "") =>
-  decodeEntities(html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());
-
-const absolutize = (href: string) =>
-  href?.startsWith("http") ? href : new URL(href, BASE).href;
-
-// Extract post ID from URL for later retrieval
+// Extract post ID from view_href URL
 const extractPostId = (url: string): string | undefined => {
-  // Extract from URL patterns like: /ba-p/13961398 or /td-p/13961398
-  const urlMatch = url.match(/\/(?:ba-p|td-p)\/(\d+)/);
-  if (urlMatch) {
-    return urlMatch[1];
-  }
-  
-  // Fallback: extract from end of URL
-  const endMatch = url.match(/\/(\d+)(?:\?|$)/);
+  const urlMatch = url.match(/\/(?:ba-p|td-p|qaq-p|qaa-p|m-p)\/(\d+)/);
+  if (urlMatch) return urlMatch[1];
+  const endMatch = url.match(/\/(\d+)(?:[#?]|$)/);
   return endMatch ? endMatch[1] : undefined;
 };
 
-async function fetchText(url: string, userAgent?: string) {
-  const res = await fetch(url, {
+/**
+ * Build a LiQL URL for full-text search on SAP Community.
+ * Uses MATCHES on subject and/or body (combined with OR per Khoros docs).
+ * Returns topic-level messages only (depth=0) to avoid reply noise.
+ */
+export function buildLiqlSearchUrl(query: string, limit = 20, subjectOnly = false, minKudos = 0): string {
+  const escaped = query.replace(/'/g, "\\'");
+  const matchClause = subjectOnly
+    ? `subject MATCHES '${escaped}'`
+    : `(subject MATCHES '${escaped}' OR body MATCHES '${escaped}')`;
+  const kudosClause = minKudos > 0 ? ` AND kudos.sum(weight) >= ${minKudos}` : "";
+  const liql = [
+    "SELECT id, subject, search_snippet, post_time, view_href, kudos.sum(weight)",
+    "FROM messages",
+    `WHERE ${matchClause} AND depth = 0${kudosClause}`,
+    `LIMIT ${limit}`,
+  ].join(" ");
+  return `${LIQL_BASE}?q=${encodeURIComponent(liql)}`;
+}
+
+async function executeLiqlSearch(url: string, userAgent?: string): Promise<any[]> {
+  const response = await fetch(url, {
     headers: {
-      "User-Agent": userAgent || "sap-docs-mcp/1.0 (BestMatchScraper)",
-      "Accept": "text/html,application/xhtml+xml",
+      Accept: "application/json",
+      "User-Agent": userAgent || "sap-docs-mcp/1.0 (LiQLSearch)",
     },
   });
-  if (!res.ok) throw new Error(`${url} -> ${res.status} ${res.statusText}`);
-  return res.text();
-}
 
-function parseHitsFromHtml(html: string, limit = 20): BestMatchHit[] {
-  const results: BestMatchHit[] = [];
-
-  // Find all message wrapper divs with data-lia-message-uid
-  const wrapperRegex = /<div[^>]+data-lia-message-uid="([^"]*)"[^>]*class="[^"]*lia-message-view-wrapper[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*lia-message-view-wrapper|$)/gi;
-  let match;
-
-  while ((match = wrapperRegex.exec(html)) !== null && results.length < limit) {
-    const postId = match[1];
-    const seg = match[2].slice(0, 60000); // safety cap
-
-    // Title + URL
-    const titleMatch =
-      seg.match(
-        /<h2[^>]*class="[^"]*message-subject[^"]*"[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
-      ) ||
-      seg.match(
-        /<a[^>]+class="page-link[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
-      );
-
-    const url = titleMatch ? absolutize(decodeEntities(titleMatch[1])) : "";
-    const title = titleMatch ? stripTags(titleMatch[2]) : "";
-    if (!title || !url) continue;
-
-    // Author
-    // Look for "View Profile of ..." or the user link block
-    let author = "";
-    const authorMatch =
-      seg.match(/viewprofilepage\/user-id\/\d+[^>]*>([^<]+)/i) ||
-      seg.match(/class="[^"]*lia-user-name-link[^"]*"[^>]*>([^<]+)/i);
-    if (authorMatch) author = stripTags(authorMatch[1]);
-
-    // Date/time
-    const dateMatch = seg.match(/class="local-date"[^>]*>([^<]+)</i);
-    const timeMatch = seg.match(/class="local-time"[^>]*>([^<]+)</i);
-    const published = dateMatch
-      ? `${stripTags(dateMatch[1])}${timeMatch ? " " + stripTags(timeMatch[1]) : ""}`
-      : undefined;
-
-    // Likes (Kudos)
-    const likesMatch = seg.match(/Kudos Count\s+(\d+)/i);
-    const likes = likesMatch ? Number(likesMatch[1]) : undefined;
-
-    // Snippet
-    const snippetMatch = seg.match(
-      /<div[^>]*class="[^"]*lia-truncated-body-container[^"]*"[^>]*>([\s\S]*?)<\/div>/i
-    );
-    const snippet = snippetMatch ? stripTags(snippetMatch[1]).slice(0, CONFIG.EXCERPT_LENGTH_COMMUNITY) : undefined;
-
-    // Tags
-    const tagSectionMatch = seg.match(
-      /<div[^>]*class="[^"]*TagList[^"]*"[^>]*>[\s\S]*?<\/div>/i
-    );
-    const tags: string[] = [];
-    if (tagSectionMatch) {
-      const tagLinks = tagSectionMatch[0].matchAll(
-        /<a[^>]*class="[^"]*lia-tag[^"]*"[^>]*>([\s\S]*?)<\/a>/gi
-      );
-      for (const m of tagLinks) {
-        const t = stripTags(m[1]);
-        if (t) tags.push(t);
-      }
-    }
-
-    results.push({ title, url, author, published, likes, snippet, tags, postId });
+  if (!response.ok) {
+    console.warn(`[SAP Community] API returned ${response.status}: ${response.statusText}`);
+    return [];
   }
 
-  return results;
+  const data = (await response.json()) as any;
+  if (data.status !== "success" || !data.data?.items) {
+    console.warn("[SAP Community] API returned non-success or no items", data.status);
+    return [];
+  }
+
+  return data.data.items;
 }
 
+function mapItemsToHits(items: any[]): BestMatchHit[] {
+  return items.map((item: any): BestMatchHit => {
+    const viewHref = item.view_href || "";
+    const postId = String(item.id || "") || extractPostId(viewHref);
+    const snippet = item.search_snippet ? stripTags(item.search_snippet).slice(0, CONFIG.EXCERPT_LENGTH_COMMUNITY) : undefined;
+    const published = item.post_time
+      ? new Date(item.post_time).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      : undefined;
+
+    return {
+      title: item.subject || "",
+      url: viewHref,
+      published,
+      likes: item.kudos?.sum?.weight ?? undefined,
+      snippet,
+      postId,
+    };
+  });
+}
+
+/**
+ * Multi-pass search strategy to handle MATCHES OR-semantics:
+ *
+ * LiQL MATCHES 'RAP Augmentation' returns any post containing "RAP" OR
+ * "Augmentation", so common words like "RAP" drown out specific terms.
+ * To surface relevant posts we:
+ *   1. Search each individual query term separately via subject MATCHES
+ *   2. Search the full phrase via subject+body MATCHES
+ *   3. Merge all results, score by how many query terms appear in the subject
+ *   4. Sort by term-hit count > kudos > recency
+ */
 export async function searchCommunityBestMatch(
   query: string,
   opts: Options = {}
 ): Promise<BestMatchHit[]> {
-  const { includeBlogs = true, limit = 20, userAgent } = opts;
-  const url = buildSearchUrl(query, includeBlogs);
-  const html = await fetchText(url, userAgent);
-  return parseHitsFromHtml(html, limit);
+  const { limit = 20, minKudos = 1, userAgent } = opts;
+  const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+  const perTermLimit = Math.max(limit, 20);
+
+  const allItems: any[] = [];
+
+  // Per-term subject searches (parallel) -- ensures rare terms surface
+  const termSearches = queryTerms.map(term => {
+    const url = buildLiqlSearchUrl(term, perTermLimit, true, minKudos);
+    console.log(`[SAP Community] LiQL per-term (subject): term="${term}" minKudos=${minKudos}`);
+    return executeLiqlSearch(url, userAgent);
+  });
+
+  // Full-phrase broad search (subject+body)
+  const broadUrl = buildLiqlSearchUrl(query, perTermLimit, false, minKudos);
+  console.log(`[SAP Community] LiQL broad (subject+body): query="${query}" minKudos=${minKudos}`);
+  const broadSearch = executeLiqlSearch(broadUrl, userAgent);
+
+  const termResults = await Promise.all(termSearches);
+  const broadItems = await broadSearch;
+
+  for (const items of termResults) allItems.push(...items);
+  allItems.push(...broadItems);
+
+  // Dedupe
+  const byId = new Map<string, any>();
+  for (const item of allItems) {
+    const id = String(item.id);
+    if (!byId.has(id)) byId.set(id, item);
+  }
+
+  // Score: posts whose subject contains MORE query terms rank higher
+  const scored = Array.from(byId.values()).map(item => {
+    const subjectLower = (item.subject || "").toLowerCase();
+    let termHits = 0;
+    for (const term of queryTerms) {
+      if (subjectLower.includes(term)) termHits++;
+    }
+    const kudos = item.kudos?.sum?.weight ?? 0;
+    const postTime = item.post_time ? new Date(item.post_time).getTime() : 0;
+    return { item, termHits, kudos, postTime };
+  });
+
+  scored.sort((a, b) => {
+    if (b.termHits !== a.termHits) return b.termHits - a.termHits;
+    if (b.kudos !== a.kudos) return b.kudos - a.kudos;
+    return b.postTime - a.postTime;
+  });
+
+  const totalFetched = termResults.reduce((s, r) => s + r.length, 0) + broadItems.length;
+  console.log(`[SAP Community] Merged: ${totalFetched} fetched -> ${byId.size} unique, returning top ${limit}`);
+  return mapItemsToHits(scored.slice(0, limit).map(s => s.item));
 }
 
 // Convenience function: Search and get full content of top N posts in one call
@@ -179,7 +199,6 @@ export async function searchAndGetTopPosts(
   };
 }
 
-// Function to get full post content by scraping the post page
 // Batch retrieve multiple posts using LiQL API
 export async function getCommunityPostsByIds(postIds: string[], userAgent?: string): Promise<{ [id: string]: string }> {
   const results: { [id: string]: string } = {};
@@ -254,131 +273,12 @@ export async function getCommunityPostById(postId: string, userAgent?: string): 
   return results[postId] || null;
 }
 
+// Retrieve a community post by its URL, extracting the post ID and using the LiQL API
 export async function getCommunityPostByUrl(postUrl: string, userAgent?: string): Promise<string | null> {
-  try {
-    const html = await fetchText(postUrl, userAgent);
-    
-    // Extract title - try multiple selectors
-    let title = "Untitled";
-    const titleSelectors = [
-      /<h1[^>]*class="[^"]*lia-message-subject[^"]*"[^>]*>([\s\S]*?)<\/h1>/i,
-      /<h2[^>]*class="[^"]*message-subject[^"]*"[^>]*>([\s\S]*?)<\/h2>/i,
-      /<title>([\s\S]*?)<\/title>/i
-    ];
-    
-    for (const selector of titleSelectors) {
-      const titleMatch = html.match(selector);
-      if (titleMatch) {
-        title = stripTags(titleMatch[1]).replace(/\s*-\s*SAP Community.*$/, '').trim();
-        break;
-      }
-    }
-    
-    // Extract author and date - multiple patterns
-    let author = "Unknown";
-    const authorSelectors = [
-      /class="[^"]*lia-user-name-link[^"]*"[^>]*>([^<]+)/i,
-      /viewprofilepage\/user-id\/\d+[^>]*>([^<]+)/i,
-      /"author"[^>]*>[\s\S]*?<[^>]*>([^<]+)/i
-    ];
-    
-    for (const selector of authorSelectors) {
-      const authorMatch = html.match(selector);
-      if (authorMatch) {
-        author = stripTags(authorMatch[1]);
-        break;
-      }
-    }
-    
-    // Extract date and time
-    const dateMatch = html.match(/class="local-date"[^>]*>([^<]+)</i);
-    const timeMatch = html.match(/class="local-time"[^>]*>([^<]+)</i);
-    const published = dateMatch
-      ? `${stripTags(dateMatch[1])}${timeMatch ? " " + stripTags(timeMatch[1]) : ""}`
-      : "Unknown";
-    
-    // Extract main content - try multiple content selectors
-    let content = "Content not available";
-    const contentSelectors = [
-      /<div[^>]*class="[^"]*lia-message-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*lia-message-body-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-      /<div[^>]*class="[^"]*messageBody[^"]*"[^>]*>([\s\S]*?)<\/div>/i
-    ];
-    
-    for (const selector of contentSelectors) {
-      const contentMatch = html.match(selector);
-      if (contentMatch) {
-        // Clean up the content - remove script tags, preserve some formatting
-        let rawContent = contentMatch[1]
-          .replace(/<script[\s\S]*?<\/script>/gi, '')
-          .replace(/<style[\s\S]*?<\/style>/gi, '')
-          .replace(/<iframe[\s\S]*?<\/iframe>/gi, '[Embedded Content]');
-        
-        // Convert some HTML elements to markdown-like format
-        rawContent = rawContent
-          .replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, level, text) => {
-            const hashes = '#'.repeat(parseInt(level) + 1);
-            return `\n${hashes} ${stripTags(text)}\n`;
-          })
-          .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '\n$1\n')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**')
-          .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*')
-          .replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`')
-          .replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '\n```\n$1\n```\n')
-          .replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, '$1')
-          .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n');
-        
-        content = stripTags(rawContent).replace(/\n\s*\n\s*\n/g, '\n\n').trim();
-        break;
-      }
-    }
-    
-    // Extract tags
-    const tagSectionMatch = html.match(
-      /<div[^>]*class="[^"]*TagList[^"]*"[^>]*>[\s\S]*?<\/div>/i
-    );
-    const tags: string[] = [];
-    if (tagSectionMatch) {
-      const tagLinks = tagSectionMatch[0].matchAll(
-        /<a[^>]*class="[^"]*lia-tag[^"]*"[^>]*>([\s\S]*?)<\/a>/gi
-      );
-      for (const m of tagLinks) {
-        const t = stripTags(m[1]);
-        if (t) tags.push(t);
-      }
-    }
-    
-    // Extract kudos count
-    let kudos = 0;
-    const kudosMatch = html.match(/(\d+)\s+Kudos?/i);
-    if (kudosMatch) {
-      kudos = parseInt(kudosMatch[1]);
-    }
-    
-    const tagsText = tags.length > 0 ? `\n**Tags:** ${tags.join(", ")}` : "";
-    const kudosText = kudos > 0 ? `\n**Kudos:** ${kudos}` : "";
-    
-    const fullContent = `# ${title}
-
-**Source**: SAP Community Blog Post  
-**Author**: ${author}  
-**Published**: ${published}${kudosText}${tagsText}  
-**URL**: ${postUrl}
-
----
-
-${content}
-
----
-
-*This content is from the SAP Community and represents community knowledge and experiences.*`;
-
-    // Apply intelligent truncation if content is too large
-    const truncationResult = truncateContent(fullContent);
-    return truncationResult.content;
-  } catch (error) {
-    console.warn('Failed to get community post:', error);
+  const postId = extractPostId(postUrl);
+  if (!postId) {
+    console.warn(`[SAP Community] Could not extract post ID from URL: ${postUrl}`);
     return null;
   }
+  return getCommunityPostById(postId, userAgent);
 }

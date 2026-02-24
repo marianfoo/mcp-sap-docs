@@ -23,6 +23,9 @@ npm run test:smoke
 # Community search script
 npm run test:community
 
+# Community search MCP tool integration test (starts local server)
+npm run test:community-tool
+
 # URL status check script
 npm run test:urls:status
 ```
@@ -52,6 +55,7 @@ npm run test:integration
 - `test/software-heroes-content-search.test.ts`
 - `test/tools/run-tests.js`
 - `test/tools/search.smoke.js`
+- `test/tools/community-search-tool.mjs`
 
 For architecture and requirement mapping, see:
 

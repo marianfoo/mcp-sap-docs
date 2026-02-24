@@ -20,6 +20,7 @@
     "test:integration:urls": "npm run build && node test/tools/run-tests.js --spec search-url-verification.js",
     "test:smoke": "node test/tools/search.smoke.js",
     "test:community": "npm run build:tsc && node test/community-search.ts",
+    "test:community-tool": "npm run build:tsc && node test/tools/community-search-tool.mjs",
     "test:urls:status": "npm run build:tsc && npx tsx test/url-status.ts",
     "test:prod": "node scripts/test-live-prod.mjs",
     "check-version": "node scripts/check-version.js",

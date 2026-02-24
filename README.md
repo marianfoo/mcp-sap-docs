@@ -23,9 +23,10 @@ Both variants run from the same codebase and differ by configuration (`MCP_VARIA
 - Search API is unified across variants:
   - `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources`
 - Shared tools in both variants:
-  - `search`
-  - `fetch`
-  - `abap_feature_matrix`
+  - `search` — unified search across offline docs + optional online sources (SAP Help, SAP Community, Software Heroes)
+  - `fetch` — retrieve full document or community post content by ID
+  - `abap_feature_matrix` — check ABAP feature availability across SAP releases
+  - `sap_community_search` — dedicated SAP Community search (blogs, Q&A); use when `search` results are insufficient, especially for specific errors or workarounds
 - ABAP-only tool:
   - `abap_lint` (enabled only when variant is `abap`)
 

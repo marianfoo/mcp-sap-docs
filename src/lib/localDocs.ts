@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
-import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, getCommunityPostsByIds, searchAndGetTopPosts, BestMatchHit } from "./communityBestMatch.js";
+import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, BestMatchHit } from "./communityBestMatch.js";
 
 import { 
   getDocUrlConfig, 
@@ -54,9 +54,7 @@ if (!existsSync(path.join(PROJECT_ROOT, 'package.json'))) {
 
 const DATA_DIR = path.join(PROJECT_ROOT, "dist", "data");
 
-// Note: SAP Community search now uses HTML scraping via communityBestMatch.ts
-
-// Search SAP Community for relevant posts using HTML scraping
+// SAP Community search uses the Khoros LiQL API via communityBestMatch.ts
 async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
   try {
     const hits: BestMatchHit[] = await searchCommunityBestMatch(query, {
@@ -101,7 +99,7 @@ async function getCommunityPost(postId: string): Promise<string | null> {
   try {
     // Handle both postId formats: "community-postId" and "community-url-encodedUrl"
     if (postId.startsWith('community-url-')) {
-      // Extract URL from encoded format and fall back to URL scraping
+      // Extract URL from encoded format and retrieve via LiQL API
       const encodedUrl = postId.replace('community-url-', '');
       const postUrl = decodeURIComponent(encodedUrl);
       return await getCommunityPostByUrl(postUrl, 'SAP-Docs-MCP/1.0');
@@ -1876,49 +1874,26 @@ ${content}
   }
 }
 
-// Export the community search function for use as a separate tool
-export async function searchCommunity(query: string): Promise<SearchResponse> {
+// Export the community search function for use as a separate tool.
+// Returns up to k results with snippets. Use fetch(id="community-...") for full content.
+export async function searchCommunity(query: string, minKudos = 1, k = 30): Promise<SearchResponse> {
   try {
-    // Use the convenience function to search and get top 3 posts with full content
-    const result = await searchAndGetTopPosts(query, 3, {
+    const allResults = await searchCommunityBestMatch(query, {
       includeBlogs: true,
+      limit: k,
+      minKudos,
       userAgent: 'SAP-Docs-MCP/1.0'
     });
-    
-    if (result.search.length === 0) {
+
+    if (allResults.length === 0) {
       return { 
         results: [], 
         error: `No SAP Community posts found for "${query}". Try different keywords or check your connection.` 
       };
     }
 
-    // Format the results with full post content
-    let response = `Found ${result.search.length} SAP Community posts for "${query}" with full content:\n\n`;
-    response += `🌐 **SAP Community Posts with Full Content:**\n\n`;
-
-    for (const searchResult of result.search) {
-      const postContent = result.posts[searchResult.postId || ''];
-      
-      if (postContent) {
-        // Add the full post content
-        response += postContent + '\n\n';
-        response += `---\n\n`;
-      } else {
-        // Fallback to search result info if full content not available
-        const postDate = searchResult.published || 'Unknown';
-        response += `### **${searchResult.title}**\n`;
-        response += `**Posted:** ${postDate}\n`;
-        response += `**Description:** ${searchResult.snippet || 'No description available'}\n`;
-        response += `**URL:** ${searchResult.url}\n`;
-        response += `**ID:** \`community-${searchResult.postId}\`\n\n`;
-        response += `---\n\n`;
-      }
-    }
-
-    response += `💡 **Note:** These results include the full content from ${Object.keys(result.posts).length} SAP Community posts, representing real-world developer experiences and solutions.`;
-
     return { 
-      results: result.search.map((searchResult, index) => ({
+      results: allResults.map((searchResult, index) => ({
         library_id: `community-${searchResult.postId || index}`,
         topic: '',
         id: `community-${searchResult.postId || index}`,

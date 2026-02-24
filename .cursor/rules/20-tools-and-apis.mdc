@@ -37,7 +37,7 @@ For tool schemas, request/response formats, and endpoints.
 - **Structured**: Clean JSON for programmatic access and ChatGPT compatibility
 
 ## Integration Points
-- **Community**: HTML scraping + LiQL API for post content
+- **Community**: LiQL API (search via MATCHES + post content retrieval)
 - **SAP Help**: Private elasticsearch + metadata + page content APIs
 - **Local Docs**: File system access with URL generation
 

@@ -28,8 +28,10 @@ import {
 import {
   searchLibraries,
   fetchLibraryDocumentation,
-  readDocumentationResource
+  readDocumentationResource,
+  searchCommunity
 } from "./localDocs.js";
+import { buildLiqlSearchUrl } from "./communityBestMatch.js";
 import { lintAbapCode, LintResult } from "./abaplint.js";
 import { searchFeatureMatrix, SearchFeatureMatrixResult, getFeatureMatrixCacheStats } from "./softwareHeroes/index.js";
 
@@ -274,7 +276,9 @@ QUERY TIPS:
 • For ABAP Cloud: Add "cloud" or "btp" to query, or set abapFlavor="cloud"
 • For OFFLINE-only: Set includeOnline=false (use this mainly when online search does not work for you)
 • If results are too code-heavy: Set includeSamples=false
-• For implementation examples: Keep includeSamples=true`,
+• For implementation examples: Keep includeSamples=true
+
+ESCALATION: If search returns no useful results (especially for specific error messages, niche runtime issues, or workaround patterns), try the dedicated \`sap_community_search\` tool which searches SAP Community blogs and Q&A directly and returns full post content for the top matches.`,
             inputSchema: {
               type: "object",
               properties: {
@@ -599,6 +603,93 @@ USE CASES:
               required: ["matches", "meta", "sourceUrl", "legend"],
               additionalProperties: true
             }
+          },
+          {
+            name: "sap_community_search",
+            description: `SEARCH SAP COMMUNITY: sap_community_search(query="search terms")
+
+FUNCTION NAME: sap_community_search
+
+Dedicated search across SAP Community blogs, Q&A posts, and discussions. Returns full content of the top matching posts.
+
+IMPORTANT: The main \`search\` tool (with includeOnline=true) already includes SAP Community results alongside offline docs, SAP Help, and Software Heroes. Use this dedicated tool only when:
+• The main \`search\` tool returned no useful results for your question
+• You are looking for specific error messages, runtime exceptions, or obscure symptoms
+• You need practical workarounds, troubleshooting steps, or real-world implementation experiences not covered in official documentation
+• You want to see full community post content (not just snippets)
+
+This tool searches SAP Community via the Khoros LiQL API and automatically retrieves full content for the top 3 posts.
+
+PARAMETERS:
+• query (required): Search terms. Use specific error messages, symptoms, or technical terms for best results.
+• k (optional, default=30): Number of results to return.
+• minKudos (optional, default=1): Minimum number of kudos (likes) a post must have.
+  - Default 1 filters out zero-engagement posts, giving higher-quality results.
+  - Set to 0 for the broadest possible search (includes all posts, even those with no engagement — useful when looking for very niche or recent topics).
+  - Set higher (e.g. 5 or 10) to surface only well-received, community-validated content.
+  - Suggested maximum: 10. Higher values may return very few or no results.
+
+RETURNS (JSON with):
+• results: Array of community posts, each containing:
+  - id: Post identifier (use with \`fetch\` to retrieve full content later)
+  - title: Post title
+  - url: Direct link to the SAP Community post
+  - snippet: Text excerpt
+  - metadata.author: Post author
+  - metadata.likes: Number of kudos
+  - metadata.tags: Topic tags
+
+WORKFLOW:
+1. Start with \`search(query="your question")\` (includes community + other sources)
+2. If results are insufficient, use \`sap_community_search(query="specific error or symptom")\`
+3. Use \`fetch(id="community-...")\` to retrieve full content of any community post from either tool`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "Search terms for SAP Community. Be specific - use error messages, symptoms, or technical terms."
+                },
+                k: {
+                  type: "number",
+                  description: "Number of results to return. Default: 30.",
+                  default: 30,
+                  minimum: 1,
+                  maximum: 100
+                },
+                minKudos: {
+                  type: "number",
+                  description: "Minimum kudos (likes) a post must have. Default 1 (filters zero-engagement posts). Set 0 for broadest search (niche/recent topics). Set higher (5-10) for well-received, community-validated content only.",
+                  default: 1,
+                  minimum: 0,
+                  maximum: 100
+                }
+              },
+              required: ["query"]
+            },
+            outputSchema: {
+              type: "object",
+              properties: {
+                results: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string" },
+                      title: { type: "string" },
+                      url: { type: "string" },
+                      snippet: { type: "string" },
+                      score: { type: "number" },
+                      metadata: { type: "object", additionalProperties: true }
+                    },
+                    required: ["id", "title", "url"],
+                    additionalProperties: true
+                  }
+                }
+              },
+              required: ["results"],
+              additionalProperties: true
+            }
           }
         ]
       };
@@ -884,6 +975,93 @@ USE CASES:
             `Error running abaplint: ${error}`,
             timing.requestId
           );
+        }
+      }
+
+      if (name === "sap_community_search") {
+        const { query, k, minKudos } = args as { query: string; k?: number; minKudos?: number };
+
+        if (!query) {
+          const timing = logger.logToolStart(name, 'missing_query', clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error('Missing query parameter'));
+          return createErrorResponse(
+            `Missing required parameter: query. Please provide search terms for SAP Community.`,
+            timing.requestId
+          );
+        }
+
+        const resultCount = Math.min(Math.max(k || 30, 1), 100);
+        const effectiveMinKudos = minKudos ?? 1;
+        const timing = logger.logToolStart(name, query, clientMetadata);
+
+        // Build request URL (matches the LiQL query used by searchCommunityBestMatch)
+        const requestUrl = buildLiqlSearchUrl(query, resultCount, false, effectiveMinKudos);
+
+        try {
+          const communityResponse = await searchCommunity(query, effectiveMinKudos, resultCount);
+
+          if (!communityResponse.results.length) {
+            logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
+                    requestId: timing.requestId,
+                    requestUrl,
+                  }),
+                },
+              ],
+              structuredContent: {
+                error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
+                requestId: timing.requestId,
+                requestUrl,
+              },
+            };
+          }
+
+          const searchResults: SearchResult[] = communityResponse.results.map((r, index) => ({
+            id: r.id || `community-${index}`,
+            title: r.title || 'SAP Community Post',
+            url: r.url || '',
+            snippet: r.snippet || '',
+            score: r.score,
+            metadata: r.metadata
+          }));
+
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, searchResults.length);
+          const baseResponse = createSearchResponse(searchResults);
+          // Add requestUrl so it appears in MCP Inspector Tool Result
+          const payload = baseResponse.structuredContent || JSON.parse(baseResponse.content[0].text);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ ...payload, requestUrl }),
+              },
+            ],
+            structuredContent: { ...payload, requestUrl },
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  error: "Error searching SAP Community. Please try again later.",
+                  requestId: timing.requestId,
+                  requestUrl,
+                }),
+              },
+            ],
+            structuredContent: {
+              error: "Error searching SAP Community. Please try again later.",
+              requestId: timing.requestId,
+              requestUrl,
+            },
+          };
         }
       }
 
