@@ -2,6 +2,12 @@
 
 > Community project. This server is not an official SAP product.
 
+## Public Hosted Endpoint
+
+> **Ready to use — no setup required**
+>
+> **`https://mcp-abap.marianzeis.de/mcp`**
+
 `abap-mcp-server` is the ABAP-focused downstream variant generated from upstream `mcp-sap-docs`.
 
 ## What This Variant Provides
@@ -38,10 +44,6 @@ Default local streamable endpoint:
 Health:
 
 - `http://127.0.0.1:3124/health`
-
-## Hosted Endpoint
-
-- `https://mcp-abap.marianzeis.de/mcp`
 
 ## Eclipse / Copilot Example
 

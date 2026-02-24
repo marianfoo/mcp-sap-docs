@@ -1,5 +1,14 @@
 # MCP SAP Docs (Upstream)
 
+## Public Hosted Endpoint
+
+> **Ready to use — no setup required**
+>
+> | Variant | URL |
+> |---------|-----|
+> | SAP Docs | `http://mcp-sap-docs.marianzeis.de/mcp` |
+> | ABAP | `https://mcp-abap.marianzeis.de/mcp` |
+
 `mcp-sap-docs` is the upstream repository for two MCP server variants:
 
 - `sap-docs` variant: broad SAP docs scope (UI5, CAP, Cloud SDK, ABAP docs, etc.)
