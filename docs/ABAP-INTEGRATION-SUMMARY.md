@@ -8,26 +8,26 @@
 
 ## 🎯 **What Was Accomplished**
 
-This major update integrates **40,761+ ABAP documentation files** across **8 versions** into the standard MCP system with intelligent version management and rich content extraction.
+This major update integrates **13.163+ ABAP documentation files** across **Standard ABAP and ABAP Cloud** into the standard MCP system with intelligent version management and rich content extraction.
 
 ### **Key Changes Made**
 
 #### **1. Standard System Integration** ✅
 - ✅ **Removed specialized tools** - No more `abap_search`/`abap_get` 
 - ✅ **Unified interface** - Uses standard `search` like UI5/CAP
-- ✅ **Multi-version support** - All 8 ABAP versions (7.52-7.58 + latest) integrated
+- ✅ **ABAP Language Version Support** - Standard ABAP and ABAP Cloud integrated
 - ✅ **Clean architecture** - Same proven system powering other sources
 
 #### **2. Intelligent Version Management** ✅
-- ✅ **Latest by default** - General queries show only latest ABAP version
-- ✅ **Version auto-detection** - "LOOP 7.57" automatically searches ABAP 7.57
+- ✅ **Latest by default**: General queries show latest Standard ABAP version
+- ✅ **Cloud on request**: Queries including "cloud" show ABAP Cloud version
 - ✅ **Smart filtering** - Prevents crowded results with duplicate content
 - ✅ **Context boosting** - Requested versions get dramatically higher scores
 
 #### **3. Content Quality Revolution** ✅
 - ✅ **Rich frontmatter** - Every file has title, description, keywords, category
 - ✅ **Meaningful snippets** - Actual explanations instead of filenames
-- ✅ **Filtered noise** - Removed 2,156+ irrelevant `abennews` files
+- ✅ **Filtered noise** - Removed 2,156+ irrelevant `abennews` and legacy version files
 - ✅ **YAML-safe generation** - Proper escaping for complex ABAP syntax
 
 #### **4. Enhanced Search Experience** ✅
@@ -44,10 +44,10 @@ This major update integrates **40,761+ ABAP documentation files** across **8 ver
 |--------|--------|-------|--------|
 | **ABAP Tools** | 2 specialized | 0 (standard integration) | -2 tools |
 | **Total Documents** | 63,454 | 61,298 | -2,156 irrelevant files |
-| **ABAP Files** | 42,901 raw | 40,761 curated | Quality over quantity |
+| **ABAP Files** | 42,901 raw | 13,163 curated | Quality over quantity |
 | **Database Size** | 30.53 MB | 33.32 MB | +Rich content |
 | **Default Results** | 25 crowded | 4-5 focused | 80%+ noise reduction |
-| **Versions Supported** | 1 (specialized) | 8 (standard) | Full version coverage |
+| **Versions Supported** | 1 (specialized) | 2 (standard) | Full version coverage |
 
 ---
 
@@ -73,27 +73,12 @@ Found 4 results for 'inline declarations':
 ✅ Cross-references - Related concepts
 ```
 
-#### **Version-Specific Queries (Targeted Results)**
-```javascript
-// Auto-detects version and shows ONLY that version + related sources
-search: "LOOP 7.57"                    // → ABAP 7.57 only
-search: "SELECT statements 7.58"       // → ABAP 7.58 only  
-search: "exception handling latest"    // → Latest ABAP only
-search: "class definition 7.53"        // → ABAP 7.53 only
-
-// Example Result (Version-Targeted):
-Found 5 results for 'LOOP 7.57':
-✅ /abap-docs-757/abenloop_glosry (Score: 14.35) - Boosted 7.57 docs
-✅ /abap-docs-757/abenabap_loops (Score: 14.08) - Boosted 7.57 docs
-✅ Style guides and cheat sheets for context
-```
-
 #### **Document Retrieval (Standard)**
 ```javascript
 // Same as other sources - use IDs from search results
-fetch: "/abap-docs-758/abeninline_declarations"
+fetch: "/abap-docs-latest/abeninline_declarations"
 fetch: "/abap-docs-latest/abenselect"
-fetch: "/abap-docs-757/abenloop_glosry"
+fetch: "/abap-docs-cloud/abenloop_glosry"
 ```
 
 ---
@@ -104,36 +89,15 @@ fetch: "/abap-docs-757/abenloop_glosry"
 ```json
 // 8 ABAP versions with intelligent boosting
 {
+ {
   "sources": [
-    { "id": "abap-docs-latest", "boost": 1.0 },    // Default
-    { "id": "abap-docs-758", "boost": 0.05 },      // Background
-    { "id": "abap-docs-757", "boost": 0.02 },      // Background
-    // ... 7.56-7.52 with 0.01 boost
+    { "id": "abap-docs-latest", "boost": 1.0 },     // Highest priority
+    { "id": "abap-docs-cloud", "boost": 0.8 },      // Background availability
+    // ... 
   ],
   "contextBoosts": {
-    "7.58": { "/abap-docs-758": 2.0 },             // Massive boost when version specified
-    "7.57": { "/abap-docs-757": 2.0 },
-    "latest": { "/abap-docs-latest": 1.5 }
+    // ...
   }
-}
-```
-
-### **Search Logic Enhancement**
-```typescript
-// Intelligent version detection and filtering
-const versionMatch = query.match(/\b(7\.\d{2}|latest)\b/i);
-const requestedVersion = versionMatch ? versionMatch[1] : null;
-
-if (!requestedVersion) {
-  // General queries: Show ONLY latest ABAP
-  results = results.filter(r => 
-    !r.id.includes('/abap-docs-') || r.id.includes('/abap-docs-latest/')
-  );
-} else {
-  // Version-specific: Show ONLY requested version
-  results = results.filter(r => 
-    !r.id.includes('/abap-docs-') || r.id.includes(`/abap-docs-${versionId}/`)
-  );
 }
 ```
 
@@ -165,8 +129,8 @@ if (htmlFile.startsWith('abennews')) {
 "How do I use inline declarations?"
 → Latest ABAP reference + Clean ABAP best practices + practical examples
 
-"What are the LOOP statement variations in 7.57?"  
-→ ABAP 7.57 loop documentation + style guides + cheat sheets
+"What are the LOOP statement variations in ABAP Cloud?"  
+→ ABAP Cloud loop documentation + style guides + cheat sheets
 
 "Show me exception handling patterns"
 → Latest ABAP TRY/CATCH reference + clean code guidelines + examples
@@ -181,15 +145,6 @@ if (htmlFile.startsWith('abennews')) {
 → Latest ABAP SQL reference + performance guidelines + working code
 ```
 
-### **Version-Specific Development**
-```
-"What's new in ABAP latest?"
-→ Latest ABAP features and syntax changes
-
-"ABAP 7.53 specific features"
-→ ABAP 7.53 documentation focused on version-specific capabilities
-```
-
 ---
 
 ## **🎉 Benefits for Users**
@@ -200,8 +155,8 @@ if (htmlFile.startsWith('abennews')) {
 - **Intelligent defaults** - latest ABAP unless otherwise specified
 
 ### **✅ Comprehensive Coverage**
-- **40,761+ ABAP files** with rich, searchable content
-- **8 ABAP versions** available with smart targeting
+- **13,163+ ABAP files** with rich, searchable content
+- **2 ABAP Language Versions** available with smart targeting
 - **Cross-source intelligence** - related content across all documentation
 
 ### **✅ Perfect LLM Integration**
