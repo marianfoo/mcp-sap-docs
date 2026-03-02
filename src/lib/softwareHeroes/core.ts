@@ -256,7 +256,15 @@ export async function callSoftwareHeroesApi(
       throw new Error(`Software Heroes API timeout after ${timeoutMs}ms`);
     }
 
-    throw new Error(`Software Heroes API request failed: ${error.message}`);
+    // Node.js fetch() wraps low-level network errors (ENOTFOUND, ECONNREFUSED, etc.)
+    // in error.cause — include it so callers can diagnose the real failure reason.
+    const causeMsg =
+      error.cause instanceof Error
+        ? ` (${error.cause.message})`
+        : error.cause
+          ? ` (${String(error.cause)})`
+          : "";
+    throw new Error(`Software Heroes API request failed: ${error.message}${causeMsg}`);
   }
 }
 
