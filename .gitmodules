@@ -78,3 +78,11 @@
 	path = sources/abap-platform-reuse-services
 	url = https://github.com/SAP-samples/abap-platform-reuse-services.git
 	branch = main
+[submodule "sources/btp-cloud-platform"]
+	path = sources/btp-cloud-platform
+	url = https://github.com/SAP-docs/btp-cloud-platform.git
+	branch = main
+[submodule "sources/sap-artificial-intelligence"]
+	path = sources/sap-artificial-intelligence
+	url = https://github.com/SAP-docs/sap-artificial-intelligence.git
+	branch = main

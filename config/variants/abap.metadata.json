@@ -120,6 +120,32 @@
       "baseUrl": "https://github.com/SAP-samples/abap-platform-reuse-services/blob/main",
       "pathPattern": "/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "btp-cloud-platform",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["btp", "cloud", "platform", "sap", "development", "administration", "security"],
+      "description": "SAP Business Technology Platform documentation",
+      "libraryId": "/btp-cloud-platform",
+      "sourcePath": "btp-cloud-platform/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-platform/blob/main",
+      "pathPattern": "/docs/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-artificial-intelligence",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["ai", "sap-ai-core", "sap-ai-launchpad", "machine-learning", "ml-ops"],
+      "description": "SAP AI Core and SAP AI Launchpad documentation",
+      "libraryId": "/sap-artificial-intelligence",
+      "sourcePath": "sap-artificial-intelligence/docs",
+      "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
+      "pathPattern": "/docs/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -218,8 +244,16 @@
       "/abap-docs-standard": 0.2
     },
     "btp": {
+      "/btp-cloud-platform": 1.5,
       "/abap-docs-cloud": 1.5,
       "/cloud-abap-rap": 1.2
+    },
+    "SAP BTP": {
+      "/btp-cloud-platform": 1.0,
+      "/abap-docs-cloud": 0.5
+    },
+    "SAP AI": {
+      "/sap-artificial-intelligence": 1.0
     },
     "on-premise": {
       "/abap-docs-standard": 1.5,
@@ -246,7 +280,9 @@
     "abap-fiori-showcase": "abap-fiori-showcase",
     "abap-platform-rap-opensap": "abap-platform-rap-opensap",
     "cloud-abap-rap": "cloud-abap-rap",
-    "abap-platform-reuse-services": "abap-platform-reuse-services"
+    "abap-platform-reuse-services": "abap-platform-reuse-services",
+    "btp-cloud-platform": "btp-cloud-platform",
+    "sap-artificial-intelligence": "sap-artificial-intelligence"
   },
 
   "contextEmojis": {
@@ -260,6 +296,8 @@
     "Fiori Elements": "📱",
     "samples": "📝",
     "reuse": "♻️",
+    "SAP BTP": "☁️",
+    "SAP AI": "🤖",
     "MIXED": "🔀"
   }
 }

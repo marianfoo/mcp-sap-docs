@@ -228,6 +228,8 @@ Reference & guidance (not sample-heavy):
 • abap-docs-cloud (offline): Official ABAP Keyword Documentation for ABAP Cloud/BTP (restricted syntax). Best for Steampunk/BTP constraints.
 • sap-styleguides (offline): SAP Clean ABAP Style Guide + best practices (includes translations; non‑English duplicates are filtered).
 • dsag-abap-leitfaden (offline): DSAG ABAP Leitfaden (German) with ABAP development guidelines and best practices.
+• btp-cloud-platform (offline): SAP Business Technology Platform documentation - concepts, getting started, development, extensions, administration, security.
+• sap-artificial-intelligence (offline): SAP AI Core and SAP AI Launchpad documentation.
 
 Sample-heavy OFFLINE sources (controlled by \`includeSamples\`; great for implementation, can dominate broad queries):
 • abap-cheat-sheets (offline, samples): Many practical ABAP/RAP snippets; quick “how-to” reference.

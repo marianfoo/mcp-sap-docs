@@ -258,6 +258,24 @@ const SOURCES: SourceConfig[] = [
     description: "RAP reuse services examples - Number Ranges, Change Documents, Mail, Adobe Forms",
     filePattern: "**/*.{md,abap,cds}",
     type: "markdown" as const
+  },
+  {
+    repoName: "btp-cloud-platform",
+    absDir: join("sources", "btp-cloud-platform", "docs"),
+    id: "/btp-cloud-platform",
+    name: "SAP BTP Cloud Platform",
+    description: "SAP Business Technology Platform documentation - concepts, getting started, development, extensions, administration, security",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "sap-artificial-intelligence",
+    absDir: join("sources", "sap-artificial-intelligence", "docs"),
+    id: "/sap-artificial-intelligence",
+    name: "SAP AI Core & AI Launchpad",
+    description: "SAP AI Core and SAP AI Launchpad documentation",
+    filePattern: "**/*.md",
+    type: "markdown" as const
   }
 ];
 

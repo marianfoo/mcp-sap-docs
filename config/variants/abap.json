@@ -10,7 +10,9 @@
     "/abap-fiori-showcase",
     "/abap-platform-rap-opensap",
     "/cloud-abap-rap",
-    "/abap-platform-reuse-services"
+    "/abap-platform-reuse-services",
+    "/btp-cloud-platform",
+    "/sap-artificial-intelligence"
   ],
   "submodulePaths": [
     "sources/abap-docs",
@@ -20,7 +22,9 @@
     "sources/abap-fiori-showcase",
     "sources/abap-platform-rap-opensap",
     "sources/cloud-abap-rap",
-    "sources/abap-platform-reuse-services"
+    "sources/abap-platform-reuse-services",
+    "sources/btp-cloud-platform",
+    "sources/sap-artificial-intelligence"
   ],
   "tools": {
     "abapLint": true,

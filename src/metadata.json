@@ -276,6 +276,32 @@
       "baseUrl": "https://help.sap.com/doc/abapdocu_cp_index_htm/CLOUD/en-US",
       "pathPattern": "/{file}",
       "anchorStyle": "sap-help"
+    },
+    {
+      "id": "btp-cloud-platform",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["btp", "cloud", "platform", "sap", "development", "administration", "security"],
+      "description": "SAP Business Technology Platform documentation",
+      "libraryId": "/btp-cloud-platform",
+      "sourcePath": "btp-cloud-platform/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-platform/blob/main",
+      "pathPattern": "/docs/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-artificial-intelligence",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["ai", "sap-ai-core", "sap-ai-launchpad", "machine-learning", "ml-ops"],
+      "description": "SAP AI Core and SAP AI Launchpad documentation",
+      "libraryId": "/sap-artificial-intelligence",
+      "sourcePath": "sap-artificial-intelligence/docs",
+      "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
+      "pathPattern": "/docs/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -405,12 +431,23 @@
       "/abap-docs-standard": 0.2
     },
     "btp": {
+      "/btp-cloud-platform": 1.5,
       "/abap-docs-cloud": 1.5,
       "/cap": 0.8
     },
     "on-premise": {
       "/abap-docs-standard": 1.5,
       "/abap-docs-cloud": 0.1
+    },
+    "SAP BTP": {
+      "/btp-cloud-platform": 1.0,
+      "/cap": 0.6,
+      "/abap-docs-cloud": 0.5
+    },
+    "SAP AI": {
+      "/sap-artificial-intelligence": 1.0,
+      "/cloud-sdk-ai-js": 0.5,
+      "/cloud-sdk-ai-java": 0.5
     }
   },
 
@@ -435,7 +472,9 @@
     "abap-fiori-showcase": "abap-fiori-showcase",
     "cap-fiori-showcase": "cap-fiori-showcase",
     "abap-docs-standard": "abap-docs",
-    "abap-docs-cloud": "abap-docs"
+    "abap-docs-cloud": "abap-docs",
+    "btp-cloud-platform": "btp-cloud-platform",
+    "sap-artificial-intelligence": "sap-artificial-intelligence"
   },
 
   "contextEmojis": {
@@ -453,6 +492,8 @@
     "DSAG": "🇩🇪",
     "Fiori Elements": "📱",
     "RAP": "⚡",
-    "MIXED": "🔀"
+    "MIXED": "🔀",
+    "SAP BTP": "☁️",
+    "SAP AI": "🤖"
   }
 }

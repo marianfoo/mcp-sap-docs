@@ -25,7 +25,9 @@
     "/cloud-abap-rap",
     "/abap-platform-reuse-services",
     "/abap-docs-standard",
-    "/abap-docs-cloud"
+    "/abap-docs-cloud",
+    "/btp-cloud-platform",
+    "/sap-artificial-intelligence"
   ],
   "submodulePaths": [
     "sources/sapui5-docs",
@@ -47,7 +49,9 @@
     "sources/abap-platform-rap-opensap",
     "sources/cloud-abap-rap",
     "sources/abap-platform-reuse-services",
-    "sources/abap-docs"
+    "sources/abap-docs",
+    "sources/btp-cloud-platform",
+    "sources/sap-artificial-intelligence"
   ],
   "tools": {
     "abapLint": false,

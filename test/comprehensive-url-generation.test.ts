@@ -89,7 +89,9 @@ describe('Comprehensive URL Generation System', () => {
       '/sap-styleguides': { basePath: 'sources/sap-styleguides' },
       '/dsag-abap-leitfaden': { basePath: 'sources/dsag-abap-leitfaden/docs' },
       '/abap-fiori-showcase': { basePath: 'sources/abap-fiori-showcase' },
-      '/cap-fiori-showcase': { basePath: 'sources/cap-fiori-showcase' }
+      '/cap-fiori-showcase': { basePath: 'sources/cap-fiori-showcase' },
+      '/btp-cloud-platform': { basePath: 'sources/btp-cloud-platform/docs' },
+      '/sap-artificial-intelligence': { basePath: 'sources/sap-artificial-intelligence/docs' }
     };
 
     const mapping = pathMappings[libraryId];
