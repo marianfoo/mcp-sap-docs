@@ -25,6 +25,10 @@ flowchart LR
   C --> I[fetch]
   C --> J[abap_feature_matrix]
   C --> K[abap_lint - abap only]
+  C --> L[sap_search_objects]
+  C --> M[sap_get_object_details]
+  L --> N[SAP Released Objects Local JSON]
+  M --> N
 ```
 
 ## Variant Layer
@@ -101,15 +105,35 @@ loaded instead. The server always starts regardless of fetch outcome.
 
 `src/lib/BaseServerHandler.ts` registers tools.
 
-Shared:
+Shared (both variants):
 
 - `search`
 - `fetch`
 - `abap_feature_matrix`
+- `sap_community_search`
+- `sap_search_objects` — searches SAP released objects from local `sources/abap-atc-cr-cv-s4hc/` submodule
+- `sap_get_object_details` — full details + successor + compliance check for a specific object
 
 Variant-gated:
 
 - `abap_lint` enabled only when `abap` profile allows it
+
+## SAP Released Objects Integration
+
+`src/lib/sapReleasedObjects/` reads JSON files from the `SAP/abap-atc-cr-cv-s4hc` git submodule
+(cloned to `sources/abap-atc-cr-cv-s4hc`). Data is NOT indexed in the FTS database; it is only
+accessible via the dedicated tools.
+
+Key points:
+
+- Data source: official [SAP/abap-atc-cr-cv-s4hc](https://github.com/SAP/abap-atc-cr-cv-s4hc) repo
+- Local file loading via `fs/promises` — no network calls at runtime
+- 24h in-memory cache using the shared `TtlCache` class
+- Prefetch at startup (`prefetchReleasedObjects()`) — fire-and-forget
+- Compact context summary (object count, levels, top types, PCE versions) injected into the
+  `sap_search_objects` tool description automatically at `ListTools` time
+- Supports system types: `public_cloud`, `btp`, `private_cloud`, `on_premise`
+- Clean Core levels: A=Released, B=Classic API, C=Internal/Stable, D=No API
 
 ## Build and Setup
 

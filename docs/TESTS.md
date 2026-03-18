@@ -17,6 +17,9 @@ npm run test:integration
 # Software Heroes focused tests
 npm run test:software-heroes
 
+# SAP Released Objects unit tests (buildDataStore, search, compliance)
+npm run test:sap-objects
+
 # Full suite used in CI/local gate
 npm run test
 ```
@@ -53,8 +56,8 @@ The `search` tool must expose:
 
 ### Tool Availability by Variant
 
-- `sap-docs`: `search`, `fetch`, `abap_feature_matrix`
-- `abap`: `search`, `fetch`, `abap_feature_matrix`, `abap_lint`
+- `sap-docs`: `search`, `fetch`, `abap_feature_matrix`, `sap_community_search`, `sap_search_objects`, `sap_get_object_details`
+- `abap`: same as `sap-docs` plus `abap_lint`
 
 ## Streamable HTTP Smoke Checks
 
@@ -94,6 +97,7 @@ Expected:
 ```bash
 npm run build:tsc
 npm run test:url-generation
+npm run test:sap-objects
 
 MCP_VARIANT=sap-docs npm run build:index
 MCP_VARIANT=abap npm run build:index

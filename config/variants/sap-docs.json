@@ -51,7 +51,8 @@
     "sources/abap-platform-reuse-services",
     "sources/abap-docs",
     "sources/btp-cloud-platform",
-    "sources/sap-artificial-intelligence"
+    "sources/sap-artificial-intelligence",
+    "sources/abap-atc-cr-cv-s4hc"
   ],
   "tools": {
     "abapLint": false,

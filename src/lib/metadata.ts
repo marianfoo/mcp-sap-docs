@@ -110,6 +110,9 @@ export function getSourceBoosts(): Record<string, number> {
 export function expandQueryTerms(q: string): string[] {
   ensureLoaded();
   
+  // Guard against undefined/null/empty query passed from callers
+  if (!q) return [];
+  
   const terms = new Set<string>();
   const low = q.toLowerCase();
   terms.add(q);

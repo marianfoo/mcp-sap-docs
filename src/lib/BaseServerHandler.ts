@@ -34,6 +34,11 @@ import {
 import { buildLiqlSearchUrl } from "./communityBestMatch.js";
 import { lintAbapCode, LintResult } from "./abaplint.js";
 import { searchFeatureMatrix, SearchFeatureMatrixResult, getFeatureMatrixCacheStats } from "./softwareHeroes/index.js";
+import {
+  searchObjects,
+  getObjectDetails,
+  getReleasedObjectsContext,
+} from "./sapReleasedObjects/index.js";
 
 import { SearchResponse } from "./types.js";
 import { logger } from "./logger.js";
@@ -692,6 +697,150 @@ WORKFLOW:
               required: ["results"],
               additionalProperties: true
             }
+          },
+          // -------------------------------------------------------------------
+          // SAP Released Objects tools
+          // -------------------------------------------------------------------
+          (() => {
+            const roCtx = getReleasedObjectsContext();
+            const contextNote = roCtx
+              ? roCtx.summary
+              : "Context loading — data will be available on first use.";
+            return {
+              name: "sap_search_objects",
+              description: `SEARCH SAP RELEASED OBJECTS: sap_search_objects(query="CL_ABAP_REGEX")
+
+Search SAP released objects from the official SAP API Release State repository (SAP/abap-atc-cr-cv-s4hc).
+
+Use this tool when you need to:
+• Find which SAP objects (classes, interfaces, tables, CDS views, function groups, BAdIs, etc.) are available and released for a given topic or application area
+• Discover released APIs in a specific application component (e.g., MM-PUR, FI-GL, SD-SLS)
+• Browse what objects exist in a system type (S/4HANA Cloud Public, BTP ABAP, Private Cloud)
+• Filter by Clean Core compliance level: A=Released APIs only, B=includes Classic APIs, C=includes internal/stable, D=all objects
+• Find alternative released objects when looking for functionality in a specific domain
+
+Do NOT use this for documentation content, code examples, or general SAP help — use the \`search\` tool for those. Use this specifically for API release status and clean core compliance discovery.
+
+PARAMETERS:
+• query (optional): Object name or keyword to search (e.g. "CL_ABAP_REGEX", "purchase order", "MM")
+• system_type (optional, default: "public_cloud"): "public_cloud" | "btp" | "private_cloud" | "on_premise"
+• clean_core_level (optional, default: "A"): "A" | "B" | "C" | "D" — cumulative: B includes A+B, C includes A+B+C
+• object_type (optional): TADIR type filter, e.g. "CLAS", "INTF", "TABL", "DDLS"
+• app_component (optional): Application component prefix, e.g. "MM-PUR", "FI-GL"
+• state (optional): "released" | "deprecated" | "classicAPI" | "stable" | "notToBeReleased" | "noAPI"
+• limit (optional, default: 25, max: 100): Number of results per page
+• offset (optional, default: 0): Pagination offset
+
+RETURNS (JSON with):
+• objects: Array of SAP objects with objectType, objectName, state, cleanCoreLevel, applicationComponent, softwareComponent
+• total: Total matching count
+• hasMore: Whether more results exist
+• nextOffset: Offset to use for next page
+
+[PRE-LOADED CONTEXT]
+${contextNote}`,
+              inputSchema: {
+                type: "object",
+                properties: {
+                  query: { type: "string", description: "Object name or topic keyword to search." },
+                  system_type: {
+                    type: "string",
+                    enum: ["public_cloud", "btp", "private_cloud", "on_premise"],
+                    description: "Target SAP system type. Default: public_cloud.",
+                    default: "public_cloud"
+                  },
+                  clean_core_level: {
+                    type: "string",
+                    enum: ["A", "B", "C", "D"],
+                    description: "Maximum Clean Core level to include. A=Released only, B=+Classic, C=+Internal, D=all. Default: A.",
+                    default: "A"
+                  },
+                  object_type: {
+                    type: "string",
+                    description: "TADIR object type filter, e.g. CLAS, INTF, TABL, DDLS, FUGR, BDEF, SRVD."
+                  },
+                  app_component: {
+                    type: "string",
+                    description: "Application component prefix, e.g. MM-PUR, FI-GL, SD-SLS."
+                  },
+                  state: {
+                    type: "string",
+                    enum: ["released", "deprecated", "classicAPI", "stable", "notToBeReleased", "noAPI"],
+                    description: "Filter by release state."
+                  },
+                  limit: {
+                    type: "number",
+                    description: "Results per page. Default: 25. Max: 100.",
+                    default: 25,
+                    minimum: 1,
+                    maximum: 100
+                  },
+                  offset: {
+                    type: "number",
+                    description: "Pagination offset. Default: 0.",
+                    default: 0,
+                    minimum: 0
+                  }
+                },
+                required: []
+              }
+            };
+          })(),
+          {
+            name: "sap_get_object_details",
+            description: `GET SAP OBJECT DETAILS: sap_get_object_details(object_type="CLAS", object_name="CL_ABAP_REGEX")
+
+Get complete release state details for a specific SAP object by its TADIR type and name.
+
+Use this tool when you:
+• Know a specific SAP object name and need to verify if it is released/deprecated/internal
+• Want to check Clean Core compliance: is this object allowed in BTP ABAP or S/4HANA Cloud?
+• Need to find the recommended successor object when a deprecated SAP API should be replaced
+• Want the full context of an object: software component, application component, Clean Core level (A/B/C/D), and release state
+• Are checking whether a specific table (MARA, VBAK), class (CL_*), interface (IF_*), or CDS view is safe to use in a clean core / cloud-ready ABAP development scenario
+
+Clean Core levels: A=Released API (safe for cloud/BTP), B=Classic API (on-premise only), C=Internal/Stable (not for customer use), D=No API
+
+Optionally pass target_clean_core_level to receive an explicit compliance verdict for that object.
+
+PARAMETERS:
+• object_type (required): TADIR type, e.g. "CLAS", "TABL", "INTF", "DDLS", "FUGR"
+• object_name (required): Exact object name, e.g. "CL_ABAP_REGEX", "EKKO", "IF_OS_TRANSACTION"
+• system_type (optional, default: "public_cloud"): "public_cloud" | "btp" | "private_cloud" | "on_premise"
+• target_clean_core_level (optional): "A" or "B" — receive a compliance verdict against this target
+
+RETURNS (JSON with):
+• found: boolean
+• objectType, objectName, state, cleanCoreLevel, cleanCoreLevelLabel
+• applicationComponent, softwareComponent
+• successor: successor classification and recommended replacement objects
+• successorObjects: full details of successor objects (if available in the dataset)
+• complianceStatus (if target_clean_core_level given): "compliant" | "non_compliant"`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                object_type: {
+                  type: "string",
+                  description: "TADIR object type, e.g. CLAS, TABL, INTF, DDLS, FUGR, BDEF."
+                },
+                object_name: {
+                  type: "string",
+                  description: "Exact object name, e.g. CL_ABAP_REGEX, EKKO, IF_OS_TRANSACTION."
+                },
+                system_type: {
+                  type: "string",
+                  enum: ["public_cloud", "btp", "private_cloud", "on_premise"],
+                  description: "Target SAP system type. Default: public_cloud.",
+                  default: "public_cloud"
+                },
+                target_clean_core_level: {
+                  type: "string",
+                  enum: ["A", "B"],
+                  description: "Optional compliance target level. Returns complianceStatus: compliant or non_compliant."
+                }
+              },
+              required: ["object_type", "object_name"]
+            }
           }
         ]
       };
@@ -1130,6 +1279,80 @@ WORKFLOW:
             `Error searching ABAP Feature Matrix: ${error}`,
             timing.requestId
           );
+        }
+      }
+
+      if (name === "sap_search_objects") {
+        const {
+          query,
+          system_type,
+          clean_core_level,
+          object_type,
+          app_component,
+          state,
+          limit,
+          offset,
+        } = (args ?? {}) as {
+          query?: string;
+          system_type?: string;
+          clean_core_level?: string;
+          object_type?: string;
+          app_component?: string;
+          state?: string;
+          limit?: number;
+          offset?: number;
+        };
+        const timing = logger.logToolStart(name, query ?? "(no query)", clientMetadata);
+        try {
+          const result = await searchObjects({
+            query,
+            system_type: system_type as any,
+            clean_core_level: clean_core_level as any,
+            object_type: object_type?.toUpperCase(),
+            app_component,
+            state,
+            limit: Math.min(limit ?? 25, 100),
+            offset: offset ?? 0,
+          });
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, result.objects.length);
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return createErrorResponse(`Error searching SAP released objects: ${error}`, timing.requestId);
+        }
+      }
+
+      if (name === "sap_get_object_details") {
+        const {
+          object_type,
+          object_name,
+          system_type,
+          target_clean_core_level,
+        } = (args ?? {}) as {
+          object_type: string;
+          object_name: string;
+          system_type?: string;
+          target_clean_core_level?: string;
+        };
+        const timing = logger.logToolStart(name, `${object_type}:${object_name}`, clientMetadata);
+        try {
+          const result = await getObjectDetails({
+            object_type,
+            object_name,
+            system_type: system_type as any,
+            target_clean_core_level: target_clean_core_level as any,
+          });
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, result.found ? 1 : 0);
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return createErrorResponse(`Error fetching SAP object details: ${error}`, timing.requestId);
         }
       }
 

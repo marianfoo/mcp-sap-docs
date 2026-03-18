@@ -86,3 +86,7 @@
 	path = sources/sap-artificial-intelligence
 	url = https://github.com/SAP-docs/sap-artificial-intelligence.git
 	branch = main
+[submodule "sources/abap-atc-cr-cv-s4hc"]
+	path = sources/abap-atc-cr-cv-s4hc
+	url = https://github.com/SAP/abap-atc-cr-cv-s4hc.git
+	branch = main

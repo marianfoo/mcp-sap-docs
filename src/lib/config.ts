@@ -38,4 +38,11 @@ export const CONFIG = {
 
   // Disk cache path for the ABAP Feature Matrix (survives server restarts)
   SOFTWARE_HEROES_AFM_CACHE_PATH: process.env.SOFTWARE_HEROES_AFM_CACHE_PATH || "dist/data/abap-feature-matrix.json",
+
+  // ---------------------------------------------------------------------------
+  // SAP Released Objects Configuration
+  // ---------------------------------------------------------------------------
+
+  // In-memory cache TTL in milliseconds (default: 24 hours)
+  SAP_RELEASED_OBJECTS_CACHE_TTL_MS: Number(process.env.SAP_RELEASED_OBJECTS_CACHE_TTL_MS || 86400000),
 };

@@ -1,0 +1,82 @@
+{
+  "formatVersion": "1",
+  "objectReleaseInfo": [
+    {
+      "tadirObject": "CLAS",
+      "tadirObjName": "CL_ABAP_REGEX",
+      "state": "released",
+      "softwareComponent": "SAP_BASIS",
+      "applicationComponent": "BC-ABA"
+    },
+    {
+      "tadirObject": "CLAS",
+      "tadirObjName": "CL_ABAP_MATCHER",
+      "state": "released",
+      "softwareComponent": "SAP_BASIS",
+      "applicationComponent": "BC-ABA"
+    },
+    {
+      "tadirObject": "INTF",
+      "tadirObjName": "IF_OS_TRANSACTION",
+      "state": "released",
+      "softwareComponent": "SAP_BASIS",
+      "applicationComponent": "BC-SRV-AIS"
+    },
+    {
+      "tadirObject": "TABL",
+      "tadirObjName": "EKKO",
+      "state": "deprecated",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "MM-PUR",
+      "successorClassification": "replacedBy",
+      "successors": [
+        {
+          "tadirObject": "DDLS",
+          "tadirObjName": "I_PURCHASEORDER"
+        }
+      ]
+    },
+    {
+      "tadirObject": "DDLS",
+      "tadirObjName": "I_PURCHASEORDER",
+      "state": "released",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "MM-PUR"
+    },
+    {
+      "tadirObject": "CLAS",
+      "tadirObjName": "CL_GUI_FRONTEND_SERVICES",
+      "state": "classicAPI",
+      "softwareComponent": "SAP_BASIS",
+      "applicationComponent": "BC-SRV-GUI"
+    },
+    {
+      "tadirObject": "FUGR",
+      "tadirObjName": "SAPL_OBSOLETE",
+      "state": "notToBeReleased",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "SD-SLS"
+    },
+    {
+      "tadirObject": "TABL",
+      "tadirObjName": "MARA",
+      "state": "noAPI",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "MM-MAT"
+    },
+    {
+      "tadirObject": "TABL",
+      "tadirObjName": "VBAK",
+      "state": "stable",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "SD-SLS"
+    },
+    {
+      "tadirObject": "BDEF",
+      "tadirObjName": "I_PURCHASEORDER",
+      "state": "released",
+      "softwareComponent": "SAP_APPL",
+      "applicationComponent": "MM-PUR"
+    }
+  ]
+}

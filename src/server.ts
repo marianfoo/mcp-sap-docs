@@ -4,6 +4,7 @@ import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
+import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
 
 const variant = getVariantConfig();
 
@@ -37,6 +38,8 @@ async function main() {
 
   // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
   prefetchFeatureMatrix();
+  // Pre-load SAP Released Objects data (fire-and-forget, never blocks startup)
+  prefetchReleasedObjects();
   
   const srv = createServer();
   

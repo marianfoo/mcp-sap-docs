@@ -11,6 +11,7 @@ import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generati
 import { getAllowedSubmodulePaths, getVariantConfig } from "./lib/variant.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
+import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -283,6 +284,9 @@ const server = createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const mcpRequest: { role: string; content: string } = JSON.parse(body);
+        if (!mcpRequest.content) {
+          return json(res, 400, { error: "Missing 'content' field in request body" });
+        }
         const response = await handleMCPRequest(mcpRequest.content);
         return json(res, 200, response);
       } catch {
@@ -302,6 +306,8 @@ const server = createServer(async (req, res) => {
 
   // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
   prefetchFeatureMatrix();
+  // Pre-load SAP Released Objects data (fire-and-forget, never blocks startup)
+  prefetchReleasedObjects();
 
   // Start server
   const PORT = Number(process.env.PORT || variant.server.httpStatusPort);
