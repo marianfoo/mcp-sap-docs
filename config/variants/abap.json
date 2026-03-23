@@ -12,7 +12,8 @@
     "/cloud-abap-rap",
     "/abap-platform-reuse-services",
     "/btp-cloud-platform",
-    "/sap-artificial-intelligence"
+    "/sap-artificial-intelligence",
+    "/teched2025-dt260"
   ],
   "submodulePaths": [
     "sources/abap-docs",
@@ -25,7 +26,8 @@
     "sources/abap-platform-reuse-services",
     "sources/btp-cloud-platform",
     "sources/sap-artificial-intelligence",
-    "sources/abap-atc-cr-cv-s4hc"
+    "sources/abap-atc-cr-cv-s4hc",
+    "sources/teched2025-dt260"
   ],
   "tools": {
     "abapLint": true,

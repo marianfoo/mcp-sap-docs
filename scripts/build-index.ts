@@ -260,6 +260,15 @@ const SOURCES: SourceConfig[] = [
     type: "markdown" as const
   },
   {
+    repoName: "teched2025-dt260",
+    absDir: join("sources", "teched2025-dt260"),
+    id: "/teched2025-dt260",
+    name: "TechEd 2025 DT260 – ABAP Clean Core Modernization",
+    description: "Modernizing ABAP extensions with clean core principles, ATC transformation, and Cloudification Repository Viewer",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
     repoName: "btp-cloud-platform",
     absDir: join("sources", "btp-cloud-platform", "docs"),
     id: "/btp-cloud-platform",

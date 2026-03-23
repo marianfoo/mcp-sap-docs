@@ -302,6 +302,19 @@
       "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
       "pathPattern": "/docs/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "teched2025-dt260",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.08,
+      "tags": ["abap", "clean-core", "atc", "modernization", "cloud-readiness", "s4hana", "teched", "workshop"],
+      "description": "TechEd 2025 DT260 – Modernizing ABAP extensions with clean core and ATC",
+      "libraryId": "/teched2025-dt260",
+      "sourcePath": "teched2025-dt260",
+      "baseUrl": "https://github.com/SAP-samples/teched2025-DT260/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -321,7 +334,8 @@
     { "from": "clean-code", "to": ["clean code", "best practices", "style guide"] },
     { "from": "style-guide", "to": ["styleguide", "coding standards", "best practices"] },
     { "from": "leitfaden", "to": ["guidelines", "guide", "best practices"] },
-    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development"] },
+    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development", "atc", "modernization"] },
+    { "from": "atc", "to": ["abap test cockpit", "code analysis", "cloud readiness", "clean core check"] },
     { "from": "fiori-elements", "to": ["fiori elements", "annotations", "odata"] },
     { "from": "rap", "to": ["restful application programming", "abap restful"] },
     { "from": "annotations", "to": ["ui5 annotations", "odata annotations", "fiori annotations"] }
@@ -391,6 +405,7 @@
       "/abap-cheat-sheets": 0.8,
       "/sap-styleguides": 0.7,
       "/dsag-abap-leitfaden": 0.6,
+      "/teched2025-dt260": 0.4,
       "/cap": 0.2
     },
     "ABAP Cloud": {
@@ -404,6 +419,17 @@
       "/abap-docs-cloud": 0.2,
       "/abap-cheat-sheets": 0.6,
       "/dsag-abap-leitfaden": 0.5
+    },
+    "Clean Core": {
+      "/teched2025-dt260": 1.5,
+      "/dsag-abap-leitfaden": 0.8,
+      "/abap-docs-cloud": 0.6,
+      "/abap-cheat-sheets": 0.4
+    },
+    "ATC": {
+      "/teched2025-dt260": 1.5,
+      "/abap-docs-cloud": 0.5,
+      "/abap-docs-standard": 0.5
     },
     "Clean Code": {
       "/sap-styleguides": 1.0,
@@ -471,6 +497,7 @@
     "dsag-abap-leitfaden": "dsag-abap-leitfaden",
     "abap-fiori-showcase": "abap-fiori-showcase",
     "cap-fiori-showcase": "cap-fiori-showcase",
+    "teched2025-dt260": "teched2025-dt260",
     "abap-docs-standard": "abap-docs",
     "abap-docs-cloud": "abap-docs",
     "btp-cloud-platform": "btp-cloud-platform",
@@ -492,6 +519,8 @@
     "DSAG": "🇩🇪",
     "Fiori Elements": "📱",
     "RAP": "⚡",
+    "Clean Core": "🧹",
+    "ATC": "🔍",
     "MIXED": "🔀",
     "SAP BTP": "☁️",
     "SAP AI": "🤖"

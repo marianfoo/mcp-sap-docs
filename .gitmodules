@@ -90,3 +90,7 @@
 	path = sources/abap-atc-cr-cv-s4hc
 	url = https://github.com/SAP/abap-atc-cr-cv-s4hc.git
 	branch = main
+[submodule "sources/teched2025-dt260"]
+	path = sources/teched2025-dt260
+	url = https://github.com/SAP-samples/teched2025-DT260.git
+	branch = main

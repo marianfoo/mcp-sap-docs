@@ -146,6 +146,19 @@
       "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
       "pathPattern": "/docs/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "teched2025-dt260",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.7,
+      "tags": ["abap", "clean-core", "atc", "modernization", "cloud-readiness", "s4hana", "teched", "workshop"],
+      "description": "TechEd 2025 DT260 – Modernizing ABAP extensions with clean core and ATC transformation",
+      "libraryId": "/teched2025-dt260",
+      "sourcePath": "teched2025-dt260",
+      "baseUrl": "https://github.com/SAP-samples/teched2025-DT260/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -158,7 +171,9 @@
     { "from": "clean-code", "to": ["clean code", "best practices", "style guide"] },
     { "from": "style-guide", "to": ["styleguide", "coding standards", "best practices"] },
     { "from": "leitfaden", "to": ["guidelines", "guide", "best practices"] },
-    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development"] },
+    { "from": "clean-core", "to": ["clean core", "extensibility", "cloud development", "atc", "modernization"] },
+    { "from": "atc", "to": ["abap test cockpit", "code analysis", "cloud readiness", "clean core check"] },
+    { "from": "modernization", "to": ["legacy migration", "cloud transformation", "on-premise to cloud"] },
     { "from": "fiori-elements", "to": ["fiori elements", "annotations", "odata"] },
     { "from": "annotations", "to": ["cds annotations", "odata annotations", "fiori annotations"] },
     { "from": "behavior", "to": ["behavior definition", "behavior implementation", "bdef"] },
@@ -180,7 +195,9 @@
     "ADT": ["ABAP Development Tools", "eclipse"],
     "BDEF": ["Behavior Definition"],
     "EML": ["Entity Manipulation Language"],
-    "SADL": ["Service Adaptation Definition Language"]
+    "SADL": ["Service Adaptation Definition Language"],
+    "ATC": ["ABAP Test Cockpit", "code analysis", "clean core check"],
+    "S4HC": ["SAP S/4HANA Cloud", "s4hana cloud", "private edition"]
   },
 
   "contextBoosts": {
@@ -190,6 +207,7 @@
       "/abap-cheat-sheets": 0.8,
       "/sap-styleguides": 0.7,
       "/dsag-abap-leitfaden": 0.6,
+      "/teched2025-dt260": 0.5,
       "/abap-fiori-showcase": 0.5,
       "/abap-platform-rap-opensap": 0.5,
       "/cloud-abap-rap": 0.5,
@@ -222,6 +240,17 @@
       "/abap-fiori-showcase": 0.9,
       "/abap-docs-cloud": 0.7,
       "/abap-docs-standard": 0.7
+    },
+    "Clean Core": {
+      "/teched2025-dt260": 1.5,
+      "/dsag-abap-leitfaden": 0.8,
+      "/abap-docs-cloud": 0.6,
+      "/abap-cheat-sheets": 0.4
+    },
+    "ATC": {
+      "/teched2025-dt260": 1.5,
+      "/abap-docs-cloud": 0.5,
+      "/abap-docs-standard": 0.5
     },
     "Clean Code": {
       "/sap-styleguides": 1.0,
@@ -282,7 +311,8 @@
     "cloud-abap-rap": "cloud-abap-rap",
     "abap-platform-reuse-services": "abap-platform-reuse-services",
     "btp-cloud-platform": "btp-cloud-platform",
-    "sap-artificial-intelligence": "sap-artificial-intelligence"
+    "sap-artificial-intelligence": "sap-artificial-intelligence",
+    "teched2025-dt260": "teched2025-dt260"
   },
 
   "contextEmojis": {
@@ -298,6 +328,8 @@
     "reuse": "♻️",
     "SAP BTP": "☁️",
     "SAP AI": "🤖",
+    "Clean Core": "🧹",
+    "ATC": "🔍",
     "MIXED": "🔀"
   }
 }
