@@ -128,6 +128,8 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: NEW_VERSION
+          # Submodule clones + full build can take 20-30 min on a cold server
+          command_timeout: 45m
           script: |
             set -Eeuo pipefail
 

@@ -92,9 +92,8 @@ while IFS= read -r line; do
     # Checkout/reset to the fetched tip
     git -C "$path" checkout -B "$branch" "origin/$branch" 2>/dev/null || git -C "$path" checkout "$branch" || true
     git -C "$path" reset --hard "origin/$branch" 2>/dev/null || true
-    # Compact local repository storage (keeps only the shallow pack)
+    # Expire stale reflogs so the shallow pack stays trim
     git -C "$path" reflog expire --expire=now --all >/dev/null 2>&1 || true
-    git -C "$path" gc --prune=now --aggressive >/dev/null 2>&1 || true
   fi
 done < <(git config -f .gitmodules --get-regexp 'submodule\..*\.path')
 
