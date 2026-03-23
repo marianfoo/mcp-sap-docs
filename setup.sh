@@ -47,6 +47,29 @@ printf '  → Active MCP variant: %s\n' "$VARIANT_NAME"
 # Store allowed paths as newline-delimited string (bash 3.2 compatible, no associative arrays)
 ALLOWED_SUBMODULES_LIST="$ALLOWED_SUBMODULE_PATHS"
 
+# Returns space-separated sparse-checkout dirs (relative to submodule root) for repos
+# where only a subdirectory is indexed. Empty string = whole repo is needed.
+# Derived from the absDir paths in scripts/build-index.ts and src/lib/sapReleasedObjects/constants.ts.
+get_sparse_paths() {
+  case "$1" in
+    sources/sapui5-docs)                 printf 'docs' ;;
+    sources/openui5)                     printf 'src' ;;
+    sources/wdi5)                        printf 'docs' ;;
+    sources/ui5-tooling)                 printf 'docs' ;;
+    sources/cloud-mta-build-tool)        printf 'docs' ;;
+    sources/ui5-webcomponents)           printf 'docs' ;;
+    sources/cloud-sdk)                   printf 'docs-js docs-java' ;;
+    sources/cloud-sdk-ai)                printf 'docs-js docs-java' ;;
+    sources/ui5-cc-spreadsheetimporter)  printf 'docs' ;;
+    sources/dsag-abap-leitfaden)         printf 'docs' ;;
+    sources/abap-docs)                   printf 'docs' ;;
+    sources/btp-cloud-platform)          printf 'docs' ;;
+    sources/sap-artificial-intelligence) printf 'docs' ;;
+    sources/abap-atc-cr-cv-s4hc)         printf 'src' ;;
+    *)                                   printf '' ;;
+  esac
+}
+
 # Collect submodules from .gitmodules
 printf '  → Ensuring variant submodules are present (shallow, single branch)...\n'
 while IFS= read -r line; do
@@ -64,16 +87,41 @@ while IFS= read -r line; do
     continue
   fi
 
+  SPARSE_PATHS="$(get_sparse_paths "$path")"
   printf '    • %s (branch: %s)\n' "$path" "$branch"
 
   if [ ! -d "$path/.git" ]; then
-    printf '      - cloning shallow...\n'
-    GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch "$branch" "$url" "$path" || {
-      printf '      ! clone failed for %s, retrying with master\n' "$path"
-      GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch master "$url" "$path" || true
-    }
+    if [ -n "$SPARSE_PATHS" ]; then
+      printf '      - cloning shallow sparse (%s)...\n' "$SPARSE_PATHS"
+      _clone_branch="$branch"
+      GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --no-checkout --branch "$_clone_branch" "$url" "$path" || {
+        printf '      ! clone failed for %s, retrying with master\n' "$path"
+        _clone_branch="master"
+        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --no-checkout --branch "$_clone_branch" "$url" "$path" || true
+      }
+      if [ -d "$path/.git" ]; then
+        git -C "$path" sparse-checkout init --cone
+        # word-split intentional: SPARSE_PATHS is space-separated directory names
+        # shellcheck disable=SC2086
+        git -C "$path" sparse-checkout set $SPARSE_PATHS
+        GIT_LFS_SKIP_SMUDGE=1 git -C "$path" checkout "$_clone_branch" || true
+      fi
+    else
+      printf '      - cloning shallow...\n'
+      GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch "$branch" "$url" "$path" || {
+        printf '      ! clone failed for %s, retrying with master\n' "$path"
+        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch master "$url" "$path" || true
+      }
+    fi
   else
     printf '      - updating shallow to latest %s...\n' "$branch"
+    # Apply (or update) sparse checkout before fetch so blobs outside sparse paths
+    # are never downloaded and existing ones are removed from the working tree
+    if [ -n "$SPARSE_PATHS" ]; then
+      git -C "$path" sparse-checkout init --cone 2>/dev/null || true
+      # shellcheck disable=SC2086
+      git -C "$path" sparse-checkout set $SPARSE_PATHS || true
+    fi
     # Limit origin to a single branch and fetch shallow
     git -C "$path" config --unset-all remote.origin.fetch >/dev/null 2>&1 || true
     git -C "$path" config remote.origin.fetch "+refs/heads/${branch}:refs/remotes/origin/${branch}"
@@ -94,6 +142,10 @@ while IFS= read -r line; do
     git -C "$path" reset --hard "origin/$branch" 2>/dev/null || true
     # Expire stale reflogs so the shallow pack stays trim
     git -C "$path" reflog expire --expire=now --all >/dev/null 2>&1 || true
+    # Prune objects orphaned by sparse checkout (frees .git disk space)
+    if [ -n "$SPARSE_PATHS" ]; then
+      git -C "$path" gc --prune=now --quiet 2>/dev/null || true
+    fi
   fi
 done < <(git config -f .gitmodules --get-regexp 'submodule\..*\.path')
 

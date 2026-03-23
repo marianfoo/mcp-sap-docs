@@ -41,10 +41,41 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
         esac; \
       fi; \
       mkdir -p "$(dirname "$path")"; \
-      GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch "$branch" "$url" "$path" || { \
-        echo "clone failed for $path on branch $branch, retrying with master"; \
-        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch master "$url" "$path" || true; \
-      }; \
+      sparse="$(case "$path" in \
+        sources/sapui5-docs)                 echo 'docs';; \
+        sources/openui5)                     echo 'src';; \
+        sources/wdi5)                        echo 'docs';; \
+        sources/ui5-tooling)                 echo 'docs';; \
+        sources/cloud-mta-build-tool)        echo 'docs';; \
+        sources/ui5-webcomponents)           echo 'docs';; \
+        sources/cloud-sdk)                   echo 'docs-js docs-java';; \
+        sources/cloud-sdk-ai)                echo 'docs-js docs-java';; \
+        sources/ui5-cc-spreadsheetimporter)  echo 'docs';; \
+        sources/dsag-abap-leitfaden)         echo 'docs';; \
+        sources/abap-docs)                   echo 'docs';; \
+        sources/btp-cloud-platform)          echo 'docs';; \
+        sources/sap-artificial-intelligence) echo 'docs';; \
+        sources/abap-atc-cr-cv-s4hc)         echo 'src';; \
+        *)                                   echo '';; \
+      esac)"; \
+      if [ -n "$sparse" ]; then \
+        _cb="$branch"; \
+        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --no-checkout --branch "$_cb" "$url" "$path" || { \
+          echo "clone failed for $path on $branch, retrying with master"; \
+          _cb="master"; \
+          GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --no-checkout --branch "$_cb" "$url" "$path" || true; \
+        }; \
+        if [ -d "$path/.git" ]; then \
+          git -C "$path" sparse-checkout init --cone; \
+          git -C "$path" sparse-checkout set $sparse; \
+          GIT_LFS_SKIP_SMUDGE=1 git -C "$path" checkout "$_cb" || true; \
+        fi; \
+      else \
+        GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch "$branch" "$url" "$path" || { \
+          echo "clone failed for $path on branch $branch, retrying with master"; \
+          GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --branch master "$url" "$path" || true; \
+        }; \
+      fi; \
     done && \
     for path in $SUBMODULE_PATHS; do \
       if [ -d "$path/.git" ]; then \
