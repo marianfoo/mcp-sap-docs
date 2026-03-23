@@ -159,8 +159,8 @@ fi
 printf '  → Current submodule status:\n'
 git submodule status --recursive || true
 
-# Build the search index
-printf '🔍 Building search index...\n'
+# Build the search index (includes FTS5 and embedding index)
+printf '🔍 Building search index (BM25 + embeddings)...\n'
 npm run build
 
 printf '✅ Setup complete!\n\n'

@@ -6,6 +6,7 @@ import { searchSapHelp } from "./sapHelp.js";
 import { searchCommunity } from "./localDocs.js";
 import { searchSoftwareHeroesContent } from "./softwareHeroes/index.js";
 import { SearchResponse, SearchResult as ApiSearchResult } from "./types.js";
+import { buildSemanticResults } from "./embeddingSearch.js";
 
 export type SearchResult = {
   id: string;
@@ -15,7 +16,7 @@ export type SearchResult = {
   path: string;
   relFile: string;
   finalScore: number;
-  sourceKind: 'offline' | 'sap_help' | 'sap_community' | 'software_heroes';
+  sourceKind: 'offline' | 'sap_help' | 'sap_community' | 'software_heroes' | 'semantic';
   // Debug info for ranking analysis
   debug?: {
     bm25Score?: number;
@@ -46,7 +47,8 @@ const RRF_WEIGHTS = {
   offline: 1.0,        // Full weight for offline (indexed) results
   sap_help: 0.9,       // Slightly lower for SAP Help
   sap_community: 0.6,  // Lower for community (can be noisy)
-  software_heroes: 0.85 // Software-Heroes (high quality ABAP/RAP tutorials)
+  software_heroes: 0.85, // Software-Heroes (high quality ABAP/RAP tutorials)
+  semantic: CONFIG.EMBEDDING_WEIGHT, // Embedding-based semantic results (default 0.7)
 };
 
 /**
@@ -83,7 +85,9 @@ function canonicalUrl(u: string): string {
  * - Online: canonical URL (strips irrelevant params)
  */
 function dedupeKey(r: SearchResult): string {
-  if (r.sourceKind === "offline") {
+  if (r.sourceKind === "offline" || r.sourceKind === "semantic") {
+    // Semantic results reference the same documents as offline results — use same key
+    // so RRF fusion accumulates both scores for the same document.
     return `offline:${r.sourceId}:${r.id}`;
   }
   // For online results, use canonical URL
@@ -598,8 +602,12 @@ export async function search(
     console.log(`🌐 [ONLINE] Total: ${onlineResults.length} online results`);
   }
   
-  // Merge offline and online results
-  const allResults = [...offlineResults, ...onlineResults];
+  // Merge offline, semantic, and online results
+  // Semantic results re-rank BM25 candidates by cosine similarity and slot in via RRF
+  const semanticResults = await buildSemanticResults(query, offlineResults, k);
+  console.log(`🧠 [SEMANTIC] ${semanticResults.length} semantic results`);
+
+  const allResults = [...offlineResults, ...onlineResults, ...semanticResults];
   
   // Sort by final score (higher = better)
   allResults.sort((a, b) => b.finalScore - a.finalScore);

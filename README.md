@@ -66,11 +66,25 @@ MCP_VARIANT=abap npm run start:streamable
 
 Ranking and filtering highlights:
 
+- **Hybrid BM25 + Semantic (embedding) search** — keyword and meaning, fused via RRF
 - Reciprocal Rank Fusion (RRF) across offline and online sources
 - Source-level boosts from metadata
 - `includeSamples` can remove sample-heavy sources
 - `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries while keeping non-ABAP sources
 - `sources` can restrict offline libraries explicitly
+
+## Hybrid Search
+
+The offline search combines BM25 (FTS5 keyword matching) with semantic similarity
+(dense embeddings via `Xenova/all-MiniLM-L6-v2`). This allows natural-language and
+paraphrase queries to find relevant docs even when the exact keywords are missing.
+
+Example: _"how to check if a user has permission"_ finds `AUTHORITY-CHECK` docs.
+
+Embeddings are pre-computed at build time and stored in `docs.sqlite`.
+The model (~90 MB) is cached in `dist/models/` (gitignored, in-project).
+
+See [docs/HYBRID-SEARCH.md](docs/HYBRID-SEARCH.md) for full details, size impact, and tuning.
 
 ## Offline-Only Mode
 

@@ -155,7 +155,8 @@ jobs:
               # Rebuild database
               echo "🔨 Rebuilding database..."
               npm run build:fts
-              
+              npm run build:embeddings
+
               REPAIR_PERFORMED=1
               
             elif [ "$IS_HEALTH_CHECK_SCHEDULE" != "true" ] && [ "$HEALTH_CHECK_ONLY" != "true" ]; then
@@ -228,11 +229,13 @@ jobs:
                     echo "❌ Backup is also corrupted - forcing fresh rebuild"
                     rm -f "$DB_PATH"
                     npm run build:fts
+                    npm run build:embeddings
                   fi
                 else
                   echo "🔄 No clean backup available - forcing fresh rebuild"
                   rm -f "$DB_PATH"
                   npm run build:fts
+                  npm run build:embeddings
                 fi
                 
                 # Final check
@@ -330,7 +333,7 @@ jobs:
           echo "cd /opt/mcp-sap/mcp-sap-docs" >> $GITHUB_STEP_SUMMARY
           echo "pm2 stop all" >> $GITHUB_STEP_SUMMARY
           echo "rm -f dist/data/docs.sqlite" >> $GITHUB_STEP_SUMMARY
-          echo "npm run build:fts" >> $GITHUB_STEP_SUMMARY
+          echo "npm run build:fts && npm run build:embeddings" >> $GITHUB_STEP_SUMMARY
           echo "pm2 start all" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

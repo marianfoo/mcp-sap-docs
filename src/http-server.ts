@@ -12,6 +12,7 @@ import { getAllowedSubmodulePaths, getVariantConfig } from "./lib/variant.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
+import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -308,6 +309,10 @@ const server = createServer(async (req, res) => {
   prefetchFeatureMatrix();
   // Pre-load SAP Released Objects data (fire-and-forget, never blocks startup)
   prefetchReleasedObjects();
+  // Pre-load the embedding model so the first search is fast (fire-and-forget)
+  loadEmbeddingModel().catch((err: Error) =>
+    console.warn("embedding model pre-load failed:", err.message)
+  );
 
   // Start server
   const PORT = Number(process.env.PORT || variant.server.httpStatusPort);

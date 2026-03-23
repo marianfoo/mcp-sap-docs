@@ -10,6 +10,7 @@ import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
+import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 // Version will be updated by deployment script
 const VERSION = "0.3.29";
@@ -87,6 +88,11 @@ async function main() {
 
   // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
   prefetchFeatureMatrix();
+
+  // Pre-load the embedding model so the first search is fast (fire-and-forget)
+  loadEmbeddingModel().catch((err: Error) =>
+    logger.warn("embedding model pre-load failed", { error: err.message })
+  );
 
   const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : variant.server.streamablePort;
   const MCP_HOST = process.env.MCP_HOST || '127.0.0.1';

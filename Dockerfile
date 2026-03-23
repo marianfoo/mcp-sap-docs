@@ -109,6 +109,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/sources ./sources
 COPY --from=builder /app/config ./config
+COPY --from=builder /app/src/metadata.json ./src/metadata.json
 COPY --from=builder /app/.mcp-variant ./.mcp-variant
 
 # Create non-root user for security

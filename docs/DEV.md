@@ -38,7 +38,8 @@ The setup script is variant-aware:
 npm run build:tsc
 npm run build:index
 npm run build:fts
-npm run build
+npm run build:embeddings   # generates embedding vectors (model downloaded to dist/models/)
+npm run build              # runs all four steps above in order
 
 # runtime
 npm start

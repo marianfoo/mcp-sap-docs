@@ -45,4 +45,15 @@ export const CONFIG = {
 
   // In-memory cache TTL in milliseconds (default: 24 hours)
   SAP_RELEASED_OBJECTS_CACHE_TTL_MS: Number(process.env.SAP_RELEASED_OBJECTS_CACHE_TTL_MS || 86400000),
+
+  // ---------------------------------------------------------------------------
+  // Hybrid Search (BM25 + Embeddings) Configuration
+  // ---------------------------------------------------------------------------
+
+  // RRF weight for semantic (embedding) results (default: 0.7)
+  // Lower than offline BM25 weight (1.0) so BM25 precision is preserved
+  EMBEDDING_WEIGHT: Number(process.env.EMBEDDING_WEIGHT || 0.7),
+
+  // Directory where the embedding model is cached (gitignored, in-project)
+  MODELS_DIR: process.env.MODELS_DIR || "dist/models",
 };
