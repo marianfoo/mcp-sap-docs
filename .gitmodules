@@ -52,7 +52,7 @@
 	branch = main
 [submodule "sources/dsag-abap-leitfaden"]
 	path = sources/dsag-abap-leitfaden
-	url = https://github.com/1DSAG/ABAP-Leitfaden.git
+	url = https://github.com/marianfoo/DSAG-ABAP-Guide.git
 	branch = main
 [submodule "sources/abap-fiori-showcase"]
 	path = sources/abap-fiori-showcase

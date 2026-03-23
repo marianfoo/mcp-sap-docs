@@ -252,10 +252,10 @@ describe('Comprehensive URL Generation System', () => {
       content: '# Clean ABAP\n\n> [**中文**](CleanABAP_zh.md)\n\nThis style guide presents the essentials of clean ABAP...'
     },
     {
-      name: 'DSAG ABAP Leitfaden - Clean Core',
+      name: 'DSAG ABAP Guide - Clean Core',
       libraryId: '/dsag-abap-leitfaden',
       relFile: 'clean-core/what-is-clean-core.md',
-      expectedUrl: 'https://1dsag.github.io/ABAP-Leitfaden/clean-core/what-is-clean-core/#was-ist-clean-core',
+      expectedUrl: 'https://marianfoo.github.io/DSAG-ABAP-Guide/clean-core/what-is-clean-core/#was-ist-clean-core',
       frontmatter: '',
       content: '# Was ist Clean Core?\n\nClean Core ist ein Konzept von SAP, das darauf abzielt...'
     },
@@ -454,7 +454,7 @@ describe('Comprehensive URL Generation System', () => {
           config
         });
         
-        expect(result).toBe('https://1dsag.github.io/ABAP-Leitfaden/clean-core/what-is-clean-core/#was-ist-clean-core');
+        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/clean-core/what-is-clean-core/#was-ist-clean-core');
       });
 
       it('should handle root-level documentation', () => {
@@ -469,7 +469,7 @@ describe('Comprehensive URL Generation System', () => {
           config
         });
         
-        expect(result).toBe('https://1dsag.github.io/ABAP-Leitfaden/README/#abap-leitfaden');
+        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/README/#abap-leitfaden');
       });
     });
 

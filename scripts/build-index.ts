@@ -191,8 +191,8 @@ const SOURCES: SourceConfig[] = [
     repoName: "dsag-abap-leitfaden",
     absDir: join("sources", "dsag-abap-leitfaden", "docs"),
     id: "/dsag-abap-leitfaden",
-    name: "DSAG ABAP Leitfaden",
-    description: "German ABAP guidelines and best practices by DSAG",
+    name: "DSAG ABAP Guide",
+    description: "ABAP guidelines and best practices by DSAG (English version)",
     filePattern: "**/*.md",
     type: "markdown" as const
   },

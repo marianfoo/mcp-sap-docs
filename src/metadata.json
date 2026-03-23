@@ -215,13 +215,13 @@
     {
       "id": "dsag-abap-leitfaden",
       "type": "documentation",
-      "lang": "de",
-      "boost": 0.05,
-      "tags": ["abap", "leitfaden", "best-practices", "german", "dsag", "clean-core"],
-      "description": "DSAG ABAP Leitfaden",
+      "lang": "en",
+      "boost": 0.5,
+      "tags": ["abap", "leitfaden", "best-practices", "english", "dsag", "clean-core"],
+      "description": "DSAG ABAP Guide (English)",
       "libraryId": "/dsag-abap-leitfaden",
       "sourcePath": "dsag-abap-leitfaden/docs",
-      "baseUrl": "https://1dsag.github.io/ABAP-Leitfaden",
+      "baseUrl": "https://marianfoo.github.io/DSAG-ABAP-Guide",
       "pathPattern": "/{file}/",
       "anchorStyle": "github"
     },
@@ -337,7 +337,7 @@
     "OData": ["Open Data Protocol", "rest", "api"],
     "TS": ["TypeScript", "types"],
     "ABAP": ["Advanced Business Application Programming", "sap programming"],
-    "DSAG": ["Deutschsprachige SAP-Anwendergruppe", "german sap user group"],
+    "DSAG": ["Deutschsprachige SAP-Anwendergruppe", "german sap user group", "DSAG ABAP guidelines"],
     "RAP": ["RESTful Application Programming", "abap restful", "business object"]
   },
 

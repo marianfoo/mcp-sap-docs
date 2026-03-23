@@ -1,6 +1,6 @@
 /**
- * DSAG ABAP Leitfaden URL Generator
- * Handles GitHub Pages URLs for DSAG ABAP Guidelines
+ * DSAG ABAP Guide URL Generator
+ * Handles GitHub Pages URLs for DSAG ABAP Guidelines (English version)
  */
 
 import { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
@@ -13,10 +13,10 @@ export interface DsagUrlOptions {
 }
 
 /**
- * URL Generator for DSAG ABAP Leitfaden
+ * URL Generator for DSAG ABAP Guide (English version)
  * 
  * Transforms docs/path/file.md -> /path/file/
- * Example: docs/clean-core/what-is-clean-core.md -> https://1dsag.github.io/ABAP-Leitfaden/clean-core/what-is-clean-core/
+ * Example: docs/clean-core/what-is-clean-core.md -> https://marianfoo.github.io/DSAG-ABAP-Guide/clean-core/what-is-clean-core/
  */
 export class DsagUrlGenerator extends BaseUrlGenerator {
   
@@ -51,13 +51,13 @@ export class DsagUrlGenerator extends BaseUrlGenerator {
 }
 
 /**
- * Generate DSAG ABAP Leitfaden URL
+ * Generate DSAG ABAP Guide URL (English version)
  * @param relFile - Relative file path (e.g., "docs/clean-core/what-is-clean-core.md")
  * @param content - File content for extracting anchors
  * @returns Generated GitHub Pages URL with proper path transformation
  */
 export function generateDsagUrl(relFile: string, content: string): string {
-  const baseUrl = 'https://1dsag.github.io/ABAP-Leitfaden';
+  const baseUrl = 'https://marianfoo.github.io/DSAG-ABAP-Guide';
   
   // Transform path: docs/clean-core/what-is-clean-core.md -> clean-core/what-is-clean-core/
   let urlPath = relFile;

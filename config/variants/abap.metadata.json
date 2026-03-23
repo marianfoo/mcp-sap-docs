@@ -59,13 +59,13 @@
     {
       "id": "dsag-abap-leitfaden",
       "type": "documentation",
-      "lang": "de",
-      "boost": 0.5,
-      "tags": ["abap", "leitfaden", "best-practices", "german", "dsag", "clean-core"],
-      "description": "DSAG ABAP Development Guidelines (German) - comprehensive ABAP best practices",
+      "lang": "en",
+      "boost": 0.7,
+      "tags": ["abap", "leitfaden", "best-practices", "english", "dsag", "clean-core"],
+      "description": "DSAG ABAP Development Guidelines (English) - comprehensive ABAP best practices",
       "libraryId": "/dsag-abap-leitfaden",
       "sourcePath": "dsag-abap-leitfaden/docs",
-      "baseUrl": "https://1dsag.github.io/ABAP-Leitfaden",
+      "baseUrl": "https://marianfoo.github.io/DSAG-ABAP-Guide",
       "pathPattern": "/{file}/",
       "anchorStyle": "github"
     },
