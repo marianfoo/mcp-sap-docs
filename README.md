@@ -29,6 +29,8 @@ Both variants run from the same codebase and differ by configuration (`MCP_VARIA
   - `sap_community_search` — dedicated SAP Community search (blogs, Q&A); use when `search` results are insufficient, especially for specific errors or workarounds
   - `sap_search_objects` — search SAP released objects by name/component/type from the official [SAP/abap-atc-cr-cv-s4hc](https://github.com/SAP/abap-atc-cr-cv-s4hc) API release state repo; use for clean core compliance discovery
   - `sap_get_object_details` — full release state details for a specific SAP object (class, table, interface, etc.) including clean core level, successor objects, and optional compliance verdict
+  - `sap_discovery_center_search` — search the SAP Discovery Center service catalog for BTP services by keyword, category, or license model
+  - `sap_discovery_center_service` — get comprehensive BTP service details from the Discovery Center including pricing plans, product roadmap, documentation links, and key features
 - ABAP-only tool:
   - `abap_lint` (enabled only when variant is `abap`)
 

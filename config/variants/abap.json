@@ -31,7 +31,8 @@
   ],
   "tools": {
     "abapLint": true,
-    "abapFeatureMatrix": true
+    "abapFeatureMatrix": true,
+    "discoveryCenter": true
   },
   "server": {
     "stdioName": "mcp-abap-community-server",

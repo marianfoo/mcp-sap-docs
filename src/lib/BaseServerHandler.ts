@@ -47,6 +47,7 @@ import { CONFIG } from "./config.js";
 import { loadMetadata, getDocUrlConfig } from "./metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./url-generation/index.js";
 import { isToolEnabled, getVariantName } from "./variant.js";
+import { searchDiscoveryCenter, getDiscoveryCenterServiceDetails } from "./discoveryCenter/index.js";
 
 /**
  * Helper functions for creating structured JSON responses compatible with ChatGPT and all MCP clients
@@ -841,12 +842,101 @@ RETURNS (JSON with):
               },
               required: ["object_type", "object_name"]
             }
+          },
+          {
+            name: "sap_discovery_center_search",
+            description: `SEARCH SAP BTP SERVICES: sap_discovery_center_search(query="SAP Build")
+
+FUNCTION NAME: sap_discovery_center_search
+
+Search the SAP Discovery Center service catalog to find SAP Business Technology Platform (BTP) services, solutions, and capabilities.
+
+Use this tool when you need to:
+- Find which SAP BTP services are available for a specific use case (e.g., integration, AI, database, extension development)
+- Discover services by name or keyword (e.g., "HANA", "Integration Suite", "Build", "AI Core")
+- Browse services filtered by license model (free tier, pay-as-you-go, subscription)
+- Find deprecated BTP services and their replacements
+- Explore SAP AI and machine learning services on BTP
+- Compare BTP services within a category
+
+Do NOT use this for ABAP documentation, code examples, or SAP Help content – use the 'search' tool for those.
+After finding a service, use sap_discovery_center_service(serviceId="...") to get full details including pricing, roadmap, and documentation links.
+
+PARAMETERS:
+• query (required): Search terms for BTP services. Use service names or capability keywords.
+• top (optional, default 10, max 25): Number of results to return.
+• category (optional): Filter by category, e.g., "AI", "Integration", "Data and Analytics", "Application Development and Automation", "Foundation / Cross Services".
+• license_model (optional): Filter by license type: "free", "payg", "subscription", "btpea", "cloudcredits".
+
+RETURNS (JSON):
+• services[]: Array of matching services with id, name, shortName, description, category, additionalCategories, licenseModelType, provider, tags, ribbon, isDeprecated
+• total: Number of results returned`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Search terms for BTP services." },
+                top: { type: "number", description: "Number of results (default 10, max 25)." },
+                category: { type: "string", description: "Category filter (e.g., 'AI', 'Integration', 'Data and Analytics')." },
+                license_model: { type: "string", enum: ["free", "payg", "subscription", "btpea", "cloudcredits"], description: "License model filter." }
+              },
+              required: ["query"]
+            }
+          },
+          {
+            name: "sap_discovery_center_service",
+            description: `GET SAP BTP SERVICE DETAILS: sap_discovery_center_service(serviceId="abc-123-def")
+
+FUNCTION NAME: sap_discovery_center_service
+
+Get comprehensive details for a specific SAP BTP service from the SAP Discovery Center, including pricing plans with per-unit costs, product roadmap, documentation links, and key features.
+
+Use this tool when you need to:
+- Get pricing information for a BTP service (plans, metrics, costs per unit, free tier availability)
+- View the product roadmap and upcoming features planned for a service
+- Find official documentation, tutorials, and community resources for a service
+- Understand service plans and their differences (free tier vs. standard vs. extended)
+- Get the SAP cost calculator link or SAP Store link for a service
+- Learn about key features and capabilities of a specific service (headlines)
+- Check what billing metrics a service uses (e.g., Capacity Units, API Calls)
+
+You can pass either a UUID from search results OR the service name directly (e.g., "SAP Build Code", "SAP AI Core", "SAP HANA Cloud"). The tool will auto-resolve names to UUIDs.
+
+PARAMETERS:
+• serviceId (required): Service UUID from search results OR the service name (e.g., "SAP Build Code"). Names are auto-resolved via search.
+• currency (optional, default "USD"): Pricing currency code (e.g., "EUR", "USD", "GBP").
+• include_roadmap (optional, default true): Include product roadmap data with planned features by quarter.
+• include_pricing (optional, default true): Include pricing plans with per-unit costs and billing metrics.
+
+RETURNS (JSON):
+• Core: name, description, category, productType, licenseModelType, tags, csnComponent
+• links: calculator, sapStore, featureDescription, discoveryCenter URLs
+• headlines[]: Key feature highlights with descriptions
+• resources: Documentation links grouped by type (documentation, tutorials, community, support, calculator)
+• metrics[]: Billing metric definitions (name, description, code)
+• pricing[]: Service plans with planName, planCode, description, usageType, features, and commercialModels (model, metric, chargingPeriod, pricePerUnit, blockSize). The pricing section contains actual per-unit prices from the SAP Discovery Center (e.g., "1.04 EUR" per Capacity Unit/month).
+• roadmap: Planned features organized by quarter with categories and deliverables (or null if no roadmap exists)`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                serviceId: { type: "string", description: "Service UUID from search results OR service name (e.g., 'SAP Build Code'). Names are auto-resolved." },
+                currency: { type: "string", description: "Pricing currency code (default 'USD')." },
+                include_roadmap: { type: "boolean", description: "Include product roadmap (default true)." },
+                include_pricing: { type: "boolean", description: "Include pricing plans (default true)." }
+              },
+              required: ["serviceId"]
+            }
           }
         ]
       };
 
       if (!isToolEnabled("abapLint")) {
         response.tools = response.tools.filter((tool) => tool.name !== "abap_lint");
+      }
+
+      if (!isToolEnabled("discoveryCenter")) {
+        response.tools = response.tools.filter((tool) =>
+          tool.name !== "sap_discovery_center_search" && tool.name !== "sap_discovery_center_service"
+        );
       }
 
       return response;
@@ -1353,6 +1443,92 @@ RETURNS (JSON with):
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
           return createErrorResponse(`Error fetching SAP object details: ${error}`, timing.requestId);
+        }
+      }
+
+      // ----- SAP Discovery Center tools -----
+
+      if (name === "sap_discovery_center_search") {
+        if (!isToolEnabled("discoveryCenter")) {
+          const timing = logger.logToolStart(name, "disabled", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Tool disabled for this variant"));
+          return createErrorResponse("Tool " + name + " is disabled for MCP variant " + getVariantName() + ".", timing.requestId);
+        }
+
+        const { query, top, category, license_model } = args as {
+          query: string;
+          top?: number;
+          category?: string;
+          license_model?: string;
+        };
+
+        if (!query) {
+          const timing = logger.logToolStart(name, "missing_query", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Missing query parameter"));
+          return createErrorResponse("Missing required parameter: query.", timing.requestId);
+        }
+
+        const timing = logger.logToolStart(name, query, clientMetadata);
+
+        try {
+          const result = await searchDiscoveryCenter({
+            query,
+            top,
+            category,
+            licenseModel: license_model,
+          });
+
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, result.total);
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return createErrorResponse(`Error searching Discovery Center: ${error}`, timing.requestId);
+        }
+      }
+
+      if (name === "sap_discovery_center_service") {
+        if (!isToolEnabled("discoveryCenter")) {
+          const timing = logger.logToolStart(name, "disabled", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Tool disabled for this variant"));
+          return createErrorResponse("Tool " + name + " is disabled for MCP variant " + getVariantName() + ".", timing.requestId);
+        }
+
+        const { serviceId, currency, include_roadmap, include_pricing } = args as {
+          serviceId: string;
+          currency?: string;
+          include_roadmap?: boolean;
+          include_pricing?: boolean;
+        };
+
+        if (!serviceId) {
+          const timing = logger.logToolStart(name, "missing_serviceId", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Missing serviceId parameter"));
+          return createErrorResponse("Missing required parameter: serviceId. Use sap_discovery_center_search first to find the service ID.", timing.requestId);
+        }
+
+        const timing = logger.logToolStart(name, serviceId, clientMetadata);
+
+        try {
+          const result = await getDiscoveryCenterServiceDetails({
+            serviceId,
+            currency,
+            includeRoadmap: include_roadmap,
+            includePricing: include_pricing,
+          });
+
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, 1);
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          return createErrorResponse(`Error fetching service details from Discovery Center: ${error}`, timing.requestId);
         }
       }
 

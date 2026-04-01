@@ -4,6 +4,7 @@ import path from "node:path";
 export interface VariantToolFlags {
   abapLint: boolean;
   abapFeatureMatrix: boolean;
+  discoveryCenter: boolean;
 }
 
 export interface VariantServerIdentity {

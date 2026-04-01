@@ -47,6 +47,16 @@ export const CONFIG = {
   SAP_RELEASED_OBJECTS_CACHE_TTL_MS: Number(process.env.SAP_RELEASED_OBJECTS_CACHE_TTL_MS || 86400000),
 
   // ---------------------------------------------------------------------------
+  // SAP Discovery Center Configuration
+  // ---------------------------------------------------------------------------
+
+  // Request timeout in milliseconds (default: 15 seconds)
+  DISCOVERY_CENTER_TIMEOUT_MS: Number(process.env.DISCOVERY_CENTER_TIMEOUT_MS || 15000),
+
+  // Cache TTL in milliseconds (default: 1 hour)
+  DISCOVERY_CENTER_CACHE_TTL_MS: Number(process.env.DISCOVERY_CENTER_CACHE_TTL_MS || 3600000),
+
+  // ---------------------------------------------------------------------------
   // Hybrid Search (BM25 + Embeddings) Configuration
   // ---------------------------------------------------------------------------
 

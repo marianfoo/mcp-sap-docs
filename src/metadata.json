@@ -489,7 +489,7 @@
       "/cloud-sdk-ai-java": 0.5
     },
     "Terraform BTP": {
-      "/terraform-provider-btp": 1.0
+      "/terraform-provider-btp": 0.5
     }
   },
 
