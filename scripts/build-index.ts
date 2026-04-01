@@ -285,6 +285,15 @@ const SOURCES: SourceConfig[] = [
     description: "SAP AI Core and SAP AI Launchpad documentation",
     filePattern: "**/*.md",
     type: "markdown" as const
+  },
+  {
+    repoName: "terraform-provider-btp",
+    absDir: join("sources", "terraform-provider-btp"),
+    id: "/terraform-provider-btp",
+    name: "Terraform Provider for SAP BTP",
+    description: "Terraform provider documentation for SAP BTP including resources, data sources, list resources, and functions",
+    filePattern: "docs/**/*.md",
+    type: "markdown" as const
   }
 ];
 

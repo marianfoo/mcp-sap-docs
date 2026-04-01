@@ -10,6 +10,7 @@ import { CapUrlGenerator } from './cap.js';
 import { Wdi5UrlGenerator } from './wdi5.js';
 import { DsagUrlGenerator } from './dsag.js';
 import { AbapUrlGenerator } from './abap.js';
+import { TerraformBtpUrlGenerator } from './terraform-btp.js';
 import { GenericUrlGenerator } from './GenericUrlGenerator.js';
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
 
@@ -61,6 +62,7 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/sap-styleguides': GenericUrlGenerator,
   '/abap-fiori-showcase': GenericUrlGenerator,
   '/cap-fiori-showcase': GenericUrlGenerator,
+  '/terraform-provider-btp': TerraformBtpUrlGenerator,
 };
 
 /**
@@ -126,6 +128,7 @@ export { SapUi5UrlGenerator } from './sapui5.js';
 export { CapUrlGenerator } from './cap.js';
 export { Wdi5UrlGenerator } from './wdi5.js';
 export { DsagUrlGenerator } from './dsag.js';
+export { TerraformBtpUrlGenerator } from './terraform-btp.js';
 export { GenericUrlGenerator } from './GenericUrlGenerator.js';
 
 // Re-export convenience functions for backward compatibility

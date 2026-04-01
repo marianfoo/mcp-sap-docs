@@ -91,7 +91,8 @@ describe('Comprehensive URL Generation System', () => {
       '/abap-fiori-showcase': { basePath: 'sources/abap-fiori-showcase' },
       '/cap-fiori-showcase': { basePath: 'sources/cap-fiori-showcase' },
       '/btp-cloud-platform': { basePath: 'sources/btp-cloud-platform/docs' },
-      '/sap-artificial-intelligence': { basePath: 'sources/sap-artificial-intelligence/docs' }
+      '/sap-artificial-intelligence': { basePath: 'sources/sap-artificial-intelligence/docs' },
+      '/terraform-provider-btp': { basePath: 'sources/terraform-provider-btp' }
     };
 
     const mapping = pathMappings[libraryId];
@@ -274,6 +275,46 @@ describe('Comprehensive URL Generation System', () => {
       expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README#sap-fiori-elements-for-odata-v4-feature-showcase',
       frontmatter: '',
       content: '# SAP Fiori Elements for OData V4 Feature Showcase\n\nThis app showcases different features of SAP Fiori elements...'
+    },
+    {
+      name: 'Terraform BTP Provider - Index',
+      libraryId: '/terraform-provider-btp',
+      relFile: 'docs/index.md',
+      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/index#terraform-provider-for-sap-btp',
+      frontmatter: '',
+      content: '# Terraform Provider for SAP BTP\n\nThe Terraform provider for SAP BTP enables you...'
+    },
+    {
+      name: 'Terraform BTP Data Source - Subaccount',
+      libraryId: '/terraform-provider-btp',
+      relFile: 'docs/data-sources/subaccount.md',
+      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/data-sources/subaccount#btp_subaccount-data-source',
+      frontmatter: '',
+      content: '# btp_subaccount (Data Source)\n\nGets details about a subaccount.'
+    },
+    {
+      name: 'Terraform BTP Function - Extract CF API URL',
+      libraryId: '/terraform-provider-btp',
+      relFile: 'docs/functions/extract_cf_api_url.md',
+      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/functions/extract_cf_api_url#extract_cf_api_url-function',
+      frontmatter: '',
+      content: '# extract_cf_api_url (function)\n\nParses the label string...'
+    },
+    {
+      name: 'Terraform BTP List Resource - Subaccount',
+      libraryId: '/terraform-provider-btp',
+      relFile: 'docs/list-resources/subaccount.md',
+      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/list-resources/subaccount#btp_subaccount-list-resource',
+      frontmatter: '',
+      content: '# btp_subaccount (List Resource)\n\nThis list resource allows you to discover all subaccounts.'
+    },
+    {
+      name: 'Terraform BTP Resource - Subaccount',
+      libraryId: '/terraform-provider-btp',
+      relFile: 'docs/resources/subaccount.md',
+      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/resources/subaccount#btp_subaccount-resource',
+      frontmatter: '',
+      content: '# btp_subaccount (Resource)\n\nCreates a subaccount in a global account or directory.'
     }
     // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
     // or fallback to mock content if actual files don't exist in expected locations

@@ -65,6 +65,7 @@ get_sparse_paths() {
     sources/abap-docs)                   printf 'docs' ;;
     sources/btp-cloud-platform)          printf 'docs' ;;
     sources/sap-artificial-intelligence) printf 'docs' ;;
+    sources/terraform-provider-btp)      printf 'docs' ;;
     sources/abap-atc-cr-cv-s4hc)         printf 'src' ;;
     *)                                   printf '' ;;
   esac

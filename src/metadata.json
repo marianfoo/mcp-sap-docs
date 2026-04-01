@@ -304,6 +304,19 @@
       "anchorStyle": "github"
     },
     {
+      "id": "terraform-provider-btp",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["terraform", "btp", "infrastructure-as-code", "provider"],
+      "description": "Terraform provider documentation for SAP BTP",
+      "libraryId": "/terraform-provider-btp",
+      "sourcePath": "terraform-provider-btp",
+      "baseUrl": "https://github.com/SAP/terraform-provider-btp/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
       "id": "teched2025-dt260",
       "type": "samples",
       "lang": "en",
@@ -474,6 +487,9 @@
       "/sap-artificial-intelligence": 1.0,
       "/cloud-sdk-ai-js": 0.5,
       "/cloud-sdk-ai-java": 0.5
+    },
+    "Terraform BTP": {
+      "/terraform-provider-btp": 1.0
     }
   },
 
@@ -501,7 +517,8 @@
     "abap-docs-standard": "abap-docs",
     "abap-docs-cloud": "abap-docs",
     "btp-cloud-platform": "btp-cloud-platform",
-    "sap-artificial-intelligence": "sap-artificial-intelligence"
+    "sap-artificial-intelligence": "sap-artificial-intelligence",
+    "terraform-provider-btp": "terraform-provider-btp"
   },
 
   "contextEmojis": {
@@ -523,6 +540,7 @@
     "ATC": "🔍",
     "MIXED": "🔀",
     "SAP BTP": "☁️",
-    "SAP AI": "🤖"
+    "SAP AI": "🤖",
+    "Terraform BTP": "🏗️"
   }
 }
