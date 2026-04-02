@@ -1,0 +1,271 @@
+name: Deploy MCP stack
+
+on:
+  push:
+    branches: [ main ]
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    # 👇 must match the environment where you stored the secrets
+    environment:
+      name: remote server
+
+    steps:
+      - name: Check out repo (for action context only)
+        uses: actions/checkout@v4
+        with:
+          # Fetch more than just the triggering commit to handle workflow reruns
+          fetch-depth: 10
+          
+      - name: Ensure we have the latest main branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          echo "Current HEAD: $(git rev-parse HEAD)"
+          echo "Latest main: $(git rev-parse origin/main)"
+
+      - name: Preflight verify required secrets are present
+        run: |
+          set -euo pipefail
+          for s in SERVER_IP SERVER_USERNAME SSH_PRIVATE_KEY; do
+            [ -n "${!s}" ] || { echo "Missing $s"; exit 1; }
+          done
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Auto-increment version
+        run: |
+          # Get current version and increment patch
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Extract major.minor.patch
+          IFS='.' read -ra PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${PARTS[0]}
+          MINOR=${PARTS[1]}
+          PATCH=${PARTS[2]}
+          
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version
+          
+      - name: Update hardcoded version in streamable server
+        run: |
+          # Update the hardcoded version in streamable-http-server.ts
+          sed -i 's/const VERSION = "[0-9]*\.[0-9]*\.[0-9]*";/const VERSION = "'${{ env.NEW_VERSION }}'";/g' src/streamable-http-server.ts
+          
+      - name: Commit version bump
+        id: version_bump
+        continue-on-error: true
+        run: |
+          set -e
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Check if there are any changes to commit
+          git add package.json package-lock.json src/streamable-http-server.ts
+          if ! git diff --staged --quiet; then
+            
+            if git commit -m "chore: bump version to ${{ env.NEW_VERSION }} [skip ci]"; then
+              echo "Version bump committed successfully"
+              
+              # Handle potential conflicts from concurrent pushes or workflow reruns
+              echo "Attempting to push version bump..."
+              if ! git push; then
+                echo "Push failed, likely due to remote changes. Pulling and retrying..."
+                git fetch origin main
+                
+                # Try rebase first
+                if git rebase origin/main; then
+                  echo "Rebase successful, pushing again..."
+                  git push
+                else
+                  echo "Rebase failed, attempting merge strategy..."
+                  git rebase --abort
+                  git merge origin/main --no-edit
+                  git push
+                fi
+              fi
+              echo "✅ Version bump pushed successfully"
+            else
+              echo "ℹ️ No version changes to commit"
+            fi
+          else
+            echo "ℹ️ No version changes detected"
+          fi
+          
+      - name: Handle version bump failure
+        if: steps.version_bump.outcome == 'failure'
+        run: |
+          echo "⚠️ Version bump failed, but continuing with deployment"
+          echo "This can happen with concurrent workflows or when rerunning failed deployments"
+          echo "The deployment will proceed with the current version"
+          
+          # Reset any partial git state
+          git reset --hard HEAD
+          git clean -fd
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          NEW_VERSION: ${{ env.NEW_VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NEW_VERSION,GITHUB_TOKEN
+          # Submodule clones + full build (including embedding model download) can take 20-30 min
+          command_timeout: 45m
+          script: |
+            set -Eeuo pipefail
+
+            echo "==> Database Health Pre-Check"
+            cd /opt/mcp-sap/abap-mcp-server || { echo "Directory not found, will be created"; }
+            
+            # Function to check SQLite database integrity
+            check_db_integrity() {
+              local db_path="$1"
+              if [ -f "$db_path" ]; then
+                echo "🔍 Checking database integrity: $db_path"
+                if sqlite3 "$db_path" "PRAGMA integrity_check;" 2>/dev/null | grep -q "ok"; then
+                  echo "✅ Database integrity OK"
+                  return 0
+                else
+                  echo "❌ Database corruption detected"
+                  return 1
+                fi
+              else
+                echo "ℹ️ Database file does not exist: $db_path"
+                return 1
+              fi
+            }
+            
+            # Check existing database and create backup
+            DB_PATH="/opt/mcp-sap/abap-mcp-server/dist/data/docs.sqlite"
+            if [ -f "$DB_PATH" ]; then
+              if ! check_db_integrity "$DB_PATH"; then
+                echo "==> Database corruption detected - will rebuild"
+                rm -f "$DB_PATH"
+              else
+                echo "==> Creating database backup before deployment"
+                BACKUP_PATH="/opt/mcp-sap/backups/deploy-backup-$(date +%Y%m%d-%H%M%S).sqlite"
+                mkdir -p /opt/mcp-sap/backups
+                cp "$DB_PATH" "$BACKUP_PATH"
+                echo "✅ Database backed up to $BACKUP_PATH"
+                
+                # Keep only last 5 backups
+                ls -t /opt/mcp-sap/backups/deploy-backup-*.sqlite 2>/dev/null | tail -n +6 | xargs -r rm --
+              fi
+            fi
+
+            echo "==> Ensure base path exists and owned by user"
+            sudo mkdir -p /opt/mcp-sap
+            sudo chown -R "$USER":"$USER" /opt/mcp-sap
+
+            echo "==> Clone or update repo (with submodules)"
+            
+            # Configure git to use the token for all GitHub URLs (handles main repo + submodules)
+            git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+            git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+            if [ -d /opt/mcp-sap/abap-mcp-server/.git ]; then
+              cd /opt/mcp-sap/abap-mcp-server
+              # Ensure origin uses the generic URL (the config above will intercept it and add auth)
+              git remote set-url origin https://github.com/marianfoo/abap-mcp-server.git
+              git fetch --prune --quiet
+              git reset --hard origin/main --quiet
+            else
+              cd /opt/mcp-sap
+              git clone --quiet https://github.com/marianfoo/abap-mcp-server.git
+              cd abap-mcp-server
+            fi
+            
+            echo "==> Deploying version: $NEW_VERSION"
+
+            echo "==> Configure BM25 search environment"
+            # Ensure metadata file exists for centralized configuration
+            [ -f /opt/mcp-sap/abap-mcp-server/data/metadata.json ] || echo "Metadata file will be created during build"
+            
+            echo "==> Check system resources before build"
+            AVAILABLE_MB=$(df /opt/mcp-sap --output=avail -m | tail -n1)
+            if [ "$AVAILABLE_MB" -lt 1000 ]; then
+              echo "❌ ERROR: Insufficient disk space. Available: ${AVAILABLE_MB}MB, Required: 1000MB"
+              exit 1
+            fi
+            echo "✅ Disk space OK: ${AVAILABLE_MB}MB available"
+            
+            AVAILABLE_KB=$(awk '/MemAvailable/ { print $2 }' /proc/meminfo)
+            AVAILABLE_MB_MEM=$((AVAILABLE_KB / 1024))
+            if [ "$AVAILABLE_MB_MEM" -lt 512 ]; then
+              echo "❌ ERROR: Insufficient memory. Available: ${AVAILABLE_MB_MEM}MB, Required: 512MB"
+              exit 1
+            fi
+            echo "✅ Memory OK: ${AVAILABLE_MB_MEM}MB available"
+
+            echo "==> Stop MCP services gracefully before build"
+            pm2 stop abap-mcp-http abap-mcp-streamable > /dev/null 2>&1 || true
+            sleep 3
+            
+            echo "==> Run setup (shallow, single-branch submodules + build)"
+            SKIP_NESTED_SUBMODULES=1 bash setup.sh
+
+            echo "==> Verify database integrity after build"
+            if ! check_db_integrity "$DB_PATH"; then
+              echo "❌ ERROR: Database corruption after build - deployment failed"
+              exit 1
+            fi
+            echo "✅ Database integrity verified after build"
+
+            echo "==> Create logs directory with proper permissions"
+            mkdir -p /opt/mcp-sap/logs
+            chown -R "$USER":"$USER" /opt/mcp-sap/logs
+
+            echo "==> (Re)start MCP services with BM25 search support"
+            # HTTP status on 127.0.0.1:3002; Streamable HTTP on 127.0.0.1:3124
+            (pm2 start /opt/mcp-sap/abap-mcp-server/ecosystem.config.cjs --only abap-mcp-http || pm2 restart abap-mcp-http) > /dev/null 2>&1
+            (pm2 start /opt/mcp-sap/abap-mcp-server/ecosystem.config.cjs --only abap-mcp-streamable || pm2 restart abap-mcp-streamable) > /dev/null 2>&1
+            pm2 save > /dev/null 2>&1
+
+            echo "==> Enhanced health checks with database verification"
+            sleep 5
+            
+            for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3002/status >/dev/null && break || sleep 2; done
+            curl -fsS http://127.0.0.1:3002/status
+            # Streamable HTTP server health on 127.0.0.1:3124
+            for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3124/health >/dev/null && break || sleep 2; done
+            curl -fsS http://127.0.0.1:3124/health
+
+            # Test actual search functionality to ensure no SQLite corruption
+            echo "==> Testing search functionality"
+            SEARCH_TEST=$(curl -s -X POST http://127.0.0.1:3002/mcp -H "Content-Type: application/json" -d '{"role": "user", "content": "test search"}')
+            if echo "$SEARCH_TEST" | grep -q "SqliteError\|SQLITE_CORRUPT\|Tool execution failed"; then
+              echo "❌ ERROR: Search test failed - possible database corruption"
+              echo "Response: $SEARCH_TEST"
+              exit 1
+            fi
+            echo "✅ Search functionality verified - no corruption detected"
+
+            echo "==> Final database integrity check"
+            if ! check_db_integrity "$DB_PATH"; then
+              echo "❌ WARNING: Database corruption detected after deployment"
+              # Don't fail deployment, but alert
+            else
+              echo "✅ Final database integrity check passed"
+            fi
+
+            echo "✅ Deployment completed successfully - Version: $NEW_VERSION"
