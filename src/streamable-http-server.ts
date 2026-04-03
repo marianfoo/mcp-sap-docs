@@ -12,7 +12,7 @@ import { getVariantConfig } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
-// Version will be updated by deployment script
+// x-release-please-version
 const VERSION = "0.3.32";
 const variant = getVariantConfig();
 
