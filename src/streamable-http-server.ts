@@ -13,7 +13,7 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.3.35";
+const VERSION = "0.3.36";
 const variant = getVariantConfig();
 
 
