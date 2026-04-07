@@ -16,6 +16,41 @@ printf '📚 Initializing documentation submodules...\n'
 printf '  → Syncing submodule configuration...\n'
 git submodule sync --recursive
 
+# Prune working-tree directories and .git/modules/ caches for submodules that have been
+# removed from .gitmodules. Without this, deleted sources accumulate on the server across
+# deploys, wasting disk space and potentially confusing the build index.
+printf '  → Pruning removed submodule directories...\n'
+REGISTERED_PATHS="$(git config -f .gitmodules --get-regexp 'submodule\..*\.path' 2>/dev/null | awk '{print $2}' || true)"
+_PRUNED=0
+for _dir in sources/*/; do
+  _dir="${_dir%/}"
+  # Skip if the glob found nothing
+  [ "$_dir" = "sources/*" ] && continue
+  # Only touch directories that are (or were) a git submodule checkout
+  [ -e "$_dir/.git" ] || continue
+  if ! printf '%s\n' "$REGISTERED_PATHS" | grep -qxF "$_dir"; then
+    printf '    • Removing stale submodule working tree: %s\n' "$_dir"
+    rm -rf "$_dir"
+    _PRUNED=$((_PRUNED + 1))
+  fi
+done
+# Also remove orphaned .git/modules/ entries so re-adding a path with the same name later
+# does not pick up stale git state from the old checkout.
+if [ -d .git/modules/sources ]; then
+  for _mod in .git/modules/sources/*/; do
+    _mod="${_mod%/}"
+    [ "$_mod" = ".git/modules/sources/*" ] && continue
+    _mod_name="${_mod##*/}"
+    if ! printf '%s\n' "$REGISTERED_PATHS" | grep -qxF "sources/$_mod_name"; then
+      printf '    • Removing orphaned git module cache: %s\n' "$_mod"
+      rm -rf "$_mod"
+      _PRUNED=$((_PRUNED + 1))
+    fi
+  done
+fi
+[ "$_PRUNED" -eq 0 ] && printf '    ✓ No stale submodules found\n'
+unset _dir _mod _mod_name _PRUNED
+
 VARIANT_NAME="${MCP_VARIANT:-}"
 if [ -z "$VARIANT_NAME" ] && [ -f .mcp-variant ]; then
   VARIANT_NAME="$(tr -d '[:space:]' < .mcp-variant)"
@@ -91,7 +126,9 @@ while IFS= read -r line; do
   SPARSE_PATHS="$(get_sparse_paths "$path")"
   printf '    • %s (branch: %s)\n' "$path" "$branch"
 
-  if [ ! -d "$path/.git" ]; then
+  # Use -e (file or directory) not -d (directory only): sparse-checkout repos have .git as a
+  # gitdir pointer file, not a directory. -d would miss those and trigger a spurious re-clone.
+  if [ ! -e "$path/.git" ]; then
     if [ -n "$SPARSE_PATHS" ]; then
       printf '      - cloning shallow sparse (%s)...\n' "$SPARSE_PATHS"
       _clone_branch="$branch"
@@ -100,7 +137,7 @@ while IFS= read -r line; do
         _clone_branch="master"
         GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none --no-tags --single-branch --depth 1 --no-checkout --branch "$_clone_branch" "$url" "$path" || true
       }
-      if [ -d "$path/.git" ]; then
+      if [ -e "$path/.git" ]; then
         git -C "$path" sparse-checkout init --cone
         # word-split intentional: SPARSE_PATHS is space-separated directory names
         # shellcheck disable=SC2086

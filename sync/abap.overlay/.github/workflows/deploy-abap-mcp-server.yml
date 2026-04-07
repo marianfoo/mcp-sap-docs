@@ -134,6 +134,13 @@ jobs:
           script: |
             set -Eeuo pipefail
 
+            # Serialize concurrent deploys so two simultaneous workflow runs never race on shared
+            # server resources (git operations, pm2, etc.). Both the abap and sap-docs workflows
+            # use the same lock file, so they queue behind each other too.
+            exec 200>/tmp/mcp-sap-deploy.lock
+            flock -w 600 200 || { echo "❌ Could not acquire deploy lock after 10 min"; exit 1; }
+            echo "==> Deploy lock acquired (PID $$)"
+
             echo "==> Database Health Pre-Check"
             cd /opt/mcp-sap/abap-mcp-server || { echo "Directory not found, will be created"; }
             
@@ -178,14 +185,20 @@ jobs:
             sudo chown -R "$USER":"$USER" /opt/mcp-sap
 
             echo "==> Clone or update repo (with submodules)"
-            
-            # Configure git to use the token for all GitHub URLs (handles main repo + submodules)
-            git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-            git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+            # Inject auth for all GitHub URLs via environment variables rather than writing to
+            # ~/.gitconfig. This avoids token accumulation across runs and eliminates the
+            # config-file lock race when two deploys run concurrently.
+            # GIT_CONFIG_COUNT/KEY/VALUE are supported since Git 2.31 (Ubuntu 22.04 ships 2.34).
+            export GIT_CONFIG_COUNT=2
+            export GIT_CONFIG_KEY_0="url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf"
+            export GIT_CONFIG_VALUE_0="https://github.com/"
+            export GIT_CONFIG_KEY_1="url.https://x-access-token:${GITHUB_TOKEN}@github.com/.insteadOf"
+            export GIT_CONFIG_VALUE_1="git@github.com:"
 
             if [ -d /opt/mcp-sap/abap-mcp-server/.git ]; then
               cd /opt/mcp-sap/abap-mcp-server
-              # Ensure origin uses the generic URL (the config above will intercept it and add auth)
+              # Keep the remote URL token-free; the GIT_CONFIG env vars above add auth transparently
               git remote set-url origin https://github.com/marianfoo/abap-mcp-server.git
               git fetch --prune --quiet
               git reset --hard origin/main --quiet
