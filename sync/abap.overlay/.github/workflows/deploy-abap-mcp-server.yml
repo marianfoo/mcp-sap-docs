@@ -137,8 +137,8 @@ jobs:
             # Serialize concurrent deploys so two simultaneous workflow runs never race on shared
             # server resources (git operations, pm2, etc.). Both the abap and sap-docs workflows
             # use the same lock file, so they queue behind each other too.
-            exec 200>/tmp/mcp-sap-deploy.lock
-            flock -w 600 200 || { echo "❌ Could not acquire deploy lock after 10 min"; exit 1; }
+            exec 9>/tmp/mcp-sap-deploy.lock
+            flock -w 600 9 || { echo "❌ Could not acquire deploy lock after 10 min"; exit 1; }
             echo "==> Deploy lock acquired (PID $$)"
 
             echo "==> Database Health Pre-Check"
