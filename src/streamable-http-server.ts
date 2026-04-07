@@ -211,6 +211,21 @@ async function main() {
           requestId,
           method: req.method
         });
+      } else if (!sessionId && req.method === 'POST' && req.is('application/json')) {
+        // Stateless request (no session ID, not initialize) — create one-shot transport
+        // This supports clients like Joule Studio that don't maintain sessions
+        logger.debug('Stateless MCP request, creating one-shot transport', {
+          requestId,
+          bodyMethod: req.body?.method,
+          userAgent: req.headers['user-agent']
+        });
+
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, // Stateless — no session
+        });
+
+        const server = createServer();
+        await server.connect(transport);
       } else {
         // Invalid request - no session ID or not initialization request
         logger.warn('Invalid MCP request', {
@@ -221,7 +236,7 @@ async function main() {
           sessionId: sessionId || 'none',
           userAgent: req.headers['user-agent']
         });
-        
+
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
