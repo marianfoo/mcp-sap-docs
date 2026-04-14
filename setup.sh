@@ -102,6 +102,7 @@ get_sparse_paths() {
     sources/sap-artificial-intelligence) printf 'docs' ;;
     sources/terraform-provider-btp)      printf 'docs' ;;
     sources/abap-atc-cr-cv-s4hc)         printf 'src' ;;
+    sources/architecture-center)         printf 'docs' ;;
     *)                                   printf '' ;;
   esac
 }

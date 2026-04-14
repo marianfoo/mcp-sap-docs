@@ -260,6 +260,15 @@ const SOURCES: SourceConfig[] = [
     type: "markdown" as const
   },
   {
+    repoName: "architecture-center",
+    absDir: join("sources", "architecture-center", "docs", "ref-arch"),
+    id: "/architecture-center",
+    name: "SAP Architecture Center",
+    description: "SAP Enterprise Architecture Reference Library - Reference architectures for SAP solutions",
+    filePattern: "**/readme.md",
+    type: "markdown" as const
+  },
+  {
     repoName: "teched2025-dt260",
     absDir: join("sources", "teched2025-dt260"),
     id: "/teched2025-dt260",

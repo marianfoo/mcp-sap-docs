@@ -12,6 +12,7 @@ import { DsagUrlGenerator } from './dsag.js';
 import { AbapUrlGenerator } from './abap.js';
 import { TerraformBtpUrlGenerator } from './terraform-btp.js';
 import { GenericUrlGenerator } from './GenericUrlGenerator.js';
+import { ArchitectureCenterUrlGenerator } from './architecture-center.js';
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
 
 export interface UrlGenerationOptions {
@@ -63,6 +64,9 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/abap-fiori-showcase': GenericUrlGenerator,
   '/cap-fiori-showcase': GenericUrlGenerator,
   '/terraform-provider-btp': TerraformBtpUrlGenerator,
+
+  // SAP Architecture Center
+  '/architecture-center': ArchitectureCenterUrlGenerator,
 };
 
 /**
@@ -130,6 +134,7 @@ export { Wdi5UrlGenerator } from './wdi5.js';
 export { DsagUrlGenerator } from './dsag.js';
 export { TerraformBtpUrlGenerator } from './terraform-btp.js';
 export { GenericUrlGenerator } from './GenericUrlGenerator.js';
+export { ArchitectureCenterUrlGenerator } from './architecture-center.js';
 
 // Re-export convenience functions for backward compatibility
 export { generateCloudSdkUrl, generateCloudSdkAiUrl, generateCloudSdkUrlForLibrary } from './cloud-sdk.js';

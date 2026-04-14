@@ -28,7 +28,8 @@
     "/abap-docs-cloud",
     "/btp-cloud-platform",
     "/sap-artificial-intelligence",
-    "/terraform-provider-btp"
+    "/terraform-provider-btp",
+    "/architecture-center"
   ],
   "submodulePaths": [
     "sources/sapui5-docs",
@@ -54,7 +55,8 @@
     "sources/btp-cloud-platform",
     "sources/sap-artificial-intelligence",
     "sources/abap-atc-cr-cv-s4hc",
-    "sources/terraform-provider-btp"
+    "sources/terraform-provider-btp",
+    "sources/architecture-center"
   ],
   "tools": {
     "abapLint": false,

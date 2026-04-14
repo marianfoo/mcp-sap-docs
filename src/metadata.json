@@ -317,6 +317,19 @@
       "anchorStyle": "github"
     },
     {
+      "id": "architecture-center",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["architecture", "reference-architecture", "enterprise-architecture", "btp", "integration", "solution-design"],
+      "description": "SAP Architecture Center - Reference architectures for SAP solutions",
+      "libraryId": "/architecture-center",
+      "sourcePath": "architecture-center/docs/ref-arch",
+      "baseUrl": "https://architecture.learning.sap.com/docs",
+      "pathPattern": "{file}",
+      "anchorStyle": "github"
+    },
+    {
       "id": "teched2025-dt260",
       "type": "samples",
       "lang": "en",
@@ -351,7 +364,9 @@
     { "from": "atc", "to": ["abap test cockpit", "code analysis", "cloud readiness", "clean core check"] },
     { "from": "fiori-elements", "to": ["fiori elements", "annotations", "odata"] },
     { "from": "rap", "to": ["restful application programming", "abap restful"] },
-    { "from": "annotations", "to": ["ui5 annotations", "odata annotations", "fiori annotations"] }
+    { "from": "annotations", "to": ["ui5 annotations", "odata annotations", "fiori annotations"] },
+    { "from": "reference architecture", "to": ["architecture center", "solution architecture", "enterprise architecture"] },
+    { "from": "architecture", "to": ["reference architecture", "solution design", "architecture center"] }
   ],
   
   "acronyms": {
@@ -490,6 +505,14 @@
     },
     "Terraform BTP": {
       "/terraform-provider-btp": 0.5
+    },
+    "Architecture": {
+      "/architecture-center": 1.0,
+      "/btp-cloud-platform": 0.4
+    },
+    "Reference Architecture": {
+      "/architecture-center": 1.5,
+      "/btp-cloud-platform": 0.3
     }
   },
 
@@ -518,7 +541,8 @@
     "abap-docs-cloud": "abap-docs",
     "btp-cloud-platform": "btp-cloud-platform",
     "sap-artificial-intelligence": "sap-artificial-intelligence",
-    "terraform-provider-btp": "terraform-provider-btp"
+    "terraform-provider-btp": "terraform-provider-btp",
+    "architecture-center": "architecture-center"
   },
 
   "contextEmojis": {
@@ -541,6 +565,8 @@
     "MIXED": "🔀",
     "SAP BTP": "☁️",
     "SAP AI": "🤖",
-    "Terraform BTP": "🏗️"
+    "Terraform BTP": "🏗️",
+    "Architecture": "🏛️",
+    "Reference Architecture": "🏛️"
   }
 }
