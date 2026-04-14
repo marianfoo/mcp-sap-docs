@@ -24,14 +24,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { 
+import {
   generateDocumentationUrl,
   CloudSdkUrlGenerator,
   SapUi5UrlGenerator,
   CapUrlGenerator,
   Wdi5UrlGenerator,
   DsagUrlGenerator,
-  GenericUrlGenerator
+  GenericUrlGenerator,
+  ArchitectureCenterUrlGenerator
 } from '../src/lib/url-generation/index.js';
 import { AbapUrlGenerator, generateAbapUrl } from '../src/lib/url-generation/abap.js';
 import { DocUrlConfig, getDocUrlConfig } from '../src/lib/metadata.js';
@@ -92,7 +93,8 @@ describe('Comprehensive URL Generation System', () => {
       '/cap-fiori-showcase': { basePath: 'sources/cap-fiori-showcase' },
       '/btp-cloud-platform': { basePath: 'sources/btp-cloud-platform/docs' },
       '/sap-artificial-intelligence': { basePath: 'sources/sap-artificial-intelligence/docs' },
-      '/terraform-provider-btp': { basePath: 'sources/terraform-provider-btp' }
+      '/terraform-provider-btp': { basePath: 'sources/terraform-provider-btp' },
+      '/architecture-center': { basePath: 'sources/architecture-center/docs/ref-arch' }
     };
 
     const mapping = pathMappings[libraryId];
@@ -315,6 +317,23 @@ describe('Comprehensive URL Generation System', () => {
       expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/resources/subaccount#btp_subaccount-resource',
       frontmatter: '',
       content: '# btp_subaccount (Resource)\n\nCreates a subaccount in a global account or directory.'
+    },
+    // Architecture Center - slug-based URL generation
+    {
+      name: 'Architecture Center - Event-Driven Applications (RA0001)',
+      libraryId: '/architecture-center',
+      relFile: 'RA0001/readme.md',
+      expectedUrl: 'https://architecture.learning.sap.com/docs/ref-arch/fbdc46aaae',
+      frontmatter: '---\nid: id-ra0001\nslug: /ref-arch/fbdc46aaae\ntitle: Designing Event-Driven Applications\ndescription: Guidance for developing applications based on Event-Driven Architecture (EDA) patterns.\nkeywords:\n  - event-driven applications\n  - eda patterns\n  - cap framework\n---\n',
+      content: '# Designing Event-Driven Applications\n\nThis reference architecture provides guidance for developing applications...'
+    },
+    {
+      name: 'Architecture Center - Generative AI on SAP BTP (RA0005)',
+      libraryId: '/architecture-center',
+      relFile: 'RA0005/readme.md',
+      expectedUrl: 'https://architecture.learning.sap.com/docs/ref-arch/e5eb3b9b1d',
+      frontmatter: '---\nid: id-ra0005\nslug: /ref-arch/e5eb3b9b1d\ntitle: Generative AI on SAP BTP\ndescription: Integrate Generative AI with SAP BTP using SAP HANA Cloud Vector Engine.\nkeywords:\n  - generative ai hub\n  - vector engine integration\n---\n',
+      content: '# Generative AI on SAP BTP\n\nIntegrate Generative AI with SAP BTP...'
     }
     // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
     // or fallback to mock content if actual files don't exist in expected locations
@@ -774,6 +793,82 @@ describe('Comprehensive URL Generation System', () => {
         
         // Should use standard (on-premise) base URL as default
         expect(result).toBe('https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/test.html');
+      });
+    });
+
+    describe('ArchitectureCenterUrlGenerator', () => {
+      it('should generate URLs using frontmatter slug (not id)', () => {
+        const config = getConfigForLibrary('/architecture-center');
+        const generator = new ArchitectureCenterUrlGenerator('/architecture-center', config);
+        const content = '---\nid: id-ra0001\nslug: /ref-arch/fbdc46aaae\ntitle: Designing Event-Driven Applications\n---\n# Designing Event-Driven Applications';
+
+        const result = generator.generateUrl({
+          libraryId: '/architecture-center',
+          relFile: 'RA0001/readme.md',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/fbdc46aaae');
+      });
+
+      it('should prefer slug over id for URL generation', () => {
+        const config = getConfigForLibrary('/architecture-center');
+        const generator = new ArchitectureCenterUrlGenerator('/architecture-center', config);
+        // Both id and slug are present - slug should win
+        const content = '---\nid: id-ra0010\nslug: /ref-arch/1311c18c17\ntitle: Some Architecture\n---\n# Content';
+
+        const result = generator.generateUrl({
+          libraryId: '/architecture-center',
+          relFile: 'RA0010/readme.md',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/1311c18c17');
+      });
+
+      it('should not append anchors from content headings', () => {
+        const config = getConfigForLibrary('/architecture-center');
+        const generator = new ArchitectureCenterUrlGenerator('/architecture-center', config);
+        const content = '---\nslug: /ref-arch/abc123\n---\n# Main Title\n\n## Architecture Overview\n\nContent here...';
+
+        const result = generator.generateUrl({
+          libraryId: '/architecture-center',
+          relFile: 'RA0099/readme.md',
+          content,
+          config
+        });
+
+        // Slug-based URLs should be clean without anchors
+        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/abc123');
+      });
+
+      it('should read real source files and generate correct URLs', () => {
+        // Test against actual RA0001 source file if available
+        const content = readFileContent('/architecture-center', 'RA0001/readme.md');
+        if (!content) {
+          console.warn('Skipping real file test - architecture-center submodule not available');
+          return;
+        }
+
+        const config = getConfigForLibrary('/architecture-center');
+        const result = generateDocumentationUrl('/architecture-center', 'RA0001/readme.md', content, config);
+
+        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/fbdc46aaae');
+      });
+
+      it('should read real RA0005 source file and generate correct URL', () => {
+        const content = readFileContent('/architecture-center', 'RA0005/readme.md');
+        if (!content) {
+          console.warn('Skipping real file test - architecture-center submodule not available');
+          return;
+        }
+
+        const config = getConfigForLibrary('/architecture-center');
+        const result = generateDocumentationUrl('/architecture-center', 'RA0005/readme.md', content, config);
+
+        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/e5eb3b9b1d');
       });
     });
   });
