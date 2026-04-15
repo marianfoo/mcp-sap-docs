@@ -1,5 +1,7 @@
 # MCP SAP Docs (Upstream)
 
+An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to SAP documentation through a unified search and fetch interface. It combines a local full-text + semantic index over git-cloned SAP docs with optional live queries to SAP Help, SAP Community, and Software Heroes — all exposed as MCP tools.
+
 ## Public Hosted Endpoint
 
 > **Ready to use — no setup required**
@@ -9,30 +11,79 @@
 > | SAP Docs | `http://mcp-sap-docs.marianzeis.de/mcp` |
 > | ABAP | `https://mcp-abap.marianzeis.de/mcp` |
 
-`mcp-sap-docs` is the upstream repository for two MCP server variants:
+## Variants
 
-- `sap-docs` variant: broad SAP docs scope (UI5, CAP, Cloud SDK, ABAP docs, etc.)
-- `abap` variant: ABAP-focused scope (fewer sources, ABAP lint enabled)
+`mcp-sap-docs` is the upstream repository for two MCP server variants that share one codebase and differ by configuration (`MCP_VARIANT` / `.mcp-variant`):
 
-Both variants run from the same codebase and differ by configuration (`MCP_VARIANT` / `.mcp-variant`).
+| Variant | Scope | Extra tools |
+|---------|-------|-------------|
+| `sap-docs` | Broad SAP docs: UI5, CAP, Cloud SDK, ABAP, BTP, AI, Terraform | Discovery Center tools |
+| `abap` | ABAP-focused: ABAP keyword docs, RAP, cheat sheets, style guides | `abap_lint` |
 
-## Current State
+## Documentation Sources
+
+### Offline sources (local index, always available)
+
+| Source | Description |
+|--------|-------------|
+| `abap-docs-standard` | Official ABAP Keyword Documentation — on-premise / full syntax |
+| `abap-docs-cloud` | Official ABAP Keyword Documentation — ABAP Cloud / BTP (restricted syntax) |
+| `abap-cheat-sheets` | Practical ABAP/RAP code snippets and examples |
+| `abap-fiori-showcase` | Annotation-driven RAP + OData V4 + Fiori Elements feature showcase |
+| `abap-platform-rap-opensap` | openSAP "Building Apps with RAP" course samples |
+| `cloud-abap-rap` | ABAP Cloud + RAP example projects |
+| `abap-platform-reuse-services` | RAP reuse services examples (number ranges, mail, Adobe Forms, …) |
+| `sap-styleguides` | SAP Clean ABAP Style Guide and best practices |
+| `dsag-abap-leitfaden` | DSAG ABAP Leitfaden (German) development guidelines |
+| `btp-cloud-platform` | SAP BTP concepts, development, security, administration |
+| `sap-artificial-intelligence` | SAP AI Core and SAP AI Launchpad documentation |
+| `ui5` | SAPUI5 / OpenUI5 framework documentation |
+| `cap` | SAP Cloud Application Programming Model (CAP) documentation |
+| `cloud-sdk` | SAP Cloud SDK documentation |
+| `terraform-provider-btp` | SAP Terraform Provider for BTP — resources and data sources |
+| `architecture-center` | SAP Architecture Center reference architectures and guidance |
+| `wdi5` | wdi5 (WebdriverIO + UI5) testing framework documentation |
+
+### Online sources (live queries, enabled by default)
+
+| Source | Description |
+|--------|-------------|
+| SAP Help Portal | Official SAP product documentation (broad scope) |
+| SAP Community | Community blogs, Q&A, and troubleshooting posts |
+| Software Heroes | ABAP/RAP articles and tutorials (EN + DE, deduplicated) |
+
+## Available Tools
+
+### Shared tools (both variants)
+
+| Tool | Description |
+|------|-------------|
+| `search` | Unified hybrid search (BM25 + semantic) across offline docs and optional online sources. Supports `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources` parameters. |
+| `fetch` | Retrieve full document content by ID returned from `search`. |
+| `abap_feature_matrix` | Check ABAP feature availability across SAP releases (7.40–LATEST) using the [Software Heroes feature matrix](https://software-heroes.com/en/abap-feature-matrix). |
+| `sap_community_search` | Dedicated SAP Community search via the Khoros LiQL API — returns full content of top posts. Use when `search` results are insufficient for specific errors or workarounds. |
+| `sap_search_objects` | Search SAP released objects (classes, interfaces, tables, CDS views, …) by name/component/type from the official [SAP/abap-atc-cr-cv-s4hc](https://github.com/SAP/abap-atc-cr-cv-s4hc) release state repo. Useful for clean core compliance discovery. |
+| `sap_get_object_details` | Full release state details for a specific SAP object including clean core level (A/B/C/D), successor objects, and optional compliance verdict. |
+
+### `sap-docs` variant only
+
+| Tool | Description |
+|------|-------------|
+| `sap_discovery_center_search` | Search the SAP Discovery Center service catalog for BTP services by keyword, category, or license model. |
+| `sap_discovery_center_service` | Get comprehensive BTP service details: pricing plans, product roadmap, documentation links, and key features. Accepts a service UUID or name. |
+
+### `abap` variant only
+
+| Tool | Description |
+|------|-------------|
+| `abap_lint` | Run static code analysis on ABAP source code using abaplint. Auto-detects file type from code patterns. Returns findings with line numbers, severity, and rule keys. |
+
+## Architecture Overview
 
 - Upstream source of truth: `mcp-sap-docs`
 - One-way sync target: `abap-mcp-server`
-- Search API is unified across variants:
-  - `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources`
-- Shared tools in both variants:
-  - `search` — unified search across offline docs + optional online sources (SAP Help, SAP Community, Software Heroes)
-  - `fetch` — retrieve full document or community post content by ID
-  - `abap_feature_matrix` — check ABAP feature availability across SAP releases
-  - `sap_community_search` — dedicated SAP Community search (blogs, Q&A); use when `search` results are insufficient, especially for specific errors or workarounds
-  - `sap_search_objects` — search SAP released objects by name/component/type from the official [SAP/abap-atc-cr-cv-s4hc](https://github.com/SAP/abap-atc-cr-cv-s4hc) API release state repo; use for clean core compliance discovery
-  - `sap_get_object_details` — full release state details for a specific SAP object (class, table, interface, etc.) including clean core level, successor objects, and optional compliance verdict
-  - `sap_discovery_center_search` — search the SAP Discovery Center service catalog for BTP services by keyword, category, or license model
-  - `sap_discovery_center_service` — get comprehensive BTP service details from the Discovery Center including pricing plans, product roadmap, documentation links, and key features
-- ABAP-only tool:
-  - `abap_lint` (enabled only when variant is `abap`)
+- Search uses **Hybrid BM25 + Semantic (embedding)** fusion via Reciprocal Rank Fusion (RRF)
+- Embeddings model: `Xenova/all-MiniLM-L6-v2` (~90 MB, cached in `dist/models/`)
 
 ## Variant Selection
 
