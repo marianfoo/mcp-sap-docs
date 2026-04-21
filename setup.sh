@@ -176,9 +176,12 @@ while IFS= read -r line; do
       GIT_LFS_SKIP_SMUDGE=1 git -C "$path" fetch --filter=blob:none --no-tags --depth 1 --prune origin master || true
       branch=master
     fi
-    # Checkout/reset to the fetched tip
+    # Checkout/reset to the fetched tip.
+    # Suppress "unable to rmdir <nested-submodule-dir>" warnings — those directories
+    # contain nested submodule checkouts that git reset cannot remove; the
+    # `git submodule update --init --recursive` step below re-initialises them correctly.
     git -C "$path" checkout -B "$branch" "origin/$branch" 2>/dev/null || git -C "$path" checkout "$branch" || true
-    git -C "$path" reset --hard "origin/$branch" 2>/dev/null || true
+    git -C "$path" reset --hard "origin/$branch" 2>/dev/null | grep -v "^warning: unable to rmdir" || true
     # Expire stale reflogs so the shallow pack stays trim
     git -C "$path" reflog expire --expire=now --all >/dev/null 2>&1 || true
     # Prune objects orphaned by sparse checkout (frees .git disk space)
@@ -195,15 +198,89 @@ else
   git submodule update --init --recursive --depth 1 || true
 fi
 
-printf '  → Current submodule status:\n'
-git submodule status --recursive || true
+printf '  → Current submodule status (variant-active only):\n'
+# Filter status to only the submodules that this variant actually manages; skipped ones
+# (e.g. variant-exclusive sources) just add noise to the output.
+if [ -n "$ALLOWED_SUBMODULES_LIST" ]; then
+  git submodule status --recursive 2>/dev/null | while IFS= read -r _line; do
+    _spath=$(printf '%s' "$_line" | awk '{print $2}')
+    # Always show nested submodules (paths with more than one component under sources/)
+    _top="${_spath%%/*}/${_spath#*/}"
+    _top="${_top%%/*}"  # "sources/<name>"
+    if printf '%s\n' "$ALLOWED_SUBMODULES_LIST" | grep -qxF "$_top"; then
+      printf '%s\n' "$_line"
+    fi
+  done || true
+  unset _line _spath _top
+else
+  git submodule status --recursive || true
+fi
+
+# Remove stale SQLite auxiliary files before building the FTS index.
+# A crashed previous build can leave orphaned -shm/-wal files behind; SQLite then
+# tries to apply the old WAL against the freshly created empty database and fails
+# with SQLITE_IOERR_SHORT_READ. Wipe them here as a belt-and-suspenders guard —
+# build-fts.ts also does this, but the shell-level cleanup catches cases where
+# tsc compilation is skipped or the script is interrupted mid-run.
+_SQLITE_DB="dist/data/docs.sqlite"
+for _ext in -shm -wal; do
+  if [ -f "${_SQLITE_DB}${_ext}" ]; then
+    printf '🧹 Removing stale %s%s (leftover from a previous failed build)...\n' "$_SQLITE_DB" "$_ext"
+    rm -f "${_SQLITE_DB}${_ext}"
+  fi
+done
+unset _SQLITE_DB _ext
 
 # Build the search index (includes FTS5 and embedding index)
 printf '🔍 Building search index (BM25 + embeddings)...\n'
 npm run build
 
 printf '✅ Setup complete!\n\n'
-printf 'To start the MCP server:\n'
+
+# Reload running PM2 processes so the server picks up the freshly built index
+# without dropping active connections (pm2 reload = graceful rolling restart).
+# Falls back to pm2 restart if reload is not available for that process.
+# Reads PM2 process names from the variant config to stay in sync with ecosystem.config.cjs.
+if command -v pm2 >/dev/null 2>&1; then
+  _PM2_NAMES="$({
+    node --input-type=module -e '
+      import fs from "node:fs";
+      import path from "node:path";
+      const variant = (process.env.MCP_VARIANT || "").trim()
+        || (fs.existsSync(path.resolve(process.cwd(), ".mcp-variant"))
+            ? fs.readFileSync(path.resolve(process.cwd(), ".mcp-variant"), "utf8").trim()
+            : "")
+        || "sap-docs";
+      const configPath = path.resolve(process.cwd(), "config", "variants", `${variant}.json`);
+      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      if (config.server?.pm2HttpName)        console.log(config.server.pm2HttpName);
+      if (config.server?.pm2StreamableName)  console.log(config.server.pm2StreamableName);
+    ';
+  } 2>/dev/null || true)"
+
+  if [ -n "$_PM2_NAMES" ]; then
+    printf '♻️  Reloading PM2 processes to apply new index...\n'
+    while IFS= read -r _pm2_name; do
+      # Guard: both conditions must hold before any pm2 command runs.
+      # Keeping them in a single `if` means `pm2 reload` is unreachable when the
+      # name is empty — preventing an accidental `pm2 reload` (no-arg) which would
+      # reload every process on the system.
+      if [ -n "$_pm2_name" ] && pm2 show "$_pm2_name" >/dev/null 2>&1; then
+        printf '    • %s: reloading (graceful)...\n' "$_pm2_name"
+        pm2 reload "$_pm2_name" --update-env \
+          || { printf '    ! reload failed, falling back to restart\n'; pm2 restart "$_pm2_name" --update-env || true; }
+      elif [ -n "$_pm2_name" ]; then
+        printf '    • %s: not found in PM2 — start it with: pm2 start ecosystem.config.cjs\n' "$_pm2_name"
+      fi
+    done <<< "$_PM2_NAMES"
+    unset _pm2_name
+  fi
+  unset _PM2_NAMES
+else
+  printf 'ℹ️  PM2 not detected — restart the server manually to apply the new index.\n'
+fi
+
+printf '\nTo start the MCP server:\n'
 printf '  npm start\n\n'
 printf 'To use in Cursor:\n'
 printf '1. Open Cursor IDE\n'

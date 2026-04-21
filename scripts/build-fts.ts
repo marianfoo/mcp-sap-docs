@@ -53,10 +53,16 @@ function main() {
 
   console.log("Using MCP variant " + getVariantName() + " with " + ALLOWED_LIBRARY_IDS.size + " allowed library IDs.");
 
-  // Fresh DB
-  if (fs.existsSync(DST)) {
-    console.log(`🗑️  Removing existing ${DST}...`);
-    fs.unlinkSync(DST);
+  // Fresh DB — remove the main file and any stale WAL/SHM auxiliaries.
+  // Leaving orphaned -shm/-wal files behind (e.g. from a crashed previous run) causes
+  // SQLite to try applying the old WAL against the newly created empty database,
+  // producing SQLITE_IOERR_SHORT_READ and aborting the build.
+  for (const suffix of ["", "-shm", "-wal"] as const) {
+    const f = DST + suffix;
+    if (fs.existsSync(f)) {
+      console.log(suffix === "" ? `🗑️  Removing existing ${DST}...` : `🗑️  Removing stale ${f}...`);
+      fs.unlinkSync(f);
+    }
   }
   
   console.log(`🏗️  Creating FTS5 database at ${DST}...`);
