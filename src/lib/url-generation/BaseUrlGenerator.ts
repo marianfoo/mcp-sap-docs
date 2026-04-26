@@ -87,13 +87,20 @@ export abstract class BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
-    // Extract just the filename without directory path to avoid duplication with pathPattern
-    const fileName = context.relFile
+    let relPath = context.relFile
+      .replace(/\\/g, '/')
       .replace(/\.mdx?$/, '')
-      .replace(/\.html?$/, '')
-      .replace(/.*\//, ''); // Remove directory path, keep only filename
+      .replace(/\.html?$/, '');
+
+    const patternPrefix = this.config.pathPattern
+      .split('{file}')[0]
+      .replace(/^\/+|\/+$/g, '');
+
+    if (patternPrefix && relPath.startsWith(`${patternPrefix}/`)) {
+      relPath = relPath.slice(patternPrefix.length + 1);
+    }
     
-    let urlPath = this.config.pathPattern.replace('{file}', fileName);
+    let urlPath = this.config.pathPattern.replace('{file}', relPath);
     
     // Add anchor if available
     if (context.anchor) {

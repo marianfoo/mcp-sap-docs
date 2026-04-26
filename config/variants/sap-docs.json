@@ -29,6 +29,7 @@
     "/btp-cloud-platform",
     "/sap-artificial-intelligence",
     "/terraform-provider-btp",
+    "/teched2025-dt260",
     "/architecture-center"
   ],
   "submodulePaths": [
@@ -56,6 +57,7 @@
     "sources/sap-artificial-intelligence",
     "sources/abap-atc-cr-cv-s4hc",
     "sources/terraform-provider-btp",
+    "sources/teched2025-dt260",
     "sources/architecture-center"
   ],
   "tools": {

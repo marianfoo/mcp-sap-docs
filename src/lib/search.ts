@@ -1,5 +1,5 @@
 // Unified ABAP/RAP search using FTS5 with optional online sources
-import { searchFTS } from "./searchDb.js";
+import { lookupExactDocs, searchFTS } from "./searchDb.js";
 import { CONFIG } from "./config.js";
 import { loadMetadata, getSourceBoosts, expandQueryTerms, getContextBoosts, getAllContextBoosts } from "./metadata.js";
 import { searchSapHelp } from "./sapHelp.js";
@@ -172,6 +172,10 @@ function extractSourceId(libraryIdOrPath: string): string {
   return libraryIdOrPath;
 }
 
+function normalizeSourceFilter(source: string): string {
+  return source.replace(/^\/+/, '').trim();
+}
+
 // Create a promise that rejects after timeout
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -328,11 +332,22 @@ export async function search(
   
   // Detect implementation intent for sample boosting
   const wantsImplementation = hasImplementationIntent(query);
+
+  const sourceFilters = sources?.length
+    ? new Set(sources.map(normalizeSourceFilter).filter(Boolean))
+    : null;
+  const ftsFilters = sourceFilters
+    ? { libraries: [...sourceFilters].map(sourceId => `/${sourceId}`) }
+    : {};
+
+  for (const r of lookupExactDocs(query, ftsFilters, Math.min(k, 10))) {
+    seen.set(r.id, r);
+  }
   
   // Search offline FTS database with all query variants (union approach)
   for (const variant of queryVariants) {
     try {
-      const rows = searchFTS(variant, {}, k * 2); // Get more candidates for filtering
+      const rows = searchFTS(variant, ftsFilters, k * 2); // Get more candidates for filtering
       for (const r of rows) {
         if (!seen.has(r.id)) {
           seen.set(r.id, r);
@@ -348,10 +363,10 @@ export async function search(
   let rows = Array.from(seen.values());
   
   // Filter by specific sources if provided
-  if (sources && sources.length > 0) {
+  if (sourceFilters) {
     rows = rows.filter(r => {
       const sourceId = extractSourceId(r.libraryId || r.id);
-      return sources.includes(sourceId);
+      return sourceFilters.has(sourceId);
     });
   }
   

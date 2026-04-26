@@ -46,6 +46,8 @@ import { search } from "./search.js";
 import { CONFIG } from "./config.js";
 import { loadMetadata, getDocUrlConfig } from "./metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./url-generation/index.js";
+import { extractLibraryIdFromPath } from "./url-generation/utils.js";
+import { extractSourceUrlFromText, readSourceContentSync } from "./sourceContent.js";
 import { isToolEnabled, getVariantName } from "./variant.js";
 import { searchDiscoveryCenter, getDiscoveryCenterServiceDetails } from "./discoveryCenter/index.js";
 
@@ -75,7 +77,7 @@ interface DocumentResult {
 /**
  * Create structured JSON response for search results (ChatGPT-compatible)
  */
-function createSearchResponse(results: SearchResult[]): any {
+function createSearchResponse(results: SearchResult[], extra: Record<string, any> = {}): any {
   // Clean the results to avoid JSON serialization issues in MCP protocol
   const cleanedResults = results.map(result => ({
     // ChatGPT requires: id, title, url (other fields optional)
@@ -90,16 +92,42 @@ function createSearchResponse(results: SearchResult[]): any {
     metadata: result.metadata
   }));
   
+  const payload = { results: cleanedResults, ...extra };
+
   // ChatGPT expects: { "results": [...] } in JSON-encoded text content
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify({ results: cleanedResults })
+        text: JSON.stringify(payload)
       }
     ],
-    structuredContent: { results: cleanedResults }
+    structuredContent: payload
   };
+}
+
+function createEmptySearchResponse(message: string, requestId?: string, extra: Record<string, any> = {}): any {
+  return createSearchResponse([], {
+    error: message,
+    requestId: requestId || 'unknown',
+    ...extra
+  });
+}
+
+function isAbsoluteHttpUrl(url?: string): boolean {
+  return !!url && /^https?:\/\//i.test(url);
+}
+
+function chooseSearchResultUrl(docUrl: string | null, path: string | undefined, id: string): string {
+  if (isAbsoluteHttpUrl(docUrl || undefined)) {
+    return docUrl!;
+  }
+
+  if (isAbsoluteHttpUrl(path)) {
+    return path!;
+  }
+
+  return `#${id}`;
 }
 
 /**
@@ -1017,7 +1045,7 @@ RETURNS (JSON):
           if (topResults.length === 0) {
             console.log(`⚠️ [SEARCH TOOL] No results found for query: "${query}"`);
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: false });
-            return createErrorResponse(
+            return createEmptySearchResponse(
               `No results for "${query}". Try ABAP keywords ("SELECT", "LOOP", "RAP"), add "cloud" for ABAP Cloud syntax, or be more specific.`,
               timing.requestId
             );
@@ -1031,13 +1059,14 @@ RETURNS (JSON):
             const topic = r.id.startsWith(libraryId) ? r.id.slice(libraryId.length + 1) : '';
             
             const config = getDocUrlConfig(libraryId);
-            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', r.text, config) : null;
+            const sourceContent = config ? readSourceContentSync(libraryId, r.relFile || '') : null;
+            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', sourceContent || r.text, config) : null;
             
             return {
               // ChatGPT-required format: id, title, url
               id: r.id,
               title: r.text.split('\n')[0] || r.id,
-              url: docUrl || r.path || `#${r.id}`,
+              url: chooseSearchResultUrl(docUrl, r.path, r.id),
               // Additional fields
               library_id: libraryId,
               topic: topic,
@@ -1074,7 +1103,7 @@ RETURNS (JSON):
             
             if (!res.results.length) {
               logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: true });
-              return createErrorResponse(
+              return createEmptySearchResponse(
                 res.error || `No fallback results for "${query}". Try ABAP keywords ("SELECT", "LOOP", "RAP"), add "cloud" for ABAP Cloud syntax, or be more specific.`,
                 timing.requestId
               );
@@ -1097,7 +1126,7 @@ RETURNS (JSON):
             return createSearchResponse(fallbackResults);
           } catch (fallbackError) {
             logger.logToolError(name, timing.requestId, timing.startTime, fallbackError, true);
-            return createErrorResponse(
+            return createEmptySearchResponse(
               `Search temporarily unavailable. Wait 30 seconds and retry, or use more specific search terms.`,
               timing.requestId
             );
@@ -1135,13 +1164,15 @@ RETURNS (JSON):
           }
           
           // Transform document content to ChatGPT-compatible format
-          const config = getDocUrlConfig(library_id);
-          const docUrl = config ? generateDocumentationUrl(library_id, '', text, config) : null;
+          const fetchedSourceUrl = extractSourceUrlFromText(text);
+          const rootLibraryId = library_id.startsWith('/') ? extractLibraryIdFromPath(library_id) : library_id;
+          const config = getDocUrlConfig(rootLibraryId);
+          const docUrl = config ? generateDocumentationUrl(rootLibraryId, '', text, config) : null;
           const document: DocumentResult = {
             id: library_id,
             title: library_id.replace(/^\//, '').replace(/\//g, ' > ') + (topic ? ` (${topic})` : ''),
             text: text,
-            url: docUrl || `#${library_id}`,
+            url: fetchedSourceUrl || docUrl || `#${library_id}`,
             metadata: {
               source: 'abap-docs',
               library: library_id,
@@ -1243,23 +1274,11 @@ RETURNS (JSON):
 
           if (!communityResponse.results.length) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({
-                    error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
-                    requestId: timing.requestId,
-                    requestUrl,
-                  }),
-                },
-              ],
-              structuredContent: {
-                error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
-                requestId: timing.requestId,
-                requestUrl,
-              },
-            };
+            return createEmptySearchResponse(
+              communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
+              timing.requestId,
+              { requestUrl }
+            );
           }
 
           const searchResults: SearchResult[] = communityResponse.results.map((r, index) => ({
@@ -1286,23 +1305,11 @@ RETURNS (JSON):
           };
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({
-                  error: "Error searching SAP Community. Please try again later.",
-                  requestId: timing.requestId,
-                  requestUrl,
-                }),
-              },
-            ],
-            structuredContent: {
-              error: "Error searching SAP Community. Please try again later.",
-              requestId: timing.requestId,
-              requestUrl,
-            },
-          };
+          return createEmptySearchResponse(
+            "Error searching SAP Community. Please try again later.",
+            timing.requestId,
+            { requestUrl }
+          );
         }
       }
 

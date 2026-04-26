@@ -211,7 +211,7 @@ const SOURCES: SourceConfig[] = [
     id: "/cap-fiori-showcase",
     name: "CAP Fiori Elements Feature Showcase",
     description: "SAP Fiori Elements features and annotations showcase using CAP",
-    filePattern: "*.md",
+    filePattern: "**/*.{md,cds}",
     type: "markdown" as const
   },
   {
@@ -923,4 +923,4 @@ async function main() {
   console.log("✅  Index built with", Object.keys(all).length, "libraries.");
 }
 
-main(); 
+main();

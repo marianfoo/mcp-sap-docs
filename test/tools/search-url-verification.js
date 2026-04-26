@@ -95,7 +95,7 @@ export default [
     skipIfNoResults: true,
     expectIncludes: ['/ui5-tooling/'],
     expectContains: ['🔗'],
-    expectUrlPattern: 'https://sap.github.io/ui5-tooling'
+    expectUrlPattern: 'https://ui5.github.io/cli'
   },
   {
     name: 'Search results should have consistent format with excerpts',

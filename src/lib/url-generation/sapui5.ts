@@ -6,6 +6,7 @@
 import { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
 import { FrontmatterData } from './utils.js';
 import { DocUrlConfig } from '../metadata.js';
+import { readSourceContentSync } from '../sourceContent.js';
 
 export interface SapUi5UrlOptions {
   relFile: string;
@@ -47,14 +48,18 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
+    if (/^(?:index|README)\.md$/i.test(context.relFile)) {
+      return this.extractFirstLinkedTopicUrl(context) || this.config.baseUrl;
+    }
+
     // SAPUI5 docs often have topic IDs in frontmatter
     const topicId = context.frontmatter.id || context.frontmatter.topic;
     if (topicId) {
       return `${this.config.baseUrl}/#/topic/${topicId}`;
     }
 
-    // SAPUI5 docs also use HTML comments with loio pattern: <!-- loio{id} -->
-    const loioMatch = context.content?.match(/<!--\s*loio([a-f0-9]+)\s*-->/);
+    // SAPUI5 docs use loio/copy HTML comments for topic identifiers.
+    const loioMatch = context.content?.match(/<!--\s*(?:loio|copy)([a-f0-9]{32})\s*-->/i);
     if (loioMatch) {
       return `${this.config.baseUrl}/#/topic/${loioMatch[1]}`;
     }
@@ -65,7 +70,33 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
       return `${this.config.baseUrl}/#/topic/${topicIdMatch[1]}`;
     }
     
-    return null; // Let fallback handle it
+    return this.config.baseUrl;
+  }
+
+  private extractFirstLinkedTopicUrl(context: UrlGenerationContext & {
+    frontmatter: FrontmatterData;
+    section: string;
+    anchor: string | null;
+  }): string | null {
+    const linkMatch = context.content.match(/\[[^\]]+\]\(([^)#?]+\.md)(?:#[^)]+)?\)/i);
+    if (!linkMatch) {
+      return null;
+    }
+
+    const linkedRelFile = linkMatch[1].replace(/^\.\//, '');
+    const linkedContent = readSourceContentSync(this.libraryId, linkedRelFile);
+    if (!linkedContent) {
+      return null;
+    }
+
+    const linkedFrontmatter = this.parseFrontmatter(linkedContent);
+    const linkedTopicId = linkedFrontmatter.id || linkedFrontmatter.topic;
+    if (linkedTopicId) {
+      return `${this.config.baseUrl}/#/topic/${linkedTopicId}`;
+    }
+
+    const loioMatch = linkedContent.match(/<!--\s*(?:loio|copy)([a-f0-9]{32})\s*-->/i);
+    return loioMatch ? `${this.config.baseUrl}/#/topic/${loioMatch[1]}` : null;
   }
   
   /**
@@ -78,7 +109,7 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     anchor: string | null;
   }): string | null {
     // Extract control name from file path (e.g., src/sap/m/Button.js -> sap.m.Button)
-    const pathMatch = context.relFile.match(/src\/(sap\/[^\/]+\/[^\/]+)\.js$/);
+    const pathMatch = context.relFile.match(/(?:^|\/)src\/(sap\/.+)\.js$/);
     if (pathMatch) {
       const controlPath = pathMatch[1].replace(/\//g, '.');
       return `${this.config.baseUrl}/#/api/${controlPath}`;
@@ -116,23 +147,147 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
-    // Extract sample ID from path patterns like:
-    // /src/sap.m/test/sap/m/demokit/sample/ButtonWithBadge/Component.js
-    const sampleMatch = context.relFile.match(/sample\/([^\/]+)\/([^\/]+)$/);
-    if (sampleMatch) {
-      const [, sampleName, fileName] = sampleMatch;
-      // For samples, we construct the sample entity URL without # prefix
-      return `${this.config.baseUrl}/entity/sap.m.Button/sample/sap.m.sample.${sampleName}`;
-    }
-    
-    // Alternative pattern for samples
-    const buttonSampleMatch = context.relFile.match(/\/([^\/]+)\/test\/sap\/m\/demokit\/sample\/([^\/]+)\//);
-    if (buttonSampleMatch) {
-      const [, controlLibrary, sampleName] = buttonSampleMatch;
-      return `${this.config.baseUrl}/entity/sap.${controlLibrary}.Button/sample/sap.${controlLibrary}.sample.${sampleName}`;
+    const sampleInfo = this.extractOpenUi5SampleInfo(context.relFile, context.content);
+    if (sampleInfo) {
+      return `${this.config.baseUrl}/#/entity/${sampleInfo.entityId}/sample/${sampleInfo.sampleId}`;
     }
     
     return null; // Let fallback handle it
+  }
+
+  private extractOpenUi5SampleInfo(relFile: string, content: string): { sampleId: string; entityId: string } | null {
+    const sampleMatch = relFile.match(/^(sap\.[^/]+)\/test\/(sap(?:\/[^/]+)+)\/demokit\/sample\/(.+)$/);
+    if (!sampleMatch) {
+      return null;
+    }
+
+    const [, , namespacePath, sampleRelativePath] = sampleMatch;
+    const namespace = namespacePath.replace(/\//g, '.');
+    const pathParts = sampleRelativePath.split('/').filter(Boolean);
+    if (pathParts.length < 2) {
+      return null;
+    }
+
+    const sampleRoot = pathParts[0];
+    const sampleRootPrefix = relFile.slice(0, relFile.length - sampleRelativePath.length);
+    const manifestRelFile = `${sampleRootPrefix}${sampleRoot}/manifest.json`;
+    const manifestContent = relFile.endsWith('/manifest.json')
+      ? content
+      : readSourceContentSync(this.libraryId, manifestRelFile);
+    const sampleId = this.extractSampleIdFromContent(manifestContent || content) || `${namespace}.sample.${sampleRoot}`;
+    const sampleRouteName = sampleId.split('.sample.')[1]?.split('.')[0] || sampleRoot;
+    const entityId = this.inferSampleEntity(namespace, sampleRouteName);
+
+    return { sampleId, entityId };
+  }
+
+  private extractSampleIdFromContent(content: string): string | null {
+    const manifestMatch = content.match(/"id"\s*:\s*"(sap\.[^"]+\.sample\.[^"]+)"/);
+    if (manifestMatch) {
+      return manifestMatch[1];
+    }
+
+    const componentMatch = content.match(/\.extend\(\s*["'](sap\.[^"']+\.sample\.[^"']+)\.Component["']/);
+    if (componentMatch) {
+      return componentMatch[1];
+    }
+
+    return null;
+  }
+
+  private inferSampleEntity(namespace: string, sampleName: string): string {
+    if (namespace === 'sap.ui.table') {
+      return sampleName.startsWith('TreeTable') ? 'sap.ui.table.TreeTable' : 'sap.ui.table.Table';
+    }
+
+    if (namespace === 'sap.uxap') {
+      if (sampleName.startsWith('AnchorBar')) {
+        return 'sap.uxap.AnchorBar';
+      }
+      if (sampleName.startsWith('ObjectPage')) {
+        return 'sap.uxap.ObjectPageLayout';
+      }
+    }
+
+    if (namespace === 'sap.f') {
+      return `${namespace}.${this.firstKnownPrefix(sampleName, [
+        'FlexibleColumnLayout',
+        'DynamicPage',
+        'SidePanel',
+        'AvatarGroup',
+        'Avatar',
+        'Card'
+      ])}`;
+    }
+
+    if (namespace === 'sap.ui.layout') {
+      return `${namespace}.${this.firstKnownPrefix(sampleName, [
+        'SimpleForm',
+        'ResponsiveGridLayout',
+        'GridData',
+        'Grid',
+        'Splitter',
+        'Form',
+        'VerticalLayout',
+        'HorizontalLayout',
+        'FixFlex'
+      ])}`;
+    }
+
+    if (namespace === 'sap.ui.unified') {
+      return `${namespace}.${this.firstKnownPrefix(sampleName, [
+        'ColorPicker',
+        'FileUploader',
+        'Calendar',
+        'Currency',
+        'Menu'
+      ])}`;
+    }
+
+    return `${namespace}.${this.firstKnownPrefix(sampleName, [
+      'ActionSheet',
+      'Breadcrumbs',
+      'Button',
+      'ComboBox',
+      'DatePicker',
+      'Dialog',
+      'FeedInput',
+      'IconTabBar',
+      'Input',
+      'Label',
+      'Link',
+      'ListBase',
+      'List',
+      'MessagePopover',
+      'MessageStrip',
+      'MessageToast',
+      'MultiComboBox',
+      'ObjectHeader',
+      'Panel',
+      'Popover',
+      'ProgressIndicator',
+      'RadioButton',
+      'RangeSlider',
+      'RatingIndicator',
+      'SearchField',
+      'SegmentedButton',
+      'Select',
+      'Slider',
+      'SplitApp',
+      'StandardListItem',
+      'Table',
+      'Text',
+      'Toolbar',
+      'UploadCollection',
+      'ViewSettingsDialog',
+      'Wizard'
+    ])}`;
+  }
+
+  private firstKnownPrefix(value: string, knownPrefixes: string[]): string {
+    return [...knownPrefixes]
+      .sort((a, b) => b.length - a.length)
+      .find(prefix => value.startsWith(prefix)) || value;
   }
 }
 
@@ -169,4 +324,3 @@ export function generateUi5UrlForLibrary(options: SapUi5UrlOptions): string | nu
   const generator = new SapUi5UrlGenerator(options.libraryId, options.config);
   return generator.generateUrl(options);
 }
-

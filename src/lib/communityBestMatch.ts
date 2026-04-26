@@ -23,7 +23,8 @@ type Options = {
   userAgent?: string;     // optional UA override
 };
 
-const LIQL_BASE = "https://community.sap.com/api/2.0/search";
+const COMMUNITY_BASE = "https://community.sap.com";
+const LIQL_BASE = `${COMMUNITY_BASE}/api/2.0/search`;
 
 const stripTags = (html = "") =>
   html
@@ -37,12 +38,29 @@ const stripTags = (html = "") =>
     .trim();
 
 // Extract post ID from view_href URL
-const extractPostId = (url: string): string | undefined => {
+export const extractPostId = (url: string): string | undefined => {
   const urlMatch = url.match(/\/(?:ba-p|td-p|qaq-p|qaa-p|m-p)\/(\d+)/);
   if (urlMatch) return urlMatch[1];
   const endMatch = url.match(/\/(\d+)(?:[#?]|$)/);
   return endMatch ? endMatch[1] : undefined;
 };
+
+export function normalizeCommunityUrl(url?: string, postId?: string): string {
+  if (url) {
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return `${COMMUNITY_BASE}${normalizedPath}`;
+  }
+
+  if (postId) {
+    return `${COMMUNITY_BASE}/t5/forums/messagepage/message-id/${encodeURIComponent(postId)}`;
+  }
+
+  return COMMUNITY_BASE;
+}
 
 /**
  * Build a LiQL URL for full-text search on SAP Community.
@@ -88,8 +106,9 @@ async function executeLiqlSearch(url: string, userAgent?: string): Promise<any[]
 
 function mapItemsToHits(items: any[]): BestMatchHit[] {
   return items.map((item: any): BestMatchHit => {
-    const viewHref = item.view_href || "";
-    const postId = String(item.id || "") || extractPostId(viewHref);
+    const rawViewHref = item.view_href || "";
+    const postId = String(item.id || "") || extractPostId(rawViewHref);
+    const viewHref = normalizeCommunityUrl(rawViewHref, postId);
     const snippet = item.search_snippet ? stripTags(item.search_snippet).slice(0, CONFIG.EXCERPT_LENGTH_COMMUNITY) : undefined;
     const published = item.post_time
       ? new Date(item.post_time).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
@@ -239,7 +258,7 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
     // Process each post
     for (const post of data.data.items) {
       const postDate = post.post_time ? new Date(post.post_time).toLocaleDateString() : 'Unknown';
-      const postUrl = post.view_href || `https://community.sap.com/t5/technology-blogs-by-sap/bg-p/t/${post.id}`;
+      const postUrl = normalizeCommunityUrl(post.view_href, String(post.id || ""));
       
       const fullContent = `# ${post.subject}
 

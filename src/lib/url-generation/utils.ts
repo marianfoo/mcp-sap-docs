@@ -2,6 +2,9 @@
  * Common utilities for URL generation across different documentation sources
  */
 
+import { readSourceContentSync } from '../sourceContent.js';
+import matter from 'gray-matter';
+
 export interface FrontmatterData {
   id?: string;
   slug?: string;
@@ -15,63 +18,34 @@ export interface FrontmatterData {
  * Supports YAML frontmatter format used in Markdown/MDX files
  */
 export function parseFrontmatter(content: string): FrontmatterData {
-  const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  if (!frontmatterMatch) {
+  try {
+    return matter(content).data as FrontmatterData;
+  } catch {
     return {};
   }
-
-  const frontmatter = frontmatterMatch[1];
-  const result: FrontmatterData = {};
-
-  // Parse simple key-value pairs
-  const lines = frontmatter.split('\n');
-  let currentKey = '';
-  let isInArray = false;
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
-    if (!trimmedLine || trimmedLine.startsWith('#')) {
-      continue; // Skip empty lines and comments
-    }
-    
-    // Handle array items (lines starting with -)
-    if (trimmedLine.startsWith('-')) {
-      if (isInArray && currentKey) {
-        const arrayValue = trimmedLine.substring(1).trim();
-        if (!Array.isArray(result[currentKey])) {
-          result[currentKey] = [];
-        }
-        (result[currentKey] as string[]).push(arrayValue);
-      }
-      continue;
-    }
-    
-    // Handle key-value pairs
-    const colonIndex = trimmedLine.indexOf(':');
-    if (colonIndex !== -1) {
-      currentKey = trimmedLine.substring(0, colonIndex).trim();
-      const value = trimmedLine.substring(colonIndex + 1).trim();
-      
-      if (value === '') {
-        // This might be the start of an array
-        isInArray = true;
-        result[currentKey] = [];
-      } else {
-        isInArray = false;
-        // Clean up quoted values
-        result[currentKey] = value.replace(/^["']|["']$/g, '');
-      }
-    }
-  }
-
-  return result;
 }
 
 /**
  * Detect the main section/topic from content for anchor generation
  */
-export function detectContentSection(content: string, anchorStyle: 'docsify' | 'github' | 'custom'): string | null {
+export type AnchorStyle = 'docsify' | 'github' | 'custom' | 'sap-help';
+
+function slugifyMarkdownHeading(heading: string, collapseHyphens = false): string {
+  let slug = heading
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}_\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  if (collapseHyphens) {
+    slug = slug.replace(/-+/g, '-');
+  }
+
+  return slug;
+}
+
+export function detectContentSection(content: string, anchorStyle: AnchorStyle): string | null {
   // Find the first major heading (## or #) that gives context about the content
   const headingMatch = content.match(/^#{1,2}\s+(.+)$/m);
   if (!headingMatch) {
@@ -83,25 +57,16 @@ export function detectContentSection(content: string, anchorStyle: 'docsify' | '
   // Convert heading to anchor format based on style
   switch (anchorStyle) {
     case 'docsify':
-      // Docsify format: lowercase, spaces to hyphens, remove special chars
-      return heading
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-        .replace(/\s+/g, '-')     // Spaces to hyphens
-        .replace(/-+/g, '-')      // Multiple hyphens to single
-        .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
+      return slugifyMarkdownHeading(heading, true);
         
     case 'github':
-      // GitHub format: lowercase, spaces to hyphens, keep some special chars
-      return heading
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-');
+      return slugifyMarkdownHeading(heading);
         
     case 'custom':
+    case 'sap-help':
     default:
       // Return as-is for custom handling
-      return heading;
+      return anchorStyle === 'sap-help' ? null : heading;
   }
 }
 
@@ -192,7 +157,7 @@ export function formatSearchResult(
 ): string {
   // Extract library ID and relative file path to generate URL
   const libraryId = result.sourceId ? `/${result.sourceId}` : extractLibraryIdFromPath(result.id);
-  const relFile = extractRelativeFileFromPath(result.id);
+  const relFile = result.relFile || extractRelativeFileFromPath(result.id);
   
   // Try to generate documentation URL
   let urlInfo = '';
@@ -200,7 +165,8 @@ export function formatSearchResult(
     try {
       const config = urlGenerator.getDocUrlConfig && urlGenerator.getDocUrlConfig(libraryId);
       if (config && urlGenerator.generateDocumentationUrl) {
-        const docUrl = urlGenerator.generateDocumentationUrl(libraryId, relFile, result.text || '', config);
+        const sourceContent = readSourceContentSync(libraryId, relFile);
+        const docUrl = urlGenerator.generateDocumentationUrl(libraryId, relFile, sourceContent || result.text || '', config);
         if (docUrl) {
           urlInfo = `\n   🔗 ${docUrl}`;
         }
@@ -213,4 +179,3 @@ export function formatSearchResult(
   
   return `⭐️ **${result.id}** (Score: ${result.finalScore.toFixed(2)})\n   ${(result.text || '').substring(0, excerptLength)}${urlInfo}\n   Use in fetch\n`;
 }
-
