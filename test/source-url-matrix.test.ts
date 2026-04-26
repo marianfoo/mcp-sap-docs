@@ -47,6 +47,66 @@ const sourceUrlCases: UrlCase[] = [
     content: copyLoio('dac59fadd5f9419d986f74ba602c6d29', 'Test Recorder'),
     expectedUrl: 'https://ui5.sap.com/#/topic/dac59fadd5f9419d986f74ba602c6d29'
   },
+  {
+    libraryId: '/sapui5',
+    relFile: '01_Whats-New/change-log-a6a78b7.md',
+    content: loio('a6a78b7e104348b4bb94fb8bcf003480', 'Change Log'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/a6a78b7e104348b4bb94fb8bcf003480'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '02_Read-Me-First/sapui5-vs-openui5-5982a97.md',
+    content: loio('5982a9734748474aa8d4af9c3d8f31c0', 'SAPUI5 vs. OpenUI5'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/5982a9734748474aa8d4af9c3d8f31c0'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '03_Get-Started/quickstart-tutorial-592f36f.md',
+    content: loio('592f36fd077b45349a67dcb3efb46ab1', 'Quickstart Tutorial'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/592f36fd077b45349a67dcb3efb46ab1'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '03_Get-Started/navigation-and-routing-tutorial-1b6dcd3.md',
+    content: loio('1b6dcd39a6a74f528b27ddb22f15af0d', 'Navigation and Routing Tutorial'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/1b6dcd39a6a74f528b27ddb22f15af0d'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '03_Get-Started/data-binding-tutorial-e531093.md',
+    content: loio('e5310932a71f42daa41f3a6143efca9c', 'Data Binding Tutorial'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/e5310932a71f42daa41f3a6143efca9c'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '04_Essentials/routing-and-navigation-3d18f20.md',
+    content: loio('3d18f20bd2294228acb6910d8e8a5fb5', 'Routing and Navigation'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/3d18f20bd2294228acb6910d8e8a5fb5'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '04_Essentials/model-view-controller-mvc-91f2334.md',
+    content: loio('91f233476f4d1014b6dd926db0e91070', 'Model View Controller'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/91f233476f4d1014b6dd926db0e91070'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '04_Essentials/xml-view-91f2928.md',
+    content: loio('91f292806f4d1014b6dd926db0e91070', 'XML View'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/91f292806f4d1014b6dd926db0e91070'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '04_Essentials/binding-syntax-e2e6f41.md',
+    content: loio('e2e6f4127fe4450ab3cf1339c42ee832', 'Binding Syntax'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/e2e6f4127fe4450ab3cf1339c42ee832'
+  },
+  {
+    libraryId: '/sapui5',
+    relFile: '04_Essentials/odata-v4-model-5de13cf.md',
+    content: loio('5de13cf4dd1f4a3480f7e2eaaee3f5b8', 'OData V4 Model'),
+    expectedUrl: 'https://ui5.sap.com/#/topic/5de13cf4dd1f4a3480f7e2eaaee3f5b8'
+  },
 
   // CAP
   {
@@ -105,6 +165,42 @@ const sourceUrlCases: UrlCase[] = [
     content: 'sap.ui.define([]);',
     expectedUrl: 'https://sdk.openui5.org/#/api/sap.ui.core.mvc.Controller'
   },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.m/src/sap/m/Dialog.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.m.Dialog'
+  },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.m/src/sap/m/Input.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.m.Input'
+  },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.ui.core/src/sap/ui/core/Component.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.ui.core.Component'
+  },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.ui.core/src/sap/ui/model/json/JSONModel.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.ui.model.json.JSONModel'
+  },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.ui.layout/src/sap/ui/layout/form/SimpleForm.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.ui.layout.form.SimpleForm'
+  },
+  {
+    libraryId: '/openui5-api',
+    relFile: 'sap.uxap/src/sap/uxap/ObjectPageLayout.js',
+    content: 'sap.ui.define([]);',
+    expectedUrl: 'https://sdk.openui5.org/#/api/sap.uxap.ObjectPageLayout'
+  },
 
   // OpenUI5 samples
   {
@@ -142,6 +238,30 @@ const sourceUrlCases: UrlCase[] = [
     relFile: 'sap.uxap/test/sap/uxap/demokit/sample/ObjectPageHeaderExpanded/manifest.json',
     content: '{"sap.app":{"id":"sap.uxap.sample.ObjectPageHeaderExpanded"}}',
     expectedUrl: 'https://sdk.openui5.org/#/entity/sap.uxap.ObjectPageLayout/sample/sap.uxap.sample.ObjectPageHeaderExpanded'
+  },
+  {
+    libraryId: '/openui5-samples',
+    relFile: 'sap.f/test/sap/f/demokit/sample/DynamicPageFreeStyle/manifest.json',
+    content: '{"sap.app":{"id":"sap.f.sample.DynamicPageFreeStyle"}}',
+    expectedUrl: 'https://sdk.openui5.org/#/entity/sap.f.DynamicPage/sample/sap.f.sample.DynamicPageFreeStyle'
+  },
+  {
+    libraryId: '/openui5-samples',
+    relFile: 'sap.ui.layout/test/sap/ui/layout/demokit/sample/SimpleForm354/manifest.json',
+    content: '{"sap.app":{"id":"sap.ui.layout.sample.SimpleForm354"}}',
+    expectedUrl: 'https://sdk.openui5.org/#/entity/sap.ui.layout.form.SimpleForm/sample/sap.ui.layout.sample.SimpleForm354'
+  },
+  {
+    libraryId: '/openui5-samples',
+    relFile: 'sap.ui.core/test/sap/ui/core/demokit/sample/RoutingFullscreen/manifest.json',
+    content: '{"sap.app":{"id":"sap.ui.core.sample.RoutingFullscreen"}}',
+    expectedUrl: 'https://sdk.openui5.org/#/entity/sap.ui.core.routing.Router/sample/sap.ui.core.sample.RoutingFullscreen'
+  },
+  {
+    libraryId: '/openui5-samples',
+    relFile: 'sap.f/test/sap/f/demokit/sample/ShellBar/manifest.json',
+    content: '{"sap.app":{"id":"sap.f.sample.ShellBar"}}',
+    expectedUrl: 'https://sdk.openui5.org/#/entity/sap.f.ShellBar/sample/sap.f.sample.ShellBar'
   },
 
   // wdi5
@@ -513,9 +633,69 @@ const sourceUrlCases: UrlCase[] = [
   },
   {
     libraryId: '/abap-docs-standard',
-    relFile: 'ABAPLOOP.md',
-    content: '# LOOP',
-    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPLOOP.html'
+    relFile: 'ABAPLOOP_AT_DBTAB.md',
+    content: '# LOOP AT dbtab',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPLOOP_AT_DBTAB.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABENABAP.md',
+    content: '# ABAP - Keyword Documentation',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABENABAP.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPDATA.md',
+    content: '# DATA',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPDATA.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPINSERT_ITAB.md',
+    content: '# INSERT, Internal Tables',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPINSERT_ITAB.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPLOOP_AT_ITAB.md',
+    content: '# LOOP AT itab',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPLOOP_AT_ITAB.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPREAD_TABLE.md',
+    content: '# READ TABLE',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPREAD_TABLE.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPMODIFY_ITAB.md',
+    content: '# MODIFY itab',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPMODIFY_ITAB.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPCLASS.md',
+    content: '# CLASS',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPCLASS.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPMETHODS.md',
+    content: '# METHODS',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPMETHODS.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPCOMMIT.md',
+    content: '# COMMIT WORK',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPCOMMIT.html'
+  },
+  {
+    libraryId: '/abap-docs-standard',
+    relFile: 'ABAPTRY.md',
+    content: '# TRY',
+    expectedUrl: 'https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/ABAPTRY.html'
   },
   {
     libraryId: '/abap-docs-cloud',
