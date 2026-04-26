@@ -547,6 +547,21 @@ describe('Comprehensive URL Generation System', () => {
 
         expect(result).toBe('https://sdk.openui5.org/#/entity/sap.m.Slider/sample/sap.m.sample.Slider');
       });
+
+      it('should derive OpenUI5 sample entities from Demokit docuindex metadata', () => {
+        const config = getConfigForLibrary('/openui5-samples');
+        const generator = new SapUi5UrlGenerator('/openui5-samples', config);
+        const content = '{"sap.app":{"id":"sap.uxap.sample.ObjectPageHeaderExpanded"}}';
+
+        const result = generator.generateUrl({
+          libraryId: '/openui5-samples',
+          relFile: 'sap.uxap/test/sap/uxap/demokit/sample/ObjectPageHeaderExpanded/manifest.json',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sdk.openui5.org/#/entity/sap.uxap.ObjectPageLayout/sample/sap.uxap.sample.ObjectPageHeaderExpanded');
+      });
     });
 
     describe('CapUrlGenerator', () => {

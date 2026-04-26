@@ -15,6 +15,8 @@ export interface SapUi5UrlOptions {
   libraryId: string;
 }
 
+const OPENUI5_SAMPLE_ENTITY_CACHE = new Map<string, Map<string, string>>();
+
 /**
  * SAPUI5 URL Generator
  * Handles SAPUI5 guides, OpenUI5 API docs, and samples with different URL patterns
@@ -175,8 +177,7 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
       ? content
       : readSourceContentSync(this.libraryId, manifestRelFile);
     const sampleId = this.extractSampleIdFromContent(manifestContent || content) || `${namespace}.sample.${sampleRoot}`;
-    const sampleRouteName = sampleId.split('.sample.')[1]?.split('.')[0] || sampleRoot;
-    const entityId = this.inferSampleEntity(namespace, sampleRouteName);
+    const entityId = this.findOpenUi5SampleEntity(relFile, sampleId) || this.fallbackOpenUi5SampleEntity(namespace, sampleId, sampleRoot);
 
     return { sampleId, entityId };
   }
@@ -195,99 +196,67 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     return null;
   }
 
-  private inferSampleEntity(namespace: string, sampleName: string): string {
-    if (namespace === 'sap.ui.table') {
-      return sampleName.startsWith('TreeTable') ? 'sap.ui.table.TreeTable' : 'sap.ui.table.Table';
+  private findOpenUi5SampleEntity(relFile: string, sampleId: string): string | null {
+    const docuIndexRelFile = this.getOpenUi5DocuIndexRelFile(relFile);
+    if (!docuIndexRelFile) {
+      return null;
     }
 
-    if (namespace === 'sap.uxap') {
-      if (sampleName.startsWith('AnchorBar')) {
-        return 'sap.uxap.AnchorBar';
-      }
-      if (sampleName.startsWith('ObjectPage')) {
-        return 'sap.uxap.ObjectPageLayout';
-      }
-    }
-
-    if (namespace === 'sap.f') {
-      return `${namespace}.${this.firstKnownPrefix(sampleName, [
-        'FlexibleColumnLayout',
-        'DynamicPage',
-        'SidePanel',
-        'AvatarGroup',
-        'Avatar',
-        'Card'
-      ])}`;
-    }
-
-    if (namespace === 'sap.ui.layout') {
-      return `${namespace}.${this.firstKnownPrefix(sampleName, [
-        'SimpleForm',
-        'ResponsiveGridLayout',
-        'GridData',
-        'Grid',
-        'Splitter',
-        'Form',
-        'VerticalLayout',
-        'HorizontalLayout',
-        'FixFlex'
-      ])}`;
-    }
-
-    if (namespace === 'sap.ui.unified') {
-      return `${namespace}.${this.firstKnownPrefix(sampleName, [
-        'ColorPicker',
-        'FileUploader',
-        'Calendar',
-        'Currency',
-        'Menu'
-      ])}`;
-    }
-
-    return `${namespace}.${this.firstKnownPrefix(sampleName, [
-      'ActionSheet',
-      'Breadcrumbs',
-      'Button',
-      'ComboBox',
-      'DatePicker',
-      'Dialog',
-      'FeedInput',
-      'IconTabBar',
-      'Input',
-      'Label',
-      'Link',
-      'ListBase',
-      'List',
-      'MessagePopover',
-      'MessageStrip',
-      'MessageToast',
-      'MultiComboBox',
-      'ObjectHeader',
-      'Panel',
-      'Popover',
-      'ProgressIndicator',
-      'RadioButton',
-      'RangeSlider',
-      'RatingIndicator',
-      'SearchField',
-      'SegmentedButton',
-      'Select',
-      'Slider',
-      'SplitApp',
-      'StandardListItem',
-      'Table',
-      'Text',
-      'Toolbar',
-      'UploadCollection',
-      'ViewSettingsDialog',
-      'Wizard'
-    ])}`;
+    const sampleEntityMap = this.getOpenUi5SampleEntityMap(docuIndexRelFile);
+    return sampleEntityMap.get(sampleId) || null;
   }
 
-  private firstKnownPrefix(value: string, knownPrefixes: string[]): string {
-    return [...knownPrefixes]
-      .sort((a, b) => b.length - a.length)
-      .find(prefix => value.startsWith(prefix)) || value;
+  private getOpenUi5DocuIndexRelFile(relFile: string): string | null {
+    const sampleMatch = relFile.match(/^(sap\.[^/]+)\/test\/(sap(?:\/[^/]+)+)\/demokit\/sample\//);
+    if (!sampleMatch) {
+      return null;
+    }
+
+    const [, libraryFolder, namespacePath] = sampleMatch;
+    return `${libraryFolder}/test/${namespacePath}/demokit/docuindex.json`;
+  }
+
+  private getOpenUi5SampleEntityMap(docuIndexRelFile: string): Map<string, string> {
+    const cacheKey = `${this.libraryId}:${docuIndexRelFile}`;
+    const cached = OPENUI5_SAMPLE_ENTITY_CACHE.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const sampleEntityMap = new Map<string, string>();
+    const docuIndexContent = readSourceContentSync(this.libraryId, docuIndexRelFile);
+    if (!docuIndexContent) {
+      OPENUI5_SAMPLE_ENTITY_CACHE.set(cacheKey, sampleEntityMap);
+      return sampleEntityMap;
+    }
+
+    try {
+      const docuIndex = JSON.parse(docuIndexContent);
+      const entities = docuIndex?.explored?.entities;
+      if (Array.isArray(entities)) {
+        for (const entity of entities) {
+          if (typeof entity?.id !== 'string' || !Array.isArray(entity.samples)) {
+            continue;
+          }
+
+          for (const sampleId of entity.samples) {
+            if (typeof sampleId === 'string') {
+              sampleEntityMap.set(sampleId, entity.id);
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore malformed local metadata and use the generic fallback.
+    }
+
+    OPENUI5_SAMPLE_ENTITY_CACHE.set(cacheKey, sampleEntityMap);
+    return sampleEntityMap;
+  }
+
+  private fallbackOpenUi5SampleEntity(namespace: string, sampleId: string, sampleRoot: string): string {
+    const sampleRouteName = sampleId.split('.sample.')[1]?.split('.')[0] || sampleRoot;
+    return `${namespace}.${sampleRouteName}`;
   }
 }
 

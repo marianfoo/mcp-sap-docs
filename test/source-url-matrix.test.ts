@@ -137,6 +137,12 @@ const sourceUrlCases: UrlCase[] = [
     content: '{"sap.app":{"id":"sap.ui.unified.sample.ColorPicker"}}',
     expectedUrl: 'https://sdk.openui5.org/#/entity/sap.ui.unified.ColorPicker/sample/sap.ui.unified.sample.ColorPicker'
   },
+  {
+    libraryId: '/openui5-samples',
+    relFile: 'sap.uxap/test/sap/uxap/demokit/sample/ObjectPageHeaderExpanded/manifest.json',
+    content: '{"sap.app":{"id":"sap.uxap.sample.ObjectPageHeaderExpanded"}}',
+    expectedUrl: 'https://sdk.openui5.org/#/entity/sap.uxap.ObjectPageLayout/sample/sap.uxap.sample.ObjectPageHeaderExpanded'
+  },
 
   // wdi5
   {

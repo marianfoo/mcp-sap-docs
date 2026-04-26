@@ -8,9 +8,12 @@ import { FrontmatterData } from './utils.js';
 import { DocUrlConfig } from '../metadata.js';
 import { getProjectRoot } from '../sourceContent.js';
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
-const CAP_ROUTE_OVERRIDES: Record<string, string> = {
+const CAP_SOURCE_ROOT = path.join(getProjectRoot(), 'sources', 'cap-docs');
+
+const CAP_LEGACY_ROUTE_MIGRATIONS: Record<string, string> = {
   'about/best-practices.md': 'get-started/concepts',
   'about/features.md': 'get-started/feature-matrix',
   'about/index.md': 'get-started/features',
@@ -74,6 +77,8 @@ const CAP_REPO_ONLY_PATTERNS = [
   /^java\/operating-applications\/sizing\.md$/i
 ];
 
+let capMenuRouteMap: Map<string, string> | null | undefined;
+
 function encodePathForGithub(relFile: string): string {
   return relFile
     .split('/')
@@ -106,6 +111,105 @@ function isCapRepoOnlyFile(relFile: string): boolean {
   return CAP_REPO_ONLY_PATTERNS.some(pattern => pattern.test(relFile));
 }
 
+function toPosixPath(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function trimLeadingParentSegments(value: string): string {
+  let result = value;
+  while (result.startsWith('../')) {
+    result = result.slice(3);
+  }
+  return result.replace(/^\.\//, '');
+}
+
+function findCapMenuFiles(dir: string): string[] {
+  const result: string[] = [];
+
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '.git' || entry.name === 'node_modules') {
+        continue;
+      }
+
+      const absPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        result.push(...findCapMenuFiles(absPath));
+      } else if (entry.name === 'menu.md' || entry.name === '_menu.md') {
+        result.push(absPath);
+      }
+    }
+  } catch {
+    // Ignore missing or sparse source directories.
+  }
+
+  return result;
+}
+
+function routeToRelFile(route: string): string {
+  if (route.endsWith('/')) {
+    const cleanRoute = route.replace(/\/$/, '');
+    return cleanRoute ? `${cleanRoute}/index.md` : 'index.md';
+  }
+
+  const cleanRoute = route.replace(/\/$/, '');
+  if (!cleanRoute) {
+    return 'index.md';
+  }
+  return cleanRoute.endsWith('.md') ? cleanRoute : `${cleanRoute}.md`;
+}
+
+function routeToPublicPath(route: string): string {
+  return route
+    .replace(/\.md$/i, '')
+    .replace(/(?:^|\/)(?:index|README)$/i, '')
+    .replace(/\/$/, '');
+}
+
+function buildCapMenuRouteMap(): Map<string, string> {
+  const routeMap = new Map<string, string>();
+  for (const menuFile of findCapMenuFiles(CAP_SOURCE_ROOT)) {
+    const menuDir = toPosixPath(path.relative(CAP_SOURCE_ROOT, path.dirname(menuFile)));
+    const menuContent = fs.readFileSync(menuFile, 'utf8');
+
+    for (const line of menuContent.split(/\r?\n/)) {
+      const linkMatch = line.match(/\[[^\]]+\]\(([^)]+)\)/);
+      const rawLink = linkMatch?.[1]?.trim();
+      if (!rawLink || rawLink.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(rawLink)) {
+        continue;
+      }
+
+      const linkWithoutAnchor = rawLink.split('#')[0].trim();
+      if (!linkWithoutAnchor || /_menu\.md$/i.test(linkWithoutAnchor)) {
+        continue;
+      }
+
+      const route = trimLeadingParentSegments(toPosixPath(path.posix.normalize(
+        linkWithoutAnchor.startsWith('/')
+          ? linkWithoutAnchor.slice(1)
+          : path.posix.join(menuDir, linkWithoutAnchor)
+      )));
+      const relFile = routeToRelFile(route);
+      const publicPath = routeToPublicPath(route);
+      routeMap.set(relFile, publicPath);
+    }
+  }
+
+  return routeMap;
+}
+
+function getCapMenuRoute(relFile: string): string | null {
+  if (capMenuRouteMap === undefined) {
+    try {
+      capMenuRouteMap = buildCapMenuRouteMap();
+    } catch {
+      capMenuRouteMap = null;
+    }
+  }
+
+  return capMenuRouteMap?.get(relFile) || null;
+}
+
 export interface CapUrlOptions {
   relFile: string;
   content: string;
@@ -130,7 +234,7 @@ export class CapUrlGenerator extends BaseUrlGenerator {
       return buildCapGithubBlobUrl(normalizedRelFile);
     }
 
-    const route = CAP_ROUTE_OVERRIDES[normalizedRelFile] || normalizedRelFile
+    const route = CAP_LEGACY_ROUTE_MIGRATIONS[normalizedRelFile] || getCapMenuRoute(normalizedRelFile) || normalizedRelFile
       .replace(/\.md$/, '')
       .replace(/(?:^|\/)(?:index|README)$/i, '');
 
