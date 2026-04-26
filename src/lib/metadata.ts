@@ -14,13 +14,13 @@ export type SourceMeta = {
   sourcePath?: string;
   baseUrl?: string;
   pathPattern?: string;
-  anchorStyle?: 'docsify' | 'github' | 'custom';
+  anchorStyle?: 'docsify' | 'github' | 'custom' | 'sap-help';
 };
 
 export type DocUrlConfig = {
   baseUrl: string;
   pathPattern: string;
-  anchorStyle: 'docsify' | 'github' | 'custom';
+  anchorStyle: 'docsify' | 'github' | 'custom' | 'sap-help';
 };
 
 export type Metadata = {

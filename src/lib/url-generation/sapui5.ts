@@ -6,6 +6,7 @@
 import { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
 import { FrontmatterData } from './utils.js';
 import { DocUrlConfig } from '../metadata.js';
+import { readSourceContentSync } from '../sourceContent.js';
 
 export interface SapUi5UrlOptions {
   relFile: string;
@@ -13,6 +14,8 @@ export interface SapUi5UrlOptions {
   config: DocUrlConfig;
   libraryId: string;
 }
+
+const OPENUI5_SAMPLE_ENTITY_CACHE = new Map<string, Map<string, string>>();
 
 /**
  * SAPUI5 URL Generator
@@ -47,14 +50,18 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
+    if (/^(?:index|README)\.md$/i.test(context.relFile)) {
+      return this.extractFirstLinkedTopicUrl(context) || this.config.baseUrl;
+    }
+
     // SAPUI5 docs often have topic IDs in frontmatter
     const topicId = context.frontmatter.id || context.frontmatter.topic;
     if (topicId) {
       return `${this.config.baseUrl}/#/topic/${topicId}`;
     }
 
-    // SAPUI5 docs also use HTML comments with loio pattern: <!-- loio{id} -->
-    const loioMatch = context.content?.match(/<!--\s*loio([a-f0-9]+)\s*-->/);
+    // SAPUI5 docs use loio/copy HTML comments for topic identifiers.
+    const loioMatch = context.content?.match(/<!--\s*(?:loio|copy)([a-f0-9]{32})\s*-->/i);
     if (loioMatch) {
       return `${this.config.baseUrl}/#/topic/${loioMatch[1]}`;
     }
@@ -65,7 +72,33 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
       return `${this.config.baseUrl}/#/topic/${topicIdMatch[1]}`;
     }
     
-    return null; // Let fallback handle it
+    return this.config.baseUrl;
+  }
+
+  private extractFirstLinkedTopicUrl(context: UrlGenerationContext & {
+    frontmatter: FrontmatterData;
+    section: string;
+    anchor: string | null;
+  }): string | null {
+    const linkMatch = context.content.match(/\[[^\]]+\]\(([^)#?]+\.md)(?:#[^)]+)?\)/i);
+    if (!linkMatch) {
+      return null;
+    }
+
+    const linkedRelFile = linkMatch[1].replace(/^\.\//, '');
+    const linkedContent = readSourceContentSync(this.libraryId, linkedRelFile);
+    if (!linkedContent) {
+      return null;
+    }
+
+    const linkedFrontmatter = this.parseFrontmatter(linkedContent);
+    const linkedTopicId = linkedFrontmatter.id || linkedFrontmatter.topic;
+    if (linkedTopicId) {
+      return `${this.config.baseUrl}/#/topic/${linkedTopicId}`;
+    }
+
+    const loioMatch = linkedContent.match(/<!--\s*(?:loio|copy)([a-f0-9]{32})\s*-->/i);
+    return loioMatch ? `${this.config.baseUrl}/#/topic/${loioMatch[1]}` : null;
   }
   
   /**
@@ -78,7 +111,7 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     anchor: string | null;
   }): string | null {
     // Extract control name from file path (e.g., src/sap/m/Button.js -> sap.m.Button)
-    const pathMatch = context.relFile.match(/src\/(sap\/[^\/]+\/[^\/]+)\.js$/);
+    const pathMatch = context.relFile.match(/(?:^|\/)src\/(sap\/.+)\.js$/);
     if (pathMatch) {
       const controlPath = pathMatch[1].replace(/\//g, '.');
       return `${this.config.baseUrl}/#/api/${controlPath}`;
@@ -116,23 +149,114 @@ export class SapUi5UrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
-    // Extract sample ID from path patterns like:
-    // /src/sap.m/test/sap/m/demokit/sample/ButtonWithBadge/Component.js
-    const sampleMatch = context.relFile.match(/sample\/([^\/]+)\/([^\/]+)$/);
-    if (sampleMatch) {
-      const [, sampleName, fileName] = sampleMatch;
-      // For samples, we construct the sample entity URL without # prefix
-      return `${this.config.baseUrl}/entity/sap.m.Button/sample/sap.m.sample.${sampleName}`;
-    }
-    
-    // Alternative pattern for samples
-    const buttonSampleMatch = context.relFile.match(/\/([^\/]+)\/test\/sap\/m\/demokit\/sample\/([^\/]+)\//);
-    if (buttonSampleMatch) {
-      const [, controlLibrary, sampleName] = buttonSampleMatch;
-      return `${this.config.baseUrl}/entity/sap.${controlLibrary}.Button/sample/sap.${controlLibrary}.sample.${sampleName}`;
+    const sampleInfo = this.extractOpenUi5SampleInfo(context.relFile, context.content);
+    if (sampleInfo) {
+      return `${this.config.baseUrl}/#/entity/${sampleInfo.entityId}/sample/${sampleInfo.sampleId}`;
     }
     
     return null; // Let fallback handle it
+  }
+
+  private extractOpenUi5SampleInfo(relFile: string, content: string): { sampleId: string; entityId: string } | null {
+    const sampleMatch = relFile.match(/^(sap\.[^/]+)\/test\/(sap(?:\/[^/]+)+)\/demokit\/sample\/(.+)$/);
+    if (!sampleMatch) {
+      return null;
+    }
+
+    const [, , namespacePath, sampleRelativePath] = sampleMatch;
+    const namespace = namespacePath.replace(/\//g, '.');
+    const pathParts = sampleRelativePath.split('/').filter(Boolean);
+    if (pathParts.length < 2) {
+      return null;
+    }
+
+    const sampleRoot = pathParts[0];
+    const sampleRootPrefix = relFile.slice(0, relFile.length - sampleRelativePath.length);
+    const manifestRelFile = `${sampleRootPrefix}${sampleRoot}/manifest.json`;
+    const manifestContent = relFile.endsWith('/manifest.json')
+      ? content
+      : readSourceContentSync(this.libraryId, manifestRelFile);
+    const sampleId = this.extractSampleIdFromContent(manifestContent || content) || `${namespace}.sample.${sampleRoot}`;
+    const entityId = this.findOpenUi5SampleEntity(relFile, sampleId) || this.fallbackOpenUi5SampleEntity(namespace, sampleId, sampleRoot);
+
+    return { sampleId, entityId };
+  }
+
+  private extractSampleIdFromContent(content: string): string | null {
+    const manifestMatch = content.match(/"id"\s*:\s*"(sap\.[^"]+\.sample\.[^"]+)"/);
+    if (manifestMatch) {
+      return manifestMatch[1];
+    }
+
+    const componentMatch = content.match(/\.extend\(\s*["'](sap\.[^"']+\.sample\.[^"']+)\.Component["']/);
+    if (componentMatch) {
+      return componentMatch[1];
+    }
+
+    return null;
+  }
+
+  private findOpenUi5SampleEntity(relFile: string, sampleId: string): string | null {
+    const docuIndexRelFile = this.getOpenUi5DocuIndexRelFile(relFile);
+    if (!docuIndexRelFile) {
+      return null;
+    }
+
+    const sampleEntityMap = this.getOpenUi5SampleEntityMap(docuIndexRelFile);
+    return sampleEntityMap.get(sampleId) || null;
+  }
+
+  private getOpenUi5DocuIndexRelFile(relFile: string): string | null {
+    const sampleMatch = relFile.match(/^(sap\.[^/]+)\/test\/(sap(?:\/[^/]+)+)\/demokit\/sample\//);
+    if (!sampleMatch) {
+      return null;
+    }
+
+    const [, libraryFolder, namespacePath] = sampleMatch;
+    return `${libraryFolder}/test/${namespacePath}/demokit/docuindex.json`;
+  }
+
+  private getOpenUi5SampleEntityMap(docuIndexRelFile: string): Map<string, string> {
+    const cacheKey = `${this.libraryId}:${docuIndexRelFile}`;
+    const cached = OPENUI5_SAMPLE_ENTITY_CACHE.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const sampleEntityMap = new Map<string, string>();
+    const docuIndexContent = readSourceContentSync(this.libraryId, docuIndexRelFile);
+    if (!docuIndexContent) {
+      OPENUI5_SAMPLE_ENTITY_CACHE.set(cacheKey, sampleEntityMap);
+      return sampleEntityMap;
+    }
+
+    try {
+      const docuIndex = JSON.parse(docuIndexContent);
+      const entities = docuIndex?.explored?.entities;
+      if (Array.isArray(entities)) {
+        for (const entity of entities) {
+          if (typeof entity?.id !== 'string' || !Array.isArray(entity.samples)) {
+            continue;
+          }
+
+          for (const sampleId of entity.samples) {
+            if (typeof sampleId === 'string') {
+              sampleEntityMap.set(sampleId, entity.id);
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore malformed local metadata and use the generic fallback.
+    }
+
+    OPENUI5_SAMPLE_ENTITY_CACHE.set(cacheKey, sampleEntityMap);
+    return sampleEntityMap;
+  }
+
+  private fallbackOpenUi5SampleEntity(namespace: string, sampleId: string, sampleRoot: string): string {
+    const sampleRouteName = sampleId.split('.sample.')[1]?.split('.')[0] || sampleRoot;
+    return `${namespace}.${sampleRouteName}`;
   }
 }
 
@@ -169,4 +293,3 @@ export function generateUi5UrlForLibrary(options: SapUi5UrlOptions): string | nu
   const generator = new SapUi5UrlGenerator(options.libraryId, options.config);
   return generator.generateUrl(options);
 }
-

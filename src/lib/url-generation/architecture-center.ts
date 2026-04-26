@@ -22,7 +22,7 @@ export class ArchitectureCenterUrlGenerator extends BaseUrlGenerator {
 
     if (slug) {
       // Slug-based URLs are complete identifiers — don't append content anchors
-      return this.config.baseUrl + slug;
+      return this.buildUrl(this.config.baseUrl, slug);
     }
 
     return null;

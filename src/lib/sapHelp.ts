@@ -1,4 +1,5 @@
-import { 
+import { createHash } from "node:crypto";
+import {
   SearchResponse, 
   SearchResult, 
   SapHelpSearchResponse, 
@@ -24,6 +25,38 @@ function ensureAbsoluteUrl(url: string): string {
   // Ensure leading slash for relative URLs
   const cleanUrl = url.startsWith('/') ? url : '/' + url;
   return BASE + cleanUrl;
+}
+
+function validLoio(loio?: string): string | null {
+  if (!loio || loio === 'undefined' || loio === 'null') {
+    return null;
+  }
+
+  return loio;
+}
+
+function deriveSapHelpId(hit: any, index = 0): string {
+  const loio = validLoio(hit.loio);
+  if (loio) {
+    return loio;
+  }
+
+  const absoluteUrl = hit.url ? ensureAbsoluteUrl(hit.url) : '';
+  let slug = '';
+  try {
+    const url = new URL(absoluteUrl || BASE);
+    slug = decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() || '')
+      .replace(/\.(?:html?|pdf)$/i, '')
+      .replace(/[^A-Za-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+  } catch {
+    // Fall back to a hash-only id below.
+  }
+
+  const hashInput = absoluteUrl || hit.title || String(index);
+  const hash = createHash('sha1').update(hashInput).digest('hex').slice(0, 12);
+  return slug ? `url-${slug}-${hash}` : `url-${hash}`;
 }
 
 function parseDocsPathParts(urlOrPath: string): { productUrlSeg: string; deliverableLoio: string } {
@@ -81,34 +114,43 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
     }
 
     // Store the search results for later retrieval
-    const searchResults: SearchResult[] = results.map((hit, index) => ({
-      library_id: `sap-help-${hit.loio}`,
-      topic: '',
-      id: `sap-help-${hit.loio}`,
-      title: hit.title,
-      url: ensureAbsoluteUrl(hit.url),
-      snippet: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
-      score: 0,
-      metadata: {
-        source: "help",
-        loio: hit.loio,
-        product: hit.product || hit.productId,
-        version: hit.version || hit.versionId,
-        rank: index + 1
-      },
-      // Legacy fields for backward compatibility
-      description: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
-      totalSnippets: 1,
-      source: "help"
-    }));
+    const searchResults: SearchResult[] = results.map((hit, index) => {
+      const helpId = deriveSapHelpId(hit, index);
+
+      return {
+        library_id: `sap-help-${helpId}`,
+        topic: '',
+        id: `sap-help-${helpId}`,
+        title: hit.title,
+        url: ensureAbsoluteUrl(hit.url),
+        snippet: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
+        score: 0,
+        metadata: {
+          source: "help",
+          loio: validLoio(hit.loio),
+          product: hit.product || hit.productId,
+          version: hit.version || hit.versionId,
+          rank: index + 1
+        },
+        // Legacy fields for backward compatibility
+        description: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
+        totalSnippets: 1,
+        source: "help"
+      };
+    });
 
     // Store the full search results in a simple cache for retrieval
     // In a real implementation, you might want a more sophisticated cache
     if (!global.sapHelpSearchCache) {
       global.sapHelpSearchCache = new Map();
     }
-    results.forEach(hit => {
-      global.sapHelpSearchCache!.set(hit.loio, hit);
+    results.forEach((hit, index) => {
+      const helpId = deriveSapHelpId(hit, index);
+      global.sapHelpSearchCache!.set(helpId, hit);
+      const loio = validLoio(hit.loio);
+      if (loio) {
+        global.sapHelpSearchCache!.set(loio, hit);
+      }
     });
 
     // Format response similar to other search functions
@@ -151,14 +193,14 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
 export async function getSapHelpContent(resultId: string): Promise<string> {
   try {
     // Extract loio from the result ID
-    const loio = resultId.replace('sap-help-', '');
-    if (!loio || loio === resultId) {
+    const helpId = resultId.replace('sap-help-', '');
+    if (!helpId || helpId === resultId) {
       throw new Error("Invalid SAP Help result ID. Use an ID from sap_help_search results.");
     }
 
     // First try to get from cache
     const cache = global.sapHelpSearchCache || new Map();
-    let hit = cache.get(loio);
+    let hit = cache.get(helpId);
 
     if (!hit) {
       // If not in cache, search again to get the full hit data
@@ -167,7 +209,7 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
         state: "PRODUCTION,TEST,DRAFT",
         product: "",
         version: "",
-        q: loio, // Search by loio to find the specific document
+        q: helpId, // Search by LOIO or stable derived id to find the specific document
         to: "19",
         area: "content",
         advancedSearch: "0",
@@ -190,11 +232,32 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
 
       const searchData: SapHelpSearchResponse = await searchResponse.json();
       const results = searchData?.data?.results || [];
-      hit = results.find(r => r.loio === loio);
+      hit = results.find((r, index) => validLoio(r.loio) === helpId || deriveSapHelpId(r, index) === helpId);
 
       if (!hit) {
-        throw new Error(`Document with loio ${loio} not found`);
+        throw new Error(`SAP Help document ${helpId} not found`);
       }
+    }
+
+    if (!validLoio(hit.loio)) {
+      const fullContent = `# ${hit.title}
+
+**Source:** SAP Help Portal
+**URL:** ${ensureAbsoluteUrl(hit.url)}
+**Product:** ${hit.product || hit.productId || "Unknown"}
+**Version:** ${hit.version || hit.versionId || "Latest"}
+**Language:** ${hit.language || "en-US"}
+${hit.snippet ? `**Summary:** ${hit.snippet}` : ''}
+
+---
+
+This SAP Help search result does not expose a LOIO page id through the search API, so only the searchable metadata and canonical URL are available.
+
+---
+
+*This content is from the SAP Help Portal and represents official SAP documentation.*`;
+
+      return truncateContent(fullContent).content;
     }
 
     // Prepare metadata request parameters

@@ -14,6 +14,11 @@ import { TerraformBtpUrlGenerator } from './terraform-btp.js';
 import { GenericUrlGenerator } from './GenericUrlGenerator.js';
 import { ArchitectureCenterUrlGenerator } from './architecture-center.js';
 import { BaseUrlGenerator } from './BaseUrlGenerator.js';
+import { GithubBlobUrlGenerator } from './github-blob.js';
+import { MkDocsUrlGenerator } from './mkdocs.js';
+import { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
+import { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
+import { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
 
 export interface UrlGenerationOptions {
   libraryId: string;
@@ -54,16 +59,22 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/abap-docs-cloud': AbapUrlGenerator,
   
   // Generic sources
-  '/ui5-tooling': GenericUrlGenerator,
-  '/cloud-mta-build-tool': GenericUrlGenerator,
-  '/ui5-webcomponents': GenericUrlGenerator,
-  '/ui5-typescript': GenericUrlGenerator,
-  '/ui5-cc-spreadsheetimporter': GenericUrlGenerator,
-  '/abap-cheat-sheets': GenericUrlGenerator,
-  '/sap-styleguides': GenericUrlGenerator,
-  '/abap-fiori-showcase': GenericUrlGenerator,
-  '/cap-fiori-showcase': GenericUrlGenerator,
+  '/ui5-tooling': MkDocsUrlGenerator,
+  '/cloud-mta-build-tool': MkDocsUrlGenerator,
+  '/ui5-webcomponents': Ui5WebComponentsUrlGenerator,
+  '/ui5-typescript': Ui5TypeScriptUrlGenerator,
+  '/ui5-cc-spreadsheetimporter': MkDocsUrlGenerator,
+  '/abap-cheat-sheets': GithubBlobUrlGenerator,
+  '/sap-styleguides': GithubBlobUrlGenerator,
+  '/abap-fiori-showcase': GithubBlobUrlGenerator,
+  '/cap-fiori-showcase': GithubBlobUrlGenerator,
+  '/abap-platform-rap-opensap': GithubBlobUrlGenerator,
+  '/cloud-abap-rap': GithubBlobUrlGenerator,
+  '/abap-platform-reuse-services': GithubBlobUrlGenerator,
+  '/teched2025-dt260': GithubBlobUrlGenerator,
   '/terraform-provider-btp': TerraformBtpUrlGenerator,
+  '/btp-cloud-platform': SapHelpLoioUrlGenerator,
+  '/sap-artificial-intelligence': SapHelpLoioUrlGenerator,
 
   // SAP Architecture Center
   '/architecture-center': ArchitectureCenterUrlGenerator,
@@ -135,6 +146,11 @@ export { DsagUrlGenerator } from './dsag.js';
 export { TerraformBtpUrlGenerator } from './terraform-btp.js';
 export { GenericUrlGenerator } from './GenericUrlGenerator.js';
 export { ArchitectureCenterUrlGenerator } from './architecture-center.js';
+export { GithubBlobUrlGenerator } from './github-blob.js';
+export { MkDocsUrlGenerator } from './mkdocs.js';
+export { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
+export { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
+export { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
 
 // Re-export convenience functions for backward compatibility
 export { generateCloudSdkUrl, generateCloudSdkAiUrl, generateCloudSdkUrlForLibrary } from './cloud-sdk.js';

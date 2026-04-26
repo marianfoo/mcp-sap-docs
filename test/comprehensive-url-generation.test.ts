@@ -31,11 +31,16 @@ import {
   CapUrlGenerator,
   Wdi5UrlGenerator,
   DsagUrlGenerator,
-  GenericUrlGenerator,
-  ArchitectureCenterUrlGenerator
+  ArchitectureCenterUrlGenerator,
+  GithubBlobUrlGenerator,
+  MkDocsUrlGenerator,
+  SapHelpLoioUrlGenerator,
+  Ui5TypeScriptUrlGenerator,
+  Ui5WebComponentsUrlGenerator
 } from '../src/lib/url-generation/index.js';
 import { AbapUrlGenerator, generateAbapUrl } from '../src/lib/url-generation/abap.js';
 import { DocUrlConfig, getDocUrlConfig } from '../src/lib/metadata.js';
+import { normalizeCommunityUrl } from '../src/lib/communityBestMatch.js';
 
 describe('Comprehensive URL Generation System', () => {
   
@@ -135,26 +140,26 @@ describe('Comprehensive URL Generation System', () => {
    * - libraryId: Library identifier from metadata.json
    * - relFile: Relative file path within the library (used for path mapping)
    * - expectedUrl: Expected generated URL for validation
-   * - frontmatter: Fallback YAML frontmatter (used when real file not found)
-   * - content: Fallback content (used when real file not found)
+   * - frontmatter: YAML frontmatter fixture
+   * - content: Markdown or MDX fixture content
    * 
-   * The system will attempt to read real source files first, falling back to
-   * the provided frontmatter/content if the file doesn't exist.
+   * The main matrix intentionally uses fixture content so URL expectations
+   * stay deterministic even when submodules are updated.
    */
   const testCases = [
     {
       name: 'CAP - CDS Log Documentation',
       libraryId: '/cap',
       relFile: 'node.js/cds-log.md',
-      expectedUrl: 'https://cap.cloud.sap/docs/#/node.js/cds-log',
+      expectedUrl: 'https://cap.cloud.sap/docs/node.js/cds-log',
       frontmatter: '---\nid: cds-log\ntitle: Logging\n---\n',
       content: '# Logging\n\nCAP provides structured logging capabilities...'
     },
     {
       name: 'Cloud MTA Build Tool - Download Page',
       libraryId: '/cloud-mta-build-tool',
-      relFile: 'docs/download.md',
-      expectedUrl: 'https://sap.github.io/cloud-mta-build-tool/download',
+      relFile: 'download.md',
+      expectedUrl: 'https://sap.github.io/cloud-mta-build-tool/download/',
       frontmatter: '',
       content: '\nYou can install the Cloud MTA Build Tool...'
     },
@@ -185,24 +190,24 @@ describe('Comprehensive URL Generation System', () => {
     {
       name: 'OpenUI5 Samples - ButtonWithBadge',
       libraryId: '/openui5-samples',
-      relFile: 'src/sap.m/test/sap/m/demokit/sample/ButtonWithBadge/Component.js',
-      expectedUrl: 'https://sdk.openui5.org/entity/sap.m.Button/sample/sap.m.sample.ButtonWithBadge',
+      relFile: 'sap.m/test/sap/m/demokit/sample/ButtonWithBadge/Component.js',
+      expectedUrl: 'https://sdk.openui5.org/#/entity/sap.m.Button/sample/sap.m.sample.ButtonWithBadge',
       frontmatter: '',
-      content: 'sap.ui.define([\n  "sap/ui/core/UIComponent"\n], function (UIComponent) {\n  // Sample implementation'
+      content: 'sap.ui.define([\n  "sap/ui/core/UIComponent"\n], function (UIComponent) {\n  var Component = UIComponent.extend("sap.m.sample.ButtonWithBadge.Component", {});'
     },
-         {
-       name: 'SAPUI5 - Multi-Selection Navigation',
-       libraryId: '/sapui5',
-       relFile: '06_SAP_Fiori_Elements/multi-selection-for-intent-based-navigation-640cabf.md',
-       expectedUrl: 'https://ui5.sap.com/#/topic/640cabfd35c3469aacf31be28924d50d',
-       frontmatter: '---\nid: 640cabfd35c3469aacf31be28924d50d\ntopic: 640cabfd35c3469aacf31be28924d50d\ntitle: Multi-Selection for Intent-Based Navigation\n---\n',
-       content: '# Multi-Selection for Intent-Based Navigation\n\nThis feature allows...'
-     },
+    {
+      name: 'SAPUI5 - Multi-Selection Navigation',
+      libraryId: '/sapui5',
+      relFile: '06_SAP_Fiori_Elements/multi-selection-for-intent-based-navigation-640cabf.md',
+      expectedUrl: 'https://ui5.sap.com/#/topic/640cabfd35c3469aacf31be28924d50d',
+      frontmatter: '---\nid: 640cabfd35c3469aacf31be28924d50d\ntopic: 640cabfd35c3469aacf31be28924d50d\ntitle: Multi-Selection for Intent-Based Navigation\n---\n',
+      content: '# Multi-Selection for Intent-Based Navigation\n\nThis feature allows...'
+    },
     {
       name: 'UI5 Tooling - Builder Documentation',
       libraryId: '/ui5-tooling',
       relFile: 'pages/Builder.md',
-      expectedUrl: 'https://sap.github.io/ui5-tooling/v4/pages/Builder#ui5-builder',
+      expectedUrl: 'https://ui5.github.io/cli/v4/pages/Builder/#ui5-builder',
       frontmatter: '',
       content: '# UI5 Builder\n\nThe UI5 Builder module takes care of building your project...'
     },
@@ -210,7 +215,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'UI5 Web Components - Configuration',
       libraryId: '/ui5-webcomponents',
       relFile: '2-advanced/01-configuration.md',
-      expectedUrl: 'https://sap.github.io/ui5-webcomponents/docs/01-configuration#configuration',
+      expectedUrl: 'https://ui5.github.io/webcomponents/docs/advanced/configuration/',
       frontmatter: '',
       content: '# Configuration\n\nThis section explains how you can configure UI5 Web Components...'
     },
@@ -226,7 +231,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'UI5 TypeScript - FAQ Documentation',
       libraryId: '/ui5-typescript',
       relFile: 'faq.md',
-      expectedUrl: 'https://github.com/UI5/typescript/blob/gh-pages/faq#faq---frequently-asked-questions-for-the-ui5-type-definitions',
+      expectedUrl: 'https://ui5.github.io/typescript/faq.html#faq---frequently-asked-questions-for-the-ui5-type-definitions',
       frontmatter: '',
       content: '# FAQ - Frequently Asked Questions for the UI5 Type Definitions\n\nWhile the [main page](README.md) answers the high-level questions...'
     },
@@ -242,7 +247,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'ABAP Cheat Sheets - Internal Tables',
       libraryId: '/abap-cheat-sheets',
       relFile: '01_Internal_Tables.md',
-      expectedUrl: 'https://github.com/SAP-samples/abap-cheat-sheets/blob/main/01_Internal_Tables#internal-tables',
+      expectedUrl: 'https://github.com/SAP-samples/abap-cheat-sheets/blob/main/01_Internal_Tables.md#internal-tables',
       frontmatter: '',
       content: '# Internal Tables\n\nThis cheat sheet contains a selection of syntax examples and notes on internal tables...'
     },
@@ -250,7 +255,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'SAP Style Guides - Clean ABAP',
       libraryId: '/sap-styleguides',
       relFile: 'clean-abap/CleanABAP.md',
-      expectedUrl: 'https://github.com/SAP/styleguides/blob/main/CleanABAP#clean-abap',
+      expectedUrl: 'https://github.com/SAP/styleguides/blob/main/clean-abap/CleanABAP.md#clean-abap',
       frontmatter: '',
       content: '# Clean ABAP\n\n> [**中文**](CleanABAP_zh.md)\n\nThis style guide presents the essentials of clean ABAP...'
     },
@@ -266,7 +271,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'ABAP Platform Fiori Feature Showcase - General Features',
       libraryId: '/abap-fiori-showcase',
       relFile: '01_general_features.md',
-      expectedUrl: 'https://github.com/SAP-samples/abap-platform-fiori-feature-showcase/blob/main/01_general_features#general-features',
+      expectedUrl: 'https://github.com/SAP-samples/abap-platform-fiori-feature-showcase/blob/main/01_general_features.md#general-features',
       frontmatter: '',
       content: '# General Features\n\nThis section describes the features that are generally used throughout...'
     },
@@ -274,15 +279,47 @@ describe('Comprehensive URL Generation System', () => {
       name: 'CAP Fiori Elements Feature Showcase - README',
       libraryId: '/cap-fiori-showcase',
       relFile: 'README.md',
-      expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README#sap-fiori-elements-for-odata-v4-feature-showcase',
+      expectedUrl: 'https://github.com/SAP-samples/fiori-elements-feature-showcase/blob/main/README.md#sap-fiori-elements-for-odata-v4-feature-showcase',
       frontmatter: '',
       content: '# SAP Fiori Elements for OData V4 Feature Showcase\n\nThis app showcases different features of SAP Fiori elements...'
+    },
+    {
+      name: 'RAP openSAP Samples - README',
+      libraryId: '/abap-platform-rap-opensap',
+      relFile: 'README.md',
+      expectedUrl: 'https://github.com/SAP-samples/abap-platform-rap-opensap/blob/main/README.md#rap-opensap-course-samples',
+      frontmatter: '',
+      content: '# RAP openSAP Course Samples\n\nSample code for RAP.'
+    },
+    {
+      name: 'Cloud ABAP RAP Samples - README',
+      libraryId: '/cloud-abap-rap',
+      relFile: 'README.md',
+      expectedUrl: 'https://github.com/SAP-samples/cloud-abap-rap/blob/main/README.md#sap-cloud-abap-rap',
+      frontmatter: '',
+      content: '# SAP Cloud ABAP RAP\n\nRAP examples for ABAP Cloud.'
+    },
+    {
+      name: 'ABAP Platform Reuse Services - README',
+      libraryId: '/abap-platform-reuse-services',
+      relFile: 'README.md',
+      expectedUrl: 'https://github.com/SAP-samples/abap-platform-reuse-services/blob/main/README.md#abap-platform-reuse-services',
+      frontmatter: '',
+      content: '# ABAP Platform Reuse Services\n\nReuse service examples.'
+    },
+    {
+      name: 'TechEd 2025 DT260 - README',
+      libraryId: '/teched2025-dt260',
+      relFile: 'README.md',
+      expectedUrl: 'https://github.com/SAP-samples/teched2025-DT260/blob/main/README.md#teched-2025-dt260',
+      frontmatter: '',
+      content: '# TechEd 2025 DT260\n\nABAP clean core modernization.'
     },
     {
       name: 'Terraform BTP Provider - Index',
       libraryId: '/terraform-provider-btp',
       relFile: 'docs/index.md',
-      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/index#terraform-provider-for-sap-btp',
+      expectedUrl: 'https://registry.terraform.io/providers/SAP/btp/latest/docs',
       frontmatter: '',
       content: '# Terraform Provider for SAP BTP\n\nThe Terraform provider for SAP BTP enables you...'
     },
@@ -290,7 +327,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'Terraform BTP Data Source - Subaccount',
       libraryId: '/terraform-provider-btp',
       relFile: 'docs/data-sources/subaccount.md',
-      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/data-sources/subaccount#btp_subaccount-data-source',
+      expectedUrl: 'https://registry.terraform.io/providers/SAP/btp/latest/docs/data-sources/subaccount',
       frontmatter: '',
       content: '# btp_subaccount (Data Source)\n\nGets details about a subaccount.'
     },
@@ -298,7 +335,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'Terraform BTP Function - Extract CF API URL',
       libraryId: '/terraform-provider-btp',
       relFile: 'docs/functions/extract_cf_api_url.md',
-      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/functions/extract_cf_api_url#extract_cf_api_url-function',
+      expectedUrl: 'https://registry.terraform.io/providers/SAP/btp/latest/docs/functions/extract_cf_api_url',
       frontmatter: '',
       content: '# extract_cf_api_url (function)\n\nParses the label string...'
     },
@@ -306,7 +343,7 @@ describe('Comprehensive URL Generation System', () => {
       name: 'Terraform BTP List Resource - Subaccount',
       libraryId: '/terraform-provider-btp',
       relFile: 'docs/list-resources/subaccount.md',
-      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/list-resources/subaccount#btp_subaccount-list-resource',
+      expectedUrl: 'https://registry.terraform.io/providers/SAP/btp/latest/docs/list-resources/subaccount',
       frontmatter: '',
       content: '# btp_subaccount (List Resource)\n\nThis list resource allows you to discover all subaccounts.'
     },
@@ -314,9 +351,33 @@ describe('Comprehensive URL Generation System', () => {
       name: 'Terraform BTP Resource - Subaccount',
       libraryId: '/terraform-provider-btp',
       relFile: 'docs/resources/subaccount.md',
-      expectedUrl: 'https://github.com/SAP/terraform-provider-btp/blob/main/docs/resources/subaccount#btp_subaccount-resource',
+      expectedUrl: 'https://registry.terraform.io/providers/SAP/btp/latest/docs/resources/subaccount',
       frontmatter: '',
       content: '# btp_subaccount (Resource)\n\nCreates a subaccount in a global account or directory.'
+    },
+    {
+      name: 'SAP Help BTP - LOIO URL',
+      libraryId: '/btp-cloud-platform',
+      relFile: '20-getting-started/abap-environment-initial-settings-a999fac.md',
+      expectedUrl: 'https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/a999fac2a578468ea0e4e320c82145ce.html',
+      frontmatter: '',
+      content: '<!-- loioa999fac2a578468ea0e4e320c82145ce -->\n\n# ABAP Environment Initial Settings'
+    },
+    {
+      name: 'SAP Help AI Core - LOIO URL',
+      libraryId: '/sap-artificial-intelligence',
+      relFile: 'sap-ai-core/delete-a-docker-registry-secret-5ff30f0.md',
+      expectedUrl: 'https://help.sap.com/docs/AI_CORE/2d6c5984063c40a59eda62f4a9135bee/5ff30f0332b8452d97ed77edf746714a.html?version=CLOUD',
+      frontmatter: '',
+      content: '<!-- loio5ff30f0332b8452d97ed77edf746714a -->\n\n# Delete a Docker Registry Secret'
+    },
+    {
+      name: 'SAP Help AI Launchpad - LOIO URL',
+      libraryId: '/sap-artificial-intelligence',
+      relFile: 'sap-ai-launchpad/using-sap-ai-launchpad-bbc7e21.md',
+      expectedUrl: 'https://help.sap.com/docs/AI_LAUNCHPAD/92d77f26188e4582897b9106b9cb72e0/bbc7e21629ce4aef87d85c30cc8b1be8.html?version=CLOUD',
+      frontmatter: '',
+      content: '<!-- loiobbc7e21629ce4aef87d85c30cc8b1be8 -->\n\n# Using SAP AI Launchpad'
     },
     // Architecture Center - slug-based URL generation
     {
@@ -335,8 +396,6 @@ describe('Comprehensive URL Generation System', () => {
       frontmatter: '---\nid: id-ra0005\nslug: /ref-arch/e5eb3b9b1d\ntitle: Generative AI on SAP BTP\ndescription: Integrate Generative AI with SAP BTP using SAP HANA Cloud Vector Engine.\nkeywords:\n  - generative ai hub\n  - vector engine integration\n---\n',
       content: '# Generative AI on SAP BTP\n\nIntegrate Generative AI with SAP BTP...'
     }
-    // Note: Some sources like CAP, Cloud SDK AI, wdi5, etc. may need different file mappings
-    // or fallback to mock content if actual files don't exist in expected locations
   ];
 
   describe('Main URL Generation Function', () => {
@@ -345,19 +404,12 @@ describe('Comprehensive URL Generation System', () => {
         // Step 1: Get configuration from metadata.json
         const config = getConfigForLibrary(libraryId);
         
-        // Step 2: Try to read from actual source file first, fallback to test data
-        let fileContent = readFileContent(libraryId, relFile);
-        let contentSource = 'real file';
-        
-        if (!fileContent) {
-          // Fallback to hardcoded test data when real file is not available
-          fileContent = frontmatter ? `${frontmatter}\n${content}` : content;
-          contentSource = 'test data';
-        }
+        // Step 2: Use fixed fixture content so URL expectations stay deterministic
+        const fileContent = frontmatter ? `${frontmatter}\n${content}` : content;
         
         // For debugging: log which content source was used
         if (process.env.DEBUG_TESTS === 'true') {
-          console.log(`\n[${name}] Using ${contentSource}`);
+          console.log(`\n[${name}] Using test data`);
           console.log(`File path: ${libraryId}/${relFile}`);
           console.log(`Content preview: ${fileContent.slice(0, 100)}...`);
         }
@@ -403,6 +455,36 @@ describe('Comprehensive URL Generation System', () => {
         
         expect(result).toBe('https://sap.github.io/ai-sdk/docs/js/langchain/orchestration');
       });
+
+      it('should preserve nested Docusaurus parent paths for numbered docs', () => {
+        const config = getConfigForLibrary('/cloud-sdk-java');
+        const generator = new CloudSdkUrlGenerator('/cloud-sdk-java', config);
+        const content = '---\nid: destination-service\n---\n# Connectivity Features';
+
+        const result = generator.generateUrl({
+          libraryId: '/cloud-sdk-java',
+          relFile: 'features/connectivity/000-overview.mdx',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sap.github.io/cloud-sdk/docs/java/features/connectivity/destination-service');
+      });
+
+      it('should prefer Docusaurus slug frontmatter over file-derived routes', () => {
+        const config = getConfigForLibrary('/cloud-sdk-js');
+        const generator = new CloudSdkUrlGenerator('/cloud-sdk-js', config);
+        const content = '---\nid: ignored-id\nslug: /features/custom-runtime-route\n---\n# Custom Route';
+
+        const result = generator.generateUrl({
+          libraryId: '/cloud-sdk-js',
+          relFile: 'features/runtime/001-original-name.mdx',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sap.github.io/cloud-sdk/docs/js/features/custom-runtime-route');
+      });
     });
 
     describe('SapUi5UrlGenerator', () => {
@@ -435,25 +517,70 @@ describe('Comprehensive URL Generation System', () => {
         
         expect(result).toBe('https://sdk.openui5.org/#/api/sap.m.Button');
       });
+
+      it('should derive OpenUI5 sample routes from manifest sample ids', () => {
+        const config = getConfigForLibrary('/openui5-samples');
+        const generator = new SapUi5UrlGenerator('/openui5-samples', config);
+        const content = '{"sap.app":{"id":"sap.ui.unified.sample.ColorPicker"}}';
+
+        const result = generator.generateUrl({
+          libraryId: '/openui5-samples',
+          relFile: 'sap.ui.unified/test/sap/ui/unified/demokit/sample/ColorPickerSimplified/manifest.json',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sdk.openui5.org/#/entity/sap.ui.unified.ColorPicker/sample/sap.ui.unified.sample.ColorPicker');
+      });
+
+      it('should keep nested OpenUI5 sample sub-files on the sample root route', () => {
+        const config = getConfigForLibrary('/openui5-samples');
+        const generator = new SapUi5UrlGenerator('/openui5-samples', config);
+        const content = '<mvc:View controllerName="sap.m.sample.Slider.Slider"></mvc:View>';
+
+        const result = generator.generateUrl({
+          libraryId: '/openui5-samples',
+          relFile: 'sap.m/test/sap/m/demokit/sample/Slider/view/Slider.view.xml',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sdk.openui5.org/#/entity/sap.m.Slider/sample/sap.m.sample.Slider');
+      });
+
+      it('should derive OpenUI5 sample entities from Demokit docuindex metadata', () => {
+        const config = getConfigForLibrary('/openui5-samples');
+        const generator = new SapUi5UrlGenerator('/openui5-samples', config);
+        const content = '{"sap.app":{"id":"sap.uxap.sample.ObjectPageHeaderExpanded"}}';
+
+        const result = generator.generateUrl({
+          libraryId: '/openui5-samples',
+          relFile: 'sap.uxap/test/sap/uxap/demokit/sample/ObjectPageHeaderExpanded/manifest.json',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://sdk.openui5.org/#/entity/sap.uxap.ObjectPageLayout/sample/sap.uxap.sample.ObjectPageHeaderExpanded');
+      });
     });
 
     describe('CapUrlGenerator', () => {
-      it('should generate docsify-style URLs', () => {
+      it('should generate direct capire documentation URLs', () => {
         const config = getConfigForLibrary('/cap');
         const generator = new CapUrlGenerator('/cap', config);
-        const content = '---\nid: getting-started\n---\n# Getting Started';
+        const content = '# Providing Services';
         
         const result = generator.generateUrl({
           libraryId: '/cap',
-          relFile: 'guides/getting-started.md',
+          relFile: 'guides/providing-services.md',
           content,
           config
         });
         
-        expect(result).toBe('https://cap.cloud.sap/docs/#/guides/getting-started');
+        expect(result).toBe('https://cap.cloud.sap/docs/guides/services/providing-services');
       });
 
-      it('should handle CDS-specific sections', () => {
+      it('should preserve nested CAP documentation paths', () => {
         const config = getConfigForLibrary('/cap');
         const generator = new CapUrlGenerator('/cap', config);
         const content = '---\nslug: cds-types\n---\n# CDS Types';
@@ -465,7 +592,50 @@ describe('Comprehensive URL Generation System', () => {
           config
         });
         
-        expect(result).toBe('https://cap.cloud.sap/docs/#/cds/cds-types');
+        expect(result).toBe('https://cap.cloud.sap/docs/cds/types');
+      });
+
+      it('should map indexed legacy CAP paths to current capire routes', () => {
+        const config = getConfigForLibrary('/cap');
+        const generator = new CapUrlGenerator('/cap', config);
+
+        const cases = [
+          ['about/best-practices.md', 'https://cap.cloud.sap/docs/get-started/concepts'],
+          ['advanced/hana.md', 'https://cap.cloud.sap/docs/guides/databases/hana-native'],
+          ['advanced/hybrid-testing.md', 'https://cap.cloud.sap/docs/tools/cds-bind'],
+          ['advanced/publishing-apis/openapi.md', 'https://cap.cloud.sap/docs/guides/protocols/openapi'],
+          ['get-started/troubleshooting.md', 'https://cap.cloud.sap/docs/get-started/get-help'],
+          ['guides/databases-hana.md', 'https://cap.cloud.sap/docs/guides/databases/hana'],
+          ['guides/deployment/custom-builds.md', 'https://cap.cloud.sap/docs/guides/deploy/build'],
+          ['guides/messaging/event-broker.md', 'https://cap.cloud.sap/docs/guides/events/event-hub'],
+          ['guides/data-privacy/audit-logging.md', 'https://cap.cloud.sap/docs/guides/security/dpp-audit-logging'],
+          ['guides/extensibility/composition.md', 'https://cap.cloud.sap/docs/guides/integration/reuse-and-compose']
+        ] as const;
+
+        for (const [relFile, expected] of cases) {
+          const result = generator.generateUrl({
+            libraryId: '/cap',
+            relFile,
+            content: '# CAP',
+            config
+          });
+
+          expect(result).toBe(expected);
+        }
+      });
+
+      it('should use GitHub blob URLs for indexed CAP files that are not published as site pages', () => {
+        const config = getConfigForLibrary('/cap');
+        const generator = new CapUrlGenerator('/cap', config);
+
+        const result = generator.generateUrl({
+          libraryId: '/cap',
+          relFile: 'CODE_OF_CONDUCT.md',
+          content: '# Contributor Covenant Code of Conduct',
+          config
+        });
+
+        expect(result).toMatch(/^https:\/\/github\.com\/capire\/docs\/blob\/(?:[a-f0-9]{40}|main)\/CODE_OF_CONDUCT\.md$/);
       });
     });
 
@@ -505,16 +675,16 @@ describe('Comprehensive URL Generation System', () => {
       it('should generate GitHub Pages URLs with path transformation', () => {
         const config = getConfigForLibrary('/dsag-abap-leitfaden');
         const generator = new DsagUrlGenerator('/dsag-abap-leitfaden', config);
-        const content = '# Was ist Clean Core?\n\nClean Core ist ein Konzept von SAP...';
+        const content = '---\npermalink: /abap/oo-basics/\n---\n# Ergänzungen und Details zu Themen der Objektorientierung';
         
         const result = generator.generateUrl({
           libraryId: '/dsag-abap-leitfaden',
-          relFile: 'clean-core/what-is-clean-core.md',
+          relFile: 'abap/OO-basics.md',
           content,
           config
         });
         
-        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/clean-core/what-is-clean-core/#was-ist-clean-core');
+        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/abap/oo-basics/#ergänzungen-und-details-zu-themen-der-objektorientierung');
       });
 
       it('should handle root-level documentation', () => {
@@ -529,15 +699,15 @@ describe('Comprehensive URL Generation System', () => {
           config
         });
         
-        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/README/#abap-leitfaden');
+        expect(result).toBe('https://marianfoo.github.io/DSAG-ABAP-Guide/#abap-leitfaden');
       });
     });
 
-    describe('GenericUrlGenerator', () => {
-      it('should handle generic sources with frontmatter', () => {
-        const config = getConfigForLibrary('/ui5-tooling'); // Use a real generic source
-        const generator = new GenericUrlGenerator('/ui5-tooling', config);
-        const content = '---\nid: test-doc\n---\n# Test Document';
+    describe('MkDocsUrlGenerator', () => {
+      it('should generate GitHub Pages URLs with trailing slash and anchors', () => {
+        const config = getConfigForLibrary('/ui5-tooling');
+        const generator = new MkDocsUrlGenerator('/ui5-tooling', config);
+        const content = '# Test Document';
         
         const result = generator.generateUrl({
           libraryId: '/ui5-tooling',
@@ -546,22 +716,113 @@ describe('Comprehensive URL Generation System', () => {
           config
         });
         
-        expect(result).toBe('https://sap.github.io/ui5-tooling/v4/pages/test-doc#test-document');
+        expect(result).toBe('https://ui5.github.io/cli/v4/pages/test/#test-document');
       });
 
-      it('should fallback to filename when no frontmatter', () => {
-        const config = getConfigForLibrary('/ui5-tooling'); // Use a real generic source
-        const generator = new GenericUrlGenerator('/ui5-tooling', config);
-        const content = '# Test Document\n\nSome content...';
+      it('should map index pages to the source homepage', () => {
+        const config = getConfigForLibrary('/cloud-mta-build-tool');
+        const generator = new MkDocsUrlGenerator('/cloud-mta-build-tool', config);
+        const content = '# Cloud MTA Build Tool';
         
         const result = generator.generateUrl({
-          libraryId: '/ui5-tooling',
-          relFile: 'pages/test.md',
+          libraryId: '/cloud-mta-build-tool',
+          relFile: 'index.md',
           content,
           config
         });
         
-        expect(result).toBe('https://sap.github.io/ui5-tooling/v4/pages/test#test-document');
+        expect(result).toBe('https://sap.github.io/cloud-mta-build-tool/#cloud-mta-build-tool');
+      });
+    });
+
+    describe('GithubBlobUrlGenerator', () => {
+      it('should preserve directories and markdown extensions for GitHub blob URLs', () => {
+        const config = getConfigForLibrary('/sap-styleguides');
+        const generator = new GithubBlobUrlGenerator('/sap-styleguides', config);
+        const content = '# Clean ABAP';
+
+        const result = generator.generateUrl({
+          libraryId: '/sap-styleguides',
+          relFile: 'clean-abap/CleanABAP.md',
+          content,
+          config
+        });
+
+        expect(result).toBe('https://github.com/SAP/styleguides/blob/main/clean-abap/CleanABAP.md#clean-abap');
+      });
+    });
+
+    describe('Ui5WebComponentsUrlGenerator', () => {
+      it('should map numbered Docusaurus paths to public docs routes', () => {
+        const config = getConfigForLibrary('/ui5-webcomponents');
+        const generator = new Ui5WebComponentsUrlGenerator('/ui5-webcomponents', config);
+
+        const result = generator.generateUrl({
+          libraryId: '/ui5-webcomponents',
+          relFile: '2-advanced/01-configuration.md',
+          content: '# Configuration',
+          config
+        });
+
+        expect(result).toBe('https://ui5.github.io/webcomponents/docs/advanced/configuration/');
+      });
+    });
+
+    describe('Ui5TypeScriptUrlGenerator', () => {
+      it('should map Markdown pages to the gh-pages HTML output', () => {
+        const config = getConfigForLibrary('/ui5-typescript');
+        const generator = new Ui5TypeScriptUrlGenerator('/ui5-typescript', config);
+
+        const result = generator.generateUrl({
+          libraryId: '/ui5-typescript',
+          relFile: 'faq.md',
+          content: '# FAQ',
+          config
+        });
+
+        expect(result).toBe('https://ui5.github.io/typescript/faq.html#faq');
+      });
+    });
+
+    describe('SapHelpLoioUrlGenerator', () => {
+      it('should build BTP SAP Help URLs from LOIO comments', () => {
+        const config = getConfigForLibrary('/btp-cloud-platform');
+        const generator = new SapHelpLoioUrlGenerator('/btp-cloud-platform', config);
+
+        const result = generator.generateUrl({
+          libraryId: '/btp-cloud-platform',
+          relFile: '20-getting-started/abap-environment-initial-settings-a999fac.md',
+          content: '<!-- loioa999fac2a578468ea0e4e320c82145ce -->\n# ABAP Environment Initial Settings',
+          config
+        });
+
+        expect(result).toBe('https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/a999fac2a578468ea0e4e320c82145ce.html');
+      });
+
+      it('should not fall back to invalid SAP Help paths without a LOIO', () => {
+        const config = getConfigForLibrary('/btp-cloud-platform');
+        const generator = new SapHelpLoioUrlGenerator('/btp-cloud-platform', config);
+
+        const result = generator.generateUrl({
+          libraryId: '/btp-cloud-platform',
+          relFile: 'missing-loio.md',
+          content: '# Missing LOIO',
+          config
+        });
+
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('SAP Community URL normalization', () => {
+      it('should convert relative Khoros URLs to absolute SAP Community URLs', () => {
+        const result = normalizeCommunityUrl('/t5/technology-blogs-by-sap/example/ba-p/123456');
+        expect(result).toBe('https://community.sap.com/t5/technology-blogs-by-sap/example/ba-p/123456');
+      });
+
+      it('should preserve already absolute URLs', () => {
+        const result = normalizeCommunityUrl('https://community.sap.com/t5/example/td-p/42');
+        expect(result).toBe('https://community.sap.com/t5/example/td-p/42');
       });
     });
 

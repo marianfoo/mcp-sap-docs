@@ -130,9 +130,9 @@
       "description": "SAP Business Technology Platform documentation",
       "libraryId": "/btp-cloud-platform",
       "sourcePath": "btp-cloud-platform/docs",
-      "baseUrl": "https://github.com/SAP-docs/btp-cloud-platform/blob/main",
-      "pathPattern": "/docs/{file}",
-      "anchorStyle": "github"
+      "baseUrl": "https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b",
+      "pathPattern": "/{file}.html",
+      "anchorStyle": "sap-help"
     },
     {
       "id": "sap-artificial-intelligence",
@@ -143,9 +143,9 @@
       "description": "SAP AI Core and SAP AI Launchpad documentation",
       "libraryId": "/sap-artificial-intelligence",
       "sourcePath": "sap-artificial-intelligence/docs",
-      "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
-      "pathPattern": "/docs/{file}",
-      "anchorStyle": "github"
+      "baseUrl": "https://help.sap.com/docs",
+      "pathPattern": "/{file}.html",
+      "anchorStyle": "sap-help"
     },
     {
       "id": "teched2025-dt260",

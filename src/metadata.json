@@ -53,7 +53,7 @@
       "libraryId": "/openui5-samples",
       "sourcePath": "openui5/src",
       "baseUrl": "https://sdk.openui5.org",
-      "pathPattern": "/entity/{file}",
+      "pathPattern": "/#/entity/{file}",
       "anchorStyle": "custom"
     },
     {
@@ -78,7 +78,7 @@
       "description": "UI5 Tooling documentation",
       "libraryId": "/ui5-tooling",
       "sourcePath": "ui5-tooling/docs",
-      "baseUrl": "https://sap.github.io/ui5-tooling/v4",
+      "baseUrl": "https://ui5.github.io/cli/v4",
       "pathPattern": "/pages/{file}",
       "anchorStyle": "github"
     },
@@ -104,8 +104,8 @@
       "description": "UI5 Web Components",
       "libraryId": "/ui5-webcomponents",
       "sourcePath": "ui5-webcomponents/docs",
-      "baseUrl": "https://sap.github.io/ui5-webcomponents/docs",
-      "pathPattern": "/{file}",
+      "baseUrl": "https://ui5.github.io/webcomponents",
+      "pathPattern": "/docs/{file}/",
       "anchorStyle": "github"
     },
     {
@@ -169,8 +169,8 @@
       "description": "UI5 TypeScript",
       "libraryId": "/ui5-typescript",
       "sourcePath": "ui5-typescript",
-      "baseUrl": "https://github.com/UI5/typescript/blob/gh-pages",
-      "pathPattern": "/{file}",
+      "baseUrl": "https://ui5.github.io/typescript",
+      "pathPattern": "/{file}.html",
       "anchorStyle": "github"
     },
     {
@@ -252,6 +252,45 @@
       "anchorStyle": "github"
     },
     {
+      "id": "abap-platform-rap-opensap",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.07,
+      "tags": ["rap", "abap", "samples", "opensap", "course", "tutorial"],
+      "description": "RAP openSAP Course Samples - Building Apps with ABAP RESTful Application Programming",
+      "libraryId": "/abap-platform-rap-opensap",
+      "sourcePath": "abap-platform-rap-opensap",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-rap-opensap/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-abap-rap",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.07,
+      "tags": ["rap", "abap", "cloud", "btp", "samples", "examples"],
+      "description": "ABAP Cloud + RAP Examples - RAP development in ABAP Cloud environment",
+      "libraryId": "/cloud-abap-rap",
+      "sourcePath": "cloud-abap-rap",
+      "baseUrl": "https://github.com/SAP-samples/cloud-abap-rap/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "abap-platform-reuse-services",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.06,
+      "tags": ["rap", "abap", "reuse", "services", "number-range", "change-documents"],
+      "description": "RAP Reuse Services - Number Ranges, Change Documents, Mail, Adobe Forms",
+      "libraryId": "/abap-platform-reuse-services",
+      "sourcePath": "abap-platform-reuse-services",
+      "baseUrl": "https://github.com/SAP-samples/abap-platform-reuse-services/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
       "id": "abap-docs-standard",
       "type": "documentation",
       "lang": "en",
@@ -286,9 +325,9 @@
       "description": "SAP Business Technology Platform documentation",
       "libraryId": "/btp-cloud-platform",
       "sourcePath": "btp-cloud-platform/docs",
-      "baseUrl": "https://github.com/SAP-docs/btp-cloud-platform/blob/main",
-      "pathPattern": "/docs/{file}",
-      "anchorStyle": "github"
+      "baseUrl": "https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b",
+      "pathPattern": "/{file}.html",
+      "anchorStyle": "sap-help"
     },
     {
       "id": "sap-artificial-intelligence",
@@ -299,9 +338,9 @@
       "description": "SAP AI Core and SAP AI Launchpad documentation",
       "libraryId": "/sap-artificial-intelligence",
       "sourcePath": "sap-artificial-intelligence/docs",
-      "baseUrl": "https://github.com/SAP-docs/sap-artificial-intelligence/blob/main",
-      "pathPattern": "/docs/{file}",
-      "anchorStyle": "github"
+      "baseUrl": "https://help.sap.com/docs",
+      "pathPattern": "/{file}.html",
+      "anchorStyle": "sap-help"
     },
     {
       "id": "terraform-provider-btp",
@@ -312,9 +351,9 @@
       "description": "Terraform provider documentation for SAP BTP",
       "libraryId": "/terraform-provider-btp",
       "sourcePath": "terraform-provider-btp",
-      "baseUrl": "https://github.com/SAP/terraform-provider-btp/blob/main",
+      "baseUrl": "https://registry.terraform.io/providers/SAP/btp/latest/docs",
       "pathPattern": "/{file}",
-      "anchorStyle": "github"
+      "anchorStyle": "custom"
     },
     {
       "id": "architecture-center",
@@ -536,6 +575,9 @@
     "dsag-abap-leitfaden": "dsag-abap-leitfaden",
     "abap-fiori-showcase": "abap-fiori-showcase",
     "cap-fiori-showcase": "cap-fiori-showcase",
+    "abap-platform-rap-opensap": "abap-platform-rap-opensap",
+    "cloud-abap-rap": "cloud-abap-rap",
+    "abap-platform-reuse-services": "abap-platform-reuse-services",
     "teched2025-dt260": "teched2025-dt260",
     "abap-docs-standard": "abap-docs",
     "abap-docs-cloud": "abap-docs",
