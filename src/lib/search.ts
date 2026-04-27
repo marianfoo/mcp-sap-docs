@@ -136,28 +136,60 @@ function hasAnnotationQuery(query: string): boolean {
  * Detect query context for contextBoosts
  * Returns matching context keys from metadata
  */
-function detectQueryContexts(query: string): string[] {
-  const contexts: string[] = [];
-  const lower = query.toLowerCase();
+export function detectQueryContexts(query: string): string[] {
+  const contexts = new Set<string>();
+
+  // wdi5-related test automation queries. This has to run before generic
+  // UI5/Fiori handling because wdi5 queries frequently mention UI5 controls.
+  if (/\b(wdi5|wdio|webdriver|e2e|page\s*object|selector|locator|ascontrol|allcontrols|fe-testlib)\b/i.test(query)) {
+    contexts.add('wdi5');
+  }
+
+  // UI5 controls, API symbols, samples, and Demo Kit concepts. Include common
+  // control names from user prompts that otherwise look too generic for SAP Help.
+  if (/\b(ui5|sapui5|openui5|sap\.m|sap\.ui|sap\.f|control|demokit|sample|wizard|button|table|dialog|input|opa5|recordreplay)\b/i.test(query)) {
+    contexts.add('ui5');
+  }
+
+  if (/\b(ui5\s+web\s+components?|web\s+components?)\b/i.test(query)) {
+    contexts.add('ui5 web components');
+  }
+
+  if (/\b(ui5\s+tooling|ui5\s+cli|ui5\.yaml|builder|middleware)\b/i.test(query)) {
+    contexts.add('ui5 tooling');
+  }
+
+  if (/\b(cap|capire|cloud\s+application\s+programming)\b/i.test(query)) {
+    contexts.add('cap');
+  }
   
   // RAP-related
   if (/\b(rap|behavior|bdef|eml|managed|unmanaged)\b/i.test(query)) {
-    contexts.push('rap');
+    contexts.add('rap');
   }
   // CDS-related
   if (/\b(cds|annotation|@ui|view|entity)\b/i.test(query)) {
-    contexts.push('cds');
+    contexts.add('cds');
   }
   // Fiori-related
   if (/\b(fiori|launchpad|flp|tile|ui5)\b/i.test(query)) {
-    contexts.push('fiori');
+    contexts.add('fiori');
+  }
+  if (/\bfiori\s+elements?\b/i.test(query)) {
+    contexts.add('fiori elements');
   }
   // ABAP general
   if (/\babap\b/i.test(query)) {
-    contexts.push('abap');
+    contexts.add('abap');
+  }
+  if (/\b(abap\s+cloud|btp|steampunk)\b/i.test(query)) {
+    contexts.add('abap cloud');
+  }
+  if (/\b(standard\s+abap|on-?premise|onpremise)\b/i.test(query)) {
+    contexts.add('standard abap');
   }
   
-  return contexts;
+  return [...contexts];
 }
 
 // Helper to extract source ID from library_id or document path
@@ -339,6 +371,7 @@ export async function search(
   const ftsFilters = sourceFilters
     ? { libraries: [...sourceFilters].map(sourceId => `/${sourceId}`) }
     : {};
+  const minimumVariantCandidates = Math.max(k * 2, 50);
 
   for (const r of lookupExactDocs(query, ftsFilters, Math.min(k, 10))) {
     seen.set(r.id, r);
@@ -357,7 +390,7 @@ export async function search(
       console.warn(`FTS query failed for variant "${variant}":`, error);
       continue;
     }
-    if (seen.size >= k * 2) break; // enough candidates
+    if (seen.size >= minimumVariantCandidates) break; // enough candidates
   }
   
   let rows = Array.from(seen.values());
@@ -466,6 +499,18 @@ export async function search(
     if (titleMatchCount > 0) {
       // Boost proportional to how many query terms match in title
       boost += 0.5 * titleMatchCount;
+    }
+
+    // Technical UI5/wdi5 prompts can contain words such as "selection" or
+    // "table" that strongly match ABAP keyword docs, even when the query is
+    // clearly about frontend test automation. Penalize ABAP keyword docs unless
+    // ABAP was explicitly requested.
+    const isUi5OrWdi5Query = queryContexts.includes('ui5') || queryContexts.includes('wdi5');
+    if (queryContexts.includes('wdi5') && sourceId === 'wdi5') {
+      boost += 5.0;
+    }
+    if (isUi5OrWdi5Query && !isExplicitAbapQuery && sourceId.startsWith('abap-docs-')) {
+      boost -= 0.9;
     }
     
     // Glossary down-ranking: slightly penalize glossary entries to prefer practical guides

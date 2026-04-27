@@ -14,6 +14,14 @@ function getHandler(server: Server, method: string): RequestHandler {
 }
 
 describe('search response schema', () => {
+  it('detects source-specific contexts for ambiguous UI5 and wdi5 prompts', async () => {
+    const { detectQueryContexts } = await import('../src/lib/search.js');
+
+    expect(detectQueryContexts('Wizard')).toContain('ui5');
+    expect(detectQueryContexts('Wizard CAP')).toEqual(expect.arrayContaining(['ui5', 'cap']));
+    expect(detectQueryContexts('wdi5 table selection')).toEqual(expect.arrayContaining(['wdi5', 'ui5']));
+  });
+
   it('returns schema-compliant empty results instead of an MCP schema error', async () => {
     vi.resetModules();
     vi.doMock('../src/lib/search.js', () => ({
