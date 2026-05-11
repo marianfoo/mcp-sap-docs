@@ -157,8 +157,14 @@ async function main() {
           method: req.method,
           transportCount: Object.keys(transports).length
         });
-      } else if (!sessionId && req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
-        // New initialization request - create new transport
+      } else if (req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
+        // Initialization request — create a fresh transport.
+        //
+        // We also enter this branch if `sessionId` is present but doesn't match
+        // any live transport (server restarted, session cleaned up via
+        // `onsessionclosed`, in-memory map wiped). Per MCP spec the client is
+        // permitted to re-send `initialize` to recover; the server generates a
+        // new Mcp-Session-Id and the client should adopt it.
         const cleanupTransport = (
           sessionId: string | undefined,
           trigger: "onsessionclosed" | "onclose",
@@ -211,12 +217,21 @@ async function main() {
           requestId,
           method: req.method
         });
-      } else if (!sessionId && req.method === 'POST' && req.is('application/json')) {
-        // Stateless request (no session ID, not initialize) — create one-shot transport
-        // This supports clients like Joule Studio that don't maintain sessions
-        logger.debug('Stateless MCP request, creating one-shot transport', {
+      } else if (req.method === 'POST' && req.is('application/json')) {
+        // Stateless one-shot transport. Reached in two cases:
+        //   1. No session ID (clients like Joule Studio that don't maintain sessions).
+        //   2. Session ID present but unknown to the server (stale session — server
+        //      restarted, container redeployed, or session was cleaned up). Without
+        //      this fallback the client gets a hard HTTP 400 and many MCP clients
+        //      (notably Cursor) won't auto-recover by re-initializing, so the user
+        //      sees "No valid session ID" errors until they manually reconnect the
+        //      MCP. Treating stale sessions as one-shot trades a tiny amount of
+        //      per-session state for restart resilience — appropriate for a public,
+        //      read-only docs/search server.
+        logger.debug('Stateless / stale-session MCP request — creating one-shot transport', {
           requestId,
           bodyMethod: req.body?.method,
+          hasStaleSessionId: Boolean(sessionId),
           userAgent: req.headers['user-agent']
         });
 
@@ -227,12 +242,15 @@ async function main() {
         const server = createServer();
         await server.connect(transport);
       } else {
-        // Invalid request - no session ID or not initialization request
+        // Invalid request — only non-POST or non-JSON requests reach this branch
+        // after the stateless-fallback above. Typical case: GET/DELETE /mcp
+        // without a live session (the MCP spec uses POST for the actual JSON-RPC
+        // traffic; GET/DELETE are only valid on an already-initialized stream).
         logger.warn('Invalid MCP request', {
           requestId,
           method: req.method,
           hasSessionId: !!sessionId,
-          isInitRequest: req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize',
+          contentType: req.headers['content-type'] || 'none',
           sessionId: sessionId || 'none',
           userAgent: req.headers['user-agent']
         });
@@ -241,7 +259,7 @@ async function main() {
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: 'Bad Request: No valid session ID provided or not an initialization request',
+            message: 'Bad Request: MCP requests must be POST with application/json (or GET/DELETE on a live session).',
           },
           id: null,
         });
