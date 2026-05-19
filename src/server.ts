@@ -2,9 +2,10 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
-import { getVariantConfig } from "./lib/variant.js";
+import { getVariantConfig, isToolEnabled } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
+import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 const variant = getVariantConfig();
@@ -41,6 +42,12 @@ async function main() {
   prefetchFeatureMatrix();
   // Pre-load SAP Released Objects data (fire-and-forget, never blocks startup)
   prefetchReleasedObjects();
+  // Pre-warm the UI5 Lib Diff data when the tool is enabled (fire-and-forget)
+  if (isToolEnabled("ui5LibDiff")) {
+    prefetchUi5LibDiff().catch((err: Error) =>
+      logger.warn("ui5 lib diff prefetch failed", { error: err.message })
+    );
+  }
   // Pre-load the embedding model so the first search is fast (fire-and-forget)
   loadEmbeddingModel().catch((err: Error) =>
     logger.warn("embedding model pre-load failed", { error: err.message })

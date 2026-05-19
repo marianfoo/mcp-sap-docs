@@ -63,7 +63,8 @@
   "tools": {
     "abapLint": false,
     "abapFeatureMatrix": true,
-    "discoveryCenter": true
+    "discoveryCenter": true,
+    "ui5LibDiff": true
   },
   "server": {
     "stdioName": "Local SAP Docs",

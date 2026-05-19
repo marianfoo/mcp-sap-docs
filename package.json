@@ -15,7 +15,7 @@
     "inspect": "npx @modelcontextprotocol/inspector",
     "test": "npm run test:url-generation && npm run test:integration",
     "test:sparse-checkout": "npx vitest run test/sparse-checkout.test.ts",
-    "test:url-generation": "npm run build:tsc && npx vitest run test/comprehensive-url-generation.test.ts test/source-url-matrix.test.ts test/search-response-schema.test.ts test/prompts.test.ts test/software-heroes-afm.test.ts",
+    "test:url-generation": "npm run build:tsc && npx vitest run test/comprehensive-url-generation.test.ts test/source-url-matrix.test.ts test/search-response-schema.test.ts test/prompts.test.ts test/software-heroes-afm.test.ts test/ui5-version-diff.test.ts",
     "test:url-generation:debug": "npm run build:tsc && DEBUG_TESTS=true npx vitest run test/comprehensive-url-generation.test.ts",
     "test:mcp-urls": "npm run build:tsc && npx vitest run test/mcp-search-url-verification.test.ts",
     "test:integration": "npm run build && node test/tools/run-tests.js",
@@ -31,7 +31,8 @@
     "test:software-heroes": "npm run build:tsc && npx vitest run test/software-heroes-core.test.ts test/software-heroes-afm.test.ts test/software-heroes-content-search.test.ts",
     "test:fetch-sap-help": "npm run build:tsc && npx vitest run test/fetch-sap-help.test.ts",
     "test:sap-objects": "npm run build:tsc && npx vitest run test/sap-released-objects.test.ts",
-    "test:embeddings": "npm run build:tsc && npx vitest run test/embeddings.test.ts"
+    "test:embeddings": "npm run build:tsc && npx vitest run test/embeddings.test.ts",
+    "test:ui5-version-diff": "npm run build:tsc && npx vitest run test/ui5-version-diff.test.ts"
   },
   "ts-node": {
     "esm": true

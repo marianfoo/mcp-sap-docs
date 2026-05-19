@@ -66,4 +66,17 @@ export const CONFIG = {
 
   // Directory where the embedding model is cached (gitignored, in-project)
   MODELS_DIR: process.env.MODELS_DIR || "dist/models",
+
+  // ---------------------------------------------------------------------------
+  // UI5 Lib Diff Configuration
+  // ---------------------------------------------------------------------------
+
+  // Cache TTL in milliseconds (default: 24 hours)
+  UI5_LIB_DIFF_CACHE_TTL_MS: Number(process.env.UI5_LIB_DIFF_CACHE_TTL_MS || 86400000),
+
+  // Request timeout when fetching the consolidated JSON files (default: 30 seconds)
+  UI5_LIB_DIFF_TIMEOUT_MS: Number(process.env.UI5_LIB_DIFF_TIMEOUT_MS || 30000),
+
+  // Disk cache directory for ui5-lib-diff data (survives server restarts)
+  UI5_LIB_DIFF_CACHE_DIR: process.env.UI5_LIB_DIFF_CACHE_DIR || "dist/data/ui5-lib-diff",
 };

@@ -39,6 +39,13 @@ import {
   getObjectDetails,
   getReleasedObjectsContext,
 } from "./sapReleasedObjects/index.js";
+import {
+  getUi5VersionDiff,
+  getUi5LibDiffCacheStats,
+  type Ui5ChangeType,
+  type Ui5LibDiffLibrary,
+  type Ui5VersionDiffResult,
+} from "./ui5LibDiff/index.js";
 
 import { SearchResponse } from "./types.js";
 import { logger } from "./logger.js";
@@ -641,6 +648,138 @@ USE CASES:
             }
           },
           {
+            name: "ui5_version_diff",
+            description: `UI5 VERSION DIFF: ui5_version_diff(library="SAPUI5", from_version="1.108.0", to_version="1.130.0")
+
+FUNCTION NAME: ui5_version_diff
+
+List the new features, fixes, and deprecations that landed between two UI5 releases. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
+
+DATA SOURCE: https://ui5-lib-diff.marianzeis.de/ (https://github.com/marianfoo/ui5-lib-diff)
+Consolidated change data is fetched per library and cached for 24 hours.
+
+RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version).
+
+PARAMETERS:
+• library (optional, default "SAPUI5"): "SAPUI5" or "OpenUI5".
+• from_version (required): version you are upgrading FROM, e.g. "1.108.0".
+• to_version (required): version you are upgrading TO, e.g. "1.130.0".
+• types (optional): subset of ["FEATURE", "FIX", "DEPRECATED"]. Defaults to all three.
+• ui5_library (optional): case-insensitive substring filter on the UI5 library, e.g. "sap.m", "sap.ui.core", "sap.fe".
+• query (optional): case-insensitive substring filter on the change text, e.g. "Table", "ObjectStatus", "ManagedObject".
+• limit (optional, default 200, max 1000): maximum entries returned. counts.* still reflect the full totals.
+
+RETURNS JSON with:
+• library, from_version, to_version
+• versionsInRange: versions covered by the range (newest first)
+• counts: { FEATURE, FIX, DEPRECATED } totals across the full range
+• totalEntries: sum of counts
+• truncated: true when totalEntries > entries.length
+• entries: [{ version, date, library, type, text, commit_url? }]
+• meta: { availableVersions, minVersion, maxVersion }
+• sourceUrl
+
+USE CASES:
+• Upgrade planning: "What deprecations should I clean up before moving 1.108 -> 1.130?"
+• Workaround cleanup: filter by query="<symptom>" to find the fix that replaces a local patch
+• Library-scoped review: ui5_library="sap.m" to focus on a single library
+• Combine with @ui5/mcp-server tools (run_ui5_linter, run_manifest_validation, get_api_reference) for code-level follow-up
+
+EXAMPLES:
+ui5_version_diff(from_version="1.108.0", to_version="1.130.0", types=["DEPRECATED"])
+ui5_version_diff(library="OpenUI5", from_version="1.120.0", to_version="1.130.0", ui5_library="sap.m")
+ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatus")`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                library: {
+                  type: "string",
+                  enum: ["SAPUI5", "OpenUI5"],
+                  description: "Which UI5 flavour to diff. Defaults to SAPUI5.",
+                  default: "SAPUI5"
+                },
+                from_version: {
+                  type: "string",
+                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\"."
+                },
+                to_version: {
+                  type: "string",
+                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\"."
+                },
+                types: {
+                  type: "array",
+                  items: { type: "string", enum: ["FEATURE", "FIX", "DEPRECATED"] },
+                  description: "Filter to a subset of change types. Defaults to all three."
+                },
+                ui5_library: {
+                  type: "string",
+                  description: "Case-insensitive substring filter on UI5 library name (e.g. \"sap.m\", \"sap.ui.core\")."
+                },
+                query: {
+                  type: "string",
+                  description: "Case-insensitive substring filter on the change text."
+                },
+                limit: {
+                  type: "number",
+                  description: "Maximum entries to return. Default 200, max 1000. counts.* still reflect the full totals.",
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 200
+                }
+              },
+              required: ["from_version", "to_version"]
+            },
+            outputSchema: {
+              type: "object",
+              properties: {
+                library: { type: "string" },
+                from_version: { type: "string" },
+                to_version: { type: "string" },
+                versionsInRange: { type: "array", items: { type: "string" } },
+                counts: {
+                  type: "object",
+                  properties: {
+                    FEATURE: { type: "number" },
+                    FIX: { type: "number" },
+                    DEPRECATED: { type: "number" }
+                  },
+                  required: ["FEATURE", "FIX", "DEPRECATED"],
+                  additionalProperties: false
+                },
+                totalEntries: { type: "number" },
+                truncated: { type: "boolean" },
+                entries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      version: { type: "string" },
+                      date: { type: "string" },
+                      library: { type: "string" },
+                      type: { type: "string", enum: ["FEATURE", "FIX", "DEPRECATED"] },
+                      text: { type: "string" },
+                      commit_url: { type: "string" }
+                    },
+                    required: ["version", "library", "type", "text"],
+                    additionalProperties: true
+                  }
+                },
+                meta: {
+                  type: "object",
+                  properties: {
+                    availableVersions: { type: "number" },
+                    minVersion: { type: "string" },
+                    maxVersion: { type: "string" }
+                  },
+                  additionalProperties: true
+                },
+                sourceUrl: { type: "string" }
+              },
+              required: ["library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "truncated", "entries", "sourceUrl"],
+              additionalProperties: true
+            }
+          },
+          {
             name: "sap_community_search",
             description: `SEARCH SAP COMMUNITY: sap_community_search(query="search terms")
 
@@ -965,6 +1104,10 @@ RETURNS (JSON):
         response.tools = response.tools.filter((tool) =>
           tool.name !== "sap_discovery_center_search" && tool.name !== "sap_discovery_center_service"
         );
+      }
+
+      if (!isToolEnabled("ui5LibDiff")) {
+        response.tools = response.tools.filter((tool) => tool.name !== "ui5_version_diff");
       }
 
       return response;
@@ -1374,6 +1517,98 @@ RETURNS (JSON):
           logger.logToolError(name, timing.requestId, timing.startTime, error);
           return createErrorResponse(
             `Error searching ABAP Feature Matrix: ${error}`,
+            timing.requestId
+          );
+        }
+      }
+
+      if (name === "ui5_version_diff") {
+        if (!isToolEnabled("ui5LibDiff")) {
+          const timing = logger.logToolStart(name, "disabled", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Tool disabled for this variant"));
+          return createErrorResponse(
+            `Tool ${name} is disabled for MCP variant ${getVariantName()}.`,
+            timing.requestId
+          );
+        }
+
+        const {
+          library,
+          from_version,
+          to_version,
+          types,
+          ui5_library,
+          query,
+          limit,
+        } = (args ?? {}) as {
+          library?: Ui5LibDiffLibrary;
+          from_version?: string;
+          to_version?: string;
+          types?: Ui5ChangeType[];
+          ui5_library?: string;
+          query?: string;
+          limit?: number;
+        };
+
+        const timing = logger.logToolStart(
+          name,
+          `${library ?? "SAPUI5"} ${from_version ?? "?"} -> ${to_version ?? "?"}`,
+          clientMetadata
+        );
+
+        if (!from_version || !to_version) {
+          logger.logToolError(
+            name,
+            timing.requestId,
+            timing.startTime,
+            new Error("Missing from_version or to_version")
+          );
+          return createErrorResponse(
+            "Missing required parameters: from_version and to_version (e.g. from_version=\"1.108.0\", to_version=\"1.130.0\").",
+            timing.requestId
+          );
+        }
+
+        const cacheStats = getUi5LibDiffCacheStats();
+        console.log(`\n🔍 [UI5_VERSION_DIFF] ========================================`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Library: ${library ?? "SAPUI5"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Range: ${from_version} -> ${to_version}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Types: ${types ? types.join(",") : "ALL"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] ui5_library filter: ${ui5_library ?? "(none)"}, query: ${query ?? "(none)"}, limit: ${limit ?? 200}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Cache: ${JSON.stringify(cacheStats)}`);
+
+        try {
+          const result: Ui5VersionDiffResult = await getUi5VersionDiff({
+            library,
+            from_version,
+            to_version,
+            types,
+            ui5_library,
+            query,
+            limit,
+          });
+
+          console.log(
+            `🔍 [UI5_VERSION_DIFF] versions=${result.versionsInRange.length} total=${result.totalEntries} returned=${result.entries.length} truncated=${result.truncated}`
+          );
+          console.log(`🔍 [UI5_VERSION_DIFF] ========================================\n`);
+
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, result.entries.length, {
+            totalEntries: result.totalEntries,
+            truncated: result.truncated,
+            versionsInRange: result.versionsInRange.length,
+            counts: result.counts,
+          });
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          const message = error instanceof Error ? error.message : String(error);
+          return createErrorResponse(
+            `Error running ui5_version_diff: ${message}`,
             timing.requestId
           );
         }
