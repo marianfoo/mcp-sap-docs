@@ -21,45 +21,47 @@ export type Ui5LibDiffLibrary = "SAPUI5" | "OpenUI5";
 
 export type Ui5ChangeType = "FEATURE" | "FIX" | "DEPRECATED";
 
+type NullableString = string | null;
+
 /** Raw change record as published by ui5-lib-diff. */
 interface RawChange {
-  type: string;
-  text: string;
-  commit_url?: string;
-  id?: string;
+  type?: NullableString;
+  text?: NullableString;
+  commit_url?: NullableString;
+  id?: number | string | null;
 }
 
 /** Raw library block inside a version. */
 interface RawLibraryBlock {
-  library: string;
-  changes: RawChange[];
+  library?: NullableString;
+  changes?: RawChange[] | null;
 }
 
 /** Raw version block as published by ui5-lib-diff. */
 interface RawVersionBlock {
-  version: string;
-  date?: string;
-  libraries: RawLibraryBlock[];
+  version?: NullableString;
+  date?: NullableString;
+  libraries?: RawLibraryBlock[] | null;
 }
 
 /** One-file bundle published by ui5-lib-diff for local-first consumers. */
 interface RawBundle {
   schemaVersion?: number;
-  generatedAt?: string;
+  generatedAt?: NullableString;
   datasets?: Partial<Record<Ui5LibDiffLibrary, RawVersionBlock[]>>;
-  whatsNew?: RawWhatsNewEntry[];
+  whatsNew?: RawWhatsNewEntry[] | null;
 }
 
 interface RawWhatsNewEntry {
-  id?: number | string;
-  Version?: string;
-  Title?: string;
-  Description?: string;
-  Type?: string;
-  Action?: string;
-  Category?: string;
-  Valid_as_Of?: string;
-  outputloio?: string;
+  id?: number | string | null;
+  Version?: NullableString;
+  Title?: NullableString;
+  Description?: NullableString;
+  Type?: NullableString;
+  Action?: NullableString;
+  Category?: NullableString;
+  Valid_as_Of?: NullableString;
+  outputloio?: NullableString;
 }
 
 /** A single filtered change emitted by the tool. */
@@ -237,6 +239,13 @@ function stripHtml(value = ""): string {
     .trim();
 }
 
+/** Keep optional string fields out of MCP structured output when absent or null. */
+export function optionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Type normalization
 // ---------------------------------------------------------------------------
@@ -259,11 +268,14 @@ const CANONICAL_TYPES: ReadonlySet<Ui5ChangeType> = new Set([
  * upstream merge and the next weekly refresh) doesn't break the tool.
  * Drift is surfaced via `reportNonCanonicalDrift` during load.
  */
-export function normalizeChangeType(raw: string): Ui5ChangeType | null {
+export function normalizeChangeType(raw: unknown): Ui5ChangeType | null {
   if (typeof raw === "string" && CANONICAL_TYPES.has(raw as Ui5ChangeType)) {
     return raw as Ui5ChangeType;
   }
-  const upper = (raw ?? "").trim().toUpperCase();
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const upper = raw.trim().toUpperCase();
   if (CANONICAL_TYPES.has(upper as Ui5ChangeType)) {
     return upper as Ui5ChangeType;
   }
@@ -504,17 +516,29 @@ function filterWhatsNew(
     return true;
   });
 
-  const entries = matching.map((item) => ({
-    version: item.Version ?? "",
-    title: stripHtml(item.Title ?? ""),
-    description: stripHtml(item.Description ?? ""),
-    type: item.Type,
-    action: item.Action,
-    category: item.Category,
-    validAsOf: item.Valid_as_Of,
-    url: whatsNewUrl(item),
-    id: item.id,
-  }));
+  const entries = matching.map((item) => {
+    const entry: Ui5WhatsNewEntry = {
+      version: item.Version ?? "",
+      title: stripHtml(item.Title ?? ""),
+      description: stripHtml(item.Description ?? ""),
+    };
+
+    const type = optionalString(item.Type);
+    if (type) entry.type = type;
+    const action = optionalString(item.Action);
+    if (action) entry.action = action;
+    const category = optionalString(item.Category);
+    if (category) entry.category = category;
+    const validAsOf = optionalString(item.Valid_as_Of);
+    if (validAsOf) entry.validAsOf = validAsOf;
+    const url = whatsNewUrl(item);
+    if (url) entry.url = url;
+    if (item.id !== undefined && item.id !== null) {
+      entry.id = item.id;
+    }
+
+    return entry;
+  });
 
   return {
     entries,
@@ -637,14 +661,17 @@ export function filterUi5Diff(
 
         counts[type]++;
 
-        entries.push({
+        const entry: Ui5ChangeEntry = {
           version,
-          date: block.date,
           library: libName,
           type,
           text,
-          commit_url: change.commit_url,
-        });
+        };
+        const date = optionalString(block.date);
+        if (date) entry.date = date;
+        const commitUrl = optionalString(change.commit_url);
+        if (commitUrl) entry.commit_url = commitUrl;
+        entries.push(entry);
       }
     }
   }
