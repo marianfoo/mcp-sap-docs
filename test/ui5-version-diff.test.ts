@@ -14,8 +14,10 @@ import {
   compareUi5Versions,
   parseUi5Version,
   normalizeChangeType,
+  optionalString,
   getUi5VersionDiff,
   clearUi5LibDiffCachesForTests,
+  type Ui5VersionDiffResult,
 } from "../dist/src/lib/ui5LibDiff/ui5VersionDiff.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,14 +31,6 @@ afterEach(() => {
   CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = originalBundlePath;
   clearUi5LibDiffCachesForTests();
 });
-
-function writeBundleFixture(fixtureText: string): string {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-"));
-  const bundlePath = path.join(tmpDir, "all-changes.json");
-  const fixture = JSON.parse(fixtureText);
-  writeBundle(bundlePath, fixture);
-  return bundlePath;
-}
 
 function writeBundle(
   bundlePath: string,
@@ -77,6 +71,51 @@ function writeBundle(
     "utf-8"
   );
 }
+
+function writeBundleFixture(fixtureText: string): string {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-"));
+  const bundlePath = path.join(tmpDir, "all-changes.json");
+  const fixture = JSON.parse(fixtureText);
+  writeBundle(bundlePath, fixture);
+  return bundlePath;
+}
+
+/** Mirrors ui5_version_diff outputSchema string fields that must not be null. */
+function assertNoNullOptionalStrings(result: Ui5VersionDiffResult): void {
+  for (const entry of result.entries) {
+    for (const key of ["date", "commit_url"] as const) {
+      const value = entry[key];
+      expect(value).not.toBeNull();
+      if (value !== undefined) {
+        expect(typeof value).toBe("string");
+        expect(value).not.toBe("");
+      }
+    }
+  }
+  for (const entry of result.whatsNewEntries) {
+    for (const key of ["type", "action", "category", "validAsOf", "url"] as const) {
+      const value = entry[key];
+      expect(value).not.toBeNull();
+      if (value !== undefined) {
+        expect(typeof value).toBe("string");
+        expect(value).not.toBe("");
+      }
+    }
+  }
+}
+
+describe("optionalString", () => {
+  it("returns trimmed non-empty strings and drops null, undefined, and empty values", () => {
+    expect(optionalString(" https://example.com/commit ")).toBe(
+      "https://example.com/commit"
+    );
+    expect(optionalString(null)).toBeUndefined();
+    expect(optionalString(undefined)).toBeUndefined();
+    expect(optionalString("")).toBeUndefined();
+    expect(optionalString("   ")).toBeUndefined();
+    expect(optionalString(123)).toBeUndefined();
+  });
+});
 
 describe("compareUi5Versions", () => {
   it("orders versions numerically, not lexicographically", () => {
@@ -157,9 +196,9 @@ describe("filterUi5Diff", () => {
     });
     // 1.120: FEATURE(1) + FIX(1) + DEPRECATED(1) = 3
     // 1.130: FEATURE(1) + DEPRECATED(2) = 3 (LEGACY dropped)
-    // 1.140: FEATURE(1)
-    expect(result.counts).toEqual({ FEATURE: 3, FIX: 1, DEPRECATED: 3 });
-    expect(result.totalEntries).toBe(7);
+    // 1.140: FEATURE(1) + FIX(1)
+    expect(result.counts).toEqual({ FEATURE: 3, FIX: 2, DEPRECATED: 3 });
+    expect(result.totalEntries).toBe(8);
   });
 
   it("filters by type", () => {
@@ -209,8 +248,8 @@ describe("filterUi5Diff", () => {
       from_version: "1.108.0",
       to_version: "1.140.0",
     });
-    expect(result.entries.length).toBe(7);
-    expect(result.totalEntries).toBe(7);
+    expect(result.entries.length).toBe(8);
+    expect(result.totalEntries).toBe(8);
     expect("truncated" in result).toBe(false);
   });
 
@@ -243,7 +282,56 @@ describe("filterUi5Diff", () => {
     });
     // Defensive coercion falls back to all three types, doesn't crash, doesn't
     // accidentally match nothing (which is what `new Set("FEATURE")` would do).
-    expect(result.totalEntries).toBe(7);
+    expect(result.totalEntries).toBe(8);
+  });
+
+  it("omits commit_url when the bundle stores null", () => {
+    const result = filterUi5Diff(fixture, {
+      version: "1.140.0",
+      types: ["FIX"],
+    });
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toEqual({
+      version: "1.140.0",
+      date: "2025.04.10",
+      library: "sap.m",
+      type: "FIX",
+      text: "sap.fe.controls: AI notice at column level",
+    });
+    expect(result.entries[0]).not.toHaveProperty("commit_url");
+    assertNoNullOptionalStrings(result);
+  });
+
+  it("omits optional What's New string fields when absent", () => {
+    const result = filterUi5Diff(
+      fixture,
+      { version: "1.140.0" },
+      [
+        {
+          id: 2,
+          Version: "1.140",
+          Title: "sap.m.Button",
+          Description: "Badge support.",
+          Type: null,
+          Action: null,
+          Category: "Control",
+          Valid_as_Of: null,
+          outputloio: null,
+        },
+      ]
+    );
+
+    expect(result.whatsNewEntries).toEqual([
+      {
+        version: "1.140",
+        title: "sap.m.Button",
+        description: "Badge support.",
+        category: "Control",
+        id: 2,
+      },
+    ]);
+    assertNoNullOptionalStrings(result);
   });
 
   it("emits notes when to_version exceeds dataset bounds", () => {
@@ -334,8 +422,12 @@ describe("filterUi5Diff", () => {
         version: "1.130",
         title: "sap.m.ObjectStatus",
         description: "ObjectStatus now supports emptyIndicatorMode.",
+        type: "Changed",
+        category: "Control",
       }),
     ]);
+    expect(result.whatsNewEntries[0]).not.toHaveProperty("action");
+    expect(result.whatsNewEntries[0]).not.toHaveProperty("url");
   });
 });
 
@@ -446,11 +538,44 @@ describe("getUi5VersionDiff input validation", () => {
     const result = await getUi5VersionDiff({ version: "1.140.0" });
 
     expect(result.version).toBe("1.140.0");
-    expect(result.totalEntries).toBe(1);
-    expect(result.entries).toEqual([
-      expect.objectContaining({ version: "1.140.0", text: "sap.m.Button: badge support" }),
-    ]);
+    expect(result.totalEntries).toBe(2);
+    expect(result.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ version: "1.140.0", text: "sap.m.Button: badge support" }),
+        expect.objectContaining({
+          version: "1.140.0",
+          text: "sap.fe.controls: AI notice at column level",
+        }),
+      ])
+    );
     expect(result.meta.generatedAt).toBe("2026-05-20T00:00:00.000Z");
+  });
+
+  it("returns MCP-safe output for a real bundle version with null commit_url values", async () => {
+    const bundlePath = path.join(
+      __dirname,
+      "..",
+      "dist",
+      "data",
+      "ui5-lib-diff",
+      "all-changes.json"
+    );
+    if (!fs.existsSync(bundlePath)) {
+      return;
+    }
+
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+    const result = await getUi5VersionDiff({
+      library: "SAPUI5",
+      version: "1.147.0",
+    });
+
+    expect(result.totalEntries).toBeGreaterThan(0);
+    expect(result.whatsNewTotalEntries).toBeGreaterThanOrEqual(0);
+    assertNoNullOptionalStrings(result);
+    expect(
+      result.entries.some((entry) => !("commit_url" in entry))
+    ).toBe(true);
   });
 
   it("fails clearly when the local bundle is missing", async () => {
