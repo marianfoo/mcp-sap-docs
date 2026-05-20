@@ -12,6 +12,7 @@ import {
   compareUi5Versions,
   parseUi5Version,
   normalizeChangeType,
+  getUi5VersionDiff,
 } from "../dist/src/lib/ui5LibDiff/ui5VersionDiff.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -172,5 +173,80 @@ describe("filterUi5Diff", () => {
     });
     const libs = result.entries.map((e) => e.library);
     expect(libs).toContain("deprecated");
+  });
+
+  it("clamps limit to the [1, 1000] range", () => {
+    const high = filterUi5Diff(fixture, {
+      from_version: "1.108.0",
+      to_version: "1.140.0",
+      limit: 99999,
+    });
+    expect(high.entries.length).toBeLessThanOrEqual(1000);
+    expect(high.truncated).toBe(false); // dataset is small; limit doesn't bite
+
+    const low = filterUi5Diff(fixture, {
+      from_version: "1.108.0",
+      to_version: "1.140.0",
+      limit: -5 as any,
+    });
+    expect(low.entries.length).toBeLessThanOrEqual(1);
+  });
+
+  it("coerces a malformed types argument and records a note", () => {
+    const result = filterUi5Diff(fixture, {
+      from_version: "1.108.0",
+      to_version: "1.140.0",
+      // Bad client: sends a string instead of an array.
+      types: "FEATURE" as any,
+    });
+    // Defensive coercion falls back to all three types, doesn't crash, doesn't
+    // accidentally match nothing (which is what `new Set("FEATURE")` would do).
+    expect(result.totalEntries).toBe(7);
+  });
+
+  it("emits notes when to_version exceeds dataset bounds", () => {
+    const result = filterUi5Diff(fixture, {
+      from_version: "1.108.0",
+      to_version: "1.200.0", // beyond fixture's 1.140.0
+    });
+    expect(result.meta.notes ?? []).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("newer than the newest version in the dataset"),
+      ])
+    );
+  });
+
+  it("emits notes when the range matched zero versions", () => {
+    const result = filterUi5Diff(fixture, {
+      from_version: "1.140.0",
+      to_version: "1.141.0", // no entries in this gap
+    });
+    expect(result.versionsInRange).toEqual([]);
+    expect(result.meta.notes ?? []).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("No versions matched"),
+      ])
+    );
+  });
+});
+
+describe("getUi5VersionDiff input validation", () => {
+  it("rejects from_version === to_version (degenerate range)", async () => {
+    await expect(
+      getUi5VersionDiff({ from_version: "1.130.0", to_version: "1.130.0" })
+    ).rejects.toThrow(/strictly less than/);
+  });
+
+  it("rejects from_version > to_version", async () => {
+    await expect(
+      getUi5VersionDiff({ from_version: "1.140.0", to_version: "1.108.0" })
+    ).rejects.toThrow(/strictly less than/);
+  });
+
+  it("rejects missing parameters", async () => {
+    await expect(
+      // @ts-expect-error intentionally missing required field
+      getUi5VersionDiff({ to_version: "1.130.0" })
+    ).rejects.toThrow(/requires from_version/);
   });
 });

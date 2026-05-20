@@ -676,7 +676,7 @@ RETURNS JSON with:
 • totalEntries: sum of counts
 • truncated: true when totalEntries > entries.length
 • entries: [{ version, date, library, type, text, commit_url? }]
-• meta: { availableVersions, minVersion, maxVersion }
+• meta: { availableVersions, minVersion, maxVersion, notes? } — "notes" is a list of soft signals (out-of-range hints, coercion warnings)
 • sourceUrl
 
 USE CASES:
@@ -700,11 +700,11 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                 },
                 from_version: {
                   type: "string",
-                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\"."
+                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\". Use the full x.y.z form — \"1.108\" matches only \"1.108.0\" exactly and will miss patch releases like \"1.108.5\". Must be strictly less than to_version."
                 },
                 to_version: {
                   type: "string",
-                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\"."
+                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\". Use the full x.y.z form. Must be strictly greater than from_version."
                 },
                 types: {
                   type: "array",
@@ -769,7 +769,12 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   properties: {
                     availableVersions: { type: "number" },
                     minVersion: { type: "string" },
-                    maxVersion: { type: "string" }
+                    maxVersion: { type: "string" },
+                    notes: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Soft signals: out-of-range hints, coercion warnings, empty-range tips."
+                    }
                   },
                   additionalProperties: true
                 },

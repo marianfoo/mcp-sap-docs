@@ -8,7 +8,7 @@
 // `library` selector so callers can pick the flavour matching their project.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { TtlCache } from "../softwareHeroes/core.js";
 import { CONFIG } from "../config.js";
 
@@ -80,6 +80,8 @@ export interface Ui5VersionDiffResult {
     availableVersions: number;
     minVersion?: string;
     maxVersion?: string;
+    /** Soft signals for the caller: out-of-range hints, coercion notes, etc. */
+    notes?: string[];
   };
 }
 
@@ -104,7 +106,9 @@ const memoryCache = new TtlCache<RawVersionBlock[]>(
 );
 
 function diskCachePath(library: Ui5LibDiffLibrary): string {
-  return CONFIG.UI5_LIB_DIFF_CACHE_DIR + `/${FILE_NAMES[library]}`;
+  // CWD-relative by default (see CONFIG.UI5_LIB_DIFF_CACHE_DIR). The disk
+  // cache is wiped whenever `dist/` is removed, e.g. during a full build.
+  return join(CONFIG.UI5_LIB_DIFF_CACHE_DIR, FILE_NAMES[library]);
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +259,10 @@ async function loadConsolidated(
     const fresh = await fetchConsolidated(library);
     memoryCache.set(library, fresh);
     reportNonCanonicalDrift(library, fresh);
+    // Fire-and-forget on the request hot path: the caller already has the
+    // data, the disk write is just a future-restart optimization. The
+    // prefetch path below awaits this same write because there is no
+    // caller waiting.
     writeDiskCache(library, fresh).catch((err) =>
       console.error(
         `⚠️ [ui5VersionDiff] Failed to persist ${library} disk cache:`,
@@ -294,13 +302,25 @@ export function filterUi5Diff(
   options: Ui5VersionDiffOptions
 ): Ui5VersionDiffResult {
   const library = options.library ?? "SAPUI5";
+  const notes: string[] = [];
+
+  // Defensive coercion: an MCP client that doesn't validate against the
+  // input schema could send `types: "FEATURE"` (string). Without this
+  // guard, `new Set("FEATURE")` would yield Set{"F","E","A","T","U","R"}
+  // and silently match nothing.
+  const requestedTypes = Array.isArray(options.types)
+    ? options.types.filter((t): t is Ui5ChangeType =>
+        typeof t === "string" && CANONICAL_TYPES.has(t as Ui5ChangeType)
+      )
+    : [];
   const typesAllowed = new Set<Ui5ChangeType>(
-    options.types && options.types.length > 0
-      ? options.types
+    requestedTypes.length > 0
+      ? requestedTypes
       : ["FEATURE", "FIX", "DEPRECATED"]
   );
+
   const limit = Math.min(
-    Math.max(options.limit ?? DEFAULT_LIMIT, 1),
+    Math.max(Math.floor(options.limit ?? DEFAULT_LIMIT), 1),
     MAX_LIMIT
   );
   const libFilter = options.ui5_library?.toLowerCase().trim() || "";
@@ -367,6 +387,29 @@ export function filterUi5Diff(
   // Sort version list newest-first for display.
   versionsInRange.sort((a, b) => compareUi5Versions(b, a));
 
+  // Surface out-of-range hints so the caller (LLM or human) knows when the
+  // requested range falls outside what the dataset actually carries.
+  if (minVersion && compareUi5Versions(options.from_version, minVersion) < 0) {
+    notes.push(
+      `from_version ${options.from_version} predates the oldest version in the dataset (${minVersion}); the lower bound is effectively that version.`
+    );
+  }
+  if (maxVersion && compareUi5Versions(options.to_version, maxVersion) > 0) {
+    notes.push(
+      `to_version ${options.to_version} is newer than the newest version in the dataset (${maxVersion}); upgrade to a future release isn't covered yet.`
+    );
+  }
+  if (versionsInRange.length === 0) {
+    notes.push(
+      `No versions matched the range (${options.from_version}, ${options.to_version}]. Tip: use the full x.y.z form — "1.120" matches "1.120.0" exactly and will miss "1.120.5".`
+    );
+  }
+  if (Array.isArray(options.types) && requestedTypes.length === 0 && options.types.length > 0) {
+    notes.push(
+      `types parameter contained no valid values (expected subset of FEATURE / FIX / DEPRECATED); falling back to all three.`
+    );
+  }
+
   const totalEntries = counts.FEATURE + counts.FIX + counts.DEPRECATED;
 
   return {
@@ -383,6 +426,7 @@ export function filterUi5Diff(
       availableVersions: data.length,
       minVersion,
       maxVersion,
+      ...(notes.length > 0 ? { notes } : {}),
     },
   };
 }
@@ -397,9 +441,12 @@ export async function getUi5VersionDiff(
   if (!options.from_version || !options.to_version) {
     throw new Error("ui5_version_diff requires from_version and to_version");
   }
-  if (compareUi5Versions(options.from_version, options.to_version) > 0) {
+  // Strict <: from == to is a degenerate range that, given the
+  // exclusive-from / inclusive-to semantics, would silently return zero
+  // entries. Surface that as an error so the caller can fix the inputs.
+  if (compareUi5Versions(options.from_version, options.to_version) >= 0) {
     throw new Error(
-      `from_version (${options.from_version}) must be <= to_version (${options.to_version})`
+      `from_version (${options.from_version}) must be strictly less than to_version (${options.to_version}). The range is exclusive at from_version and inclusive at to_version, so from == to has no changes by definition.`
     );
   }
 
