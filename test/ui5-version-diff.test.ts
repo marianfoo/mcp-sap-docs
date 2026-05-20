@@ -44,12 +44,20 @@ describe("parseUi5Version", () => {
 });
 
 describe("normalizeChangeType", () => {
-  it("normalizes the three public categories regardless of casing", () => {
+  it("returns canonical input unchanged (fast path matches upstream-normalized data)", () => {
     expect(normalizeChangeType("FEATURE")).toBe("FEATURE");
+    expect(normalizeChangeType("FIX")).toBe("FIX");
+    expect(normalizeChangeType("DEPRECATED")).toBe("DEPRECATED");
+  });
+
+  it("still tolerates casing variants from stale data files (defensive fallback)", () => {
+    // Once the upstream PR (marianfoo/ui5-lib-diff parseChanges.js normalization)
+    // is deployed and a refresh cycle has run, these variants no longer appear
+    // in the data. We keep the path as a safety net for stale on-disk caches
+    // produced before the upstream landed.
     expect(normalizeChangeType("Feature")).toBe("FEATURE");
     expect(normalizeChangeType("feature")).toBe("FEATURE");
     expect(normalizeChangeType("Fix")).toBe("FIX");
-    expect(normalizeChangeType("DEPRECATED")).toBe("DEPRECATED");
   });
 
   it("drops internal/legacy markers", () => {

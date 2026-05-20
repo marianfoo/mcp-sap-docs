@@ -136,17 +136,65 @@ export function compareUi5Versions(a: string, b: string): number {
 // Type normalization
 // ---------------------------------------------------------------------------
 
+const CANONICAL_TYPES: ReadonlySet<Ui5ChangeType> = new Set([
+  "FEATURE",
+  "FIX",
+  "DEPRECATED",
+]);
+
 /**
- * The upstream data mixes casing and contains internal/legacy markers
- * ("Feature", "feature", "INETRNAL" typo, "[INTERNAL] ALP", "LEGACY").
- * We only expose the three categories users actually care about.
+ * The upstream data is canonicalized at the source as of
+ * https://github.com/marianfoo/ui5-lib-diff (parseChanges.js#normalizeType):
+ * every `type` is one of "FEATURE" | "FIX" | "DEPRECATED" and the historic
+ * casing variants ("Feature", "feature", "Fix") plus internal/legacy
+ * markers ("INTERNAL", the "INETRNAL" typo, "[INTERNAL] ALP", "LEGACY")
+ * are dropped before the consolidated JSON is written.
+ *
+ * We keep a defensive uppercase path so a stale data file (e.g. between
+ * upstream merge and the next weekly refresh) doesn't break the tool.
+ * Drift is surfaced via `reportNonCanonicalDrift` during load.
  */
 export function normalizeChangeType(raw: string): Ui5ChangeType | null {
-  const t = (raw ?? "").trim().toUpperCase();
-  if (t === "FEATURE") return "FEATURE";
-  if (t === "FIX") return "FIX";
-  if (t === "DEPRECATED") return "DEPRECATED";
+  if (typeof raw === "string" && CANONICAL_TYPES.has(raw as Ui5ChangeType)) {
+    return raw as Ui5ChangeType;
+  }
+  const upper = (raw ?? "").trim().toUpperCase();
+  if (CANONICAL_TYPES.has(upper as Ui5ChangeType)) {
+    return upper as Ui5ChangeType;
+  }
   return null;
+}
+
+/**
+ * After loading a dataset, count any non-canonical `type` values and emit
+ * a single grouped warning. Helps spot upstream regressions early without
+ * spamming the log on every cache hit.
+ */
+function reportNonCanonicalDrift(
+  library: Ui5LibDiffLibrary,
+  data: RawVersionBlock[]
+): void {
+  const driftCounts = new Map<string, number>();
+  for (const block of data) {
+    for (const lib of block.libraries ?? []) {
+      for (const change of lib.changes ?? []) {
+        if (
+          typeof change.type !== "string" ||
+          !CANONICAL_TYPES.has(change.type as Ui5ChangeType)
+        ) {
+          const key =
+            typeof change.type === "string" ? change.type : String(change.type);
+          driftCounts.set(key, (driftCounts.get(key) ?? 0) + 1);
+        }
+      }
+    }
+  }
+  if (driftCounts.size > 0) {
+    console.warn(
+      `[ui5VersionDiff] ${library} contains non-canonical types — expected upstream to canonicalize. Drift:`,
+      Object.fromEntries(driftCounts)
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -206,6 +254,7 @@ async function loadConsolidated(
   try {
     const fresh = await fetchConsolidated(library);
     memoryCache.set(library, fresh);
+    reportNonCanonicalDrift(library, fresh);
     writeDiskCache(library, fresh).catch((err) =>
       console.error(
         `⚠️ [ui5VersionDiff] Failed to persist ${library} disk cache:`,
@@ -221,6 +270,7 @@ async function loadConsolidated(
     const disk = await readDiskCache(library);
     if (disk) {
       memoryCache.set(library, disk);
+      reportNonCanonicalDrift(library, disk);
       return disk;
     }
     throw new Error(
@@ -368,6 +418,7 @@ export async function prefetchUi5LibDiff(): Promise<void> {
       try {
         const data = await fetchConsolidated(library);
         memoryCache.set(library, data);
+        reportNonCanonicalDrift(library, data);
         await writeDiskCache(library, data);
         console.log(
           `✅ [ui5VersionDiff] Prefetched ${library}: ${data.length} versions`
@@ -380,6 +431,7 @@ export async function prefetchUi5LibDiff(): Promise<void> {
         const disk = await readDiskCache(library);
         if (disk) {
           memoryCache.set(library, disk);
+          reportNonCanonicalDrift(library, disk);
           console.log(
             `📂 [ui5VersionDiff] Loaded ${library} from disk cache: ${disk.length} versions`
           );
