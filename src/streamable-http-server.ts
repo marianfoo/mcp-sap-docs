@@ -14,7 +14,7 @@ import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 // Version will be updated by deployment script
-const VERSION = "0.3.43";
+const VERSION = "0.3.44";
 const variant = getVariantConfig();
 
 
