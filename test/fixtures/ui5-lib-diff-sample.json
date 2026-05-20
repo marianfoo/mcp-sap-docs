@@ -96,6 +96,11 @@
           {
             "type": "FEATURE",
             "text": "sap.m.Button: badge support"
+          },
+          {
+            "type": "FIX",
+            "text": "sap.fe.controls: AI notice at column level",
+            "commit_url": null
           }
         ]
       }

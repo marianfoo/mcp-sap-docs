@@ -237,6 +237,11 @@ function stripHtml(value = ""): string {
     .trim();
 }
 
+/** Keep optional string fields out of MCP structured output when absent or null. */
+export function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Type normalization
 // ---------------------------------------------------------------------------
@@ -504,17 +509,29 @@ function filterWhatsNew(
     return true;
   });
 
-  const entries = matching.map((item) => ({
-    version: item.Version ?? "",
-    title: stripHtml(item.Title ?? ""),
-    description: stripHtml(item.Description ?? ""),
-    type: item.Type,
-    action: item.Action,
-    category: item.Category,
-    validAsOf: item.Valid_as_Of,
-    url: whatsNewUrl(item),
-    id: item.id,
-  }));
+  const entries = matching.map((item) => {
+    const entry: Ui5WhatsNewEntry = {
+      version: item.Version ?? "",
+      title: stripHtml(item.Title ?? ""),
+      description: stripHtml(item.Description ?? ""),
+    };
+
+    const type = optionalString(item.Type);
+    if (type) entry.type = type;
+    const action = optionalString(item.Action);
+    if (action) entry.action = action;
+    const category = optionalString(item.Category);
+    if (category) entry.category = category;
+    const validAsOf = optionalString(item.Valid_as_Of);
+    if (validAsOf) entry.validAsOf = validAsOf;
+    const url = whatsNewUrl(item);
+    if (url) entry.url = url;
+    if (item.id !== undefined && item.id !== null) {
+      entry.id = item.id;
+    }
+
+    return entry;
+  });
 
   return {
     entries,
@@ -637,14 +654,17 @@ export function filterUi5Diff(
 
         counts[type]++;
 
-        entries.push({
+        const entry: Ui5ChangeEntry = {
           version,
-          date: block.date,
           library: libName,
           type,
           text,
-          commit_url: change.commit_url,
-        });
+        };
+        const date = optionalString(block.date);
+        if (date) entry.date = date;
+        const commitUrl = optionalString(change.commit_url);
+        if (commitUrl) entry.commit_url = commitUrl;
+        entries.push(entry);
       }
     }
   }
