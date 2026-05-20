@@ -66,4 +66,21 @@ export const CONFIG = {
 
   // Directory where the embedding model is cached (gitignored, in-project)
   MODELS_DIR: process.env.MODELS_DIR || "dist/models",
+
+  // ---------------------------------------------------------------------------
+  // UI5 Lib Diff Configuration
+  // ---------------------------------------------------------------------------
+
+  // Cache TTL in milliseconds (default: 24 hours)
+  UI5_LIB_DIFF_CACHE_TTL_MS: Number(process.env.UI5_LIB_DIFF_CACHE_TTL_MS || 86400000),
+
+  // Local all-changes bundle consumed by ui5_version_diff at runtime.
+  UI5_LIB_DIFF_BUNDLE_PATH: process.env.UI5_LIB_DIFF_BUNDLE_PATH || "dist/data/ui5-lib-diff/all-changes.json",
+
+  // Setup-time source URL for downloading the local all-changes bundle.
+  // The runtime tool does not fetch this URL; it only reads UI5_LIB_DIFF_BUNDLE_PATH.
+  UI5_LIB_DIFF_DOWNLOAD_URL: process.env.UI5_LIB_DIFF_DOWNLOAD_URL || "https://ui5-lib-diff.marianzeis.de/api/v1/all-changes.json",
+
+  // Human-facing UI route returned in tool metadata for inspection.
+  UI5_LIB_DIFF_APP_BASE_URL: process.env.UI5_LIB_DIFF_APP_BASE_URL || "https://ui5-lib-diff.marianzeis.de",
 };

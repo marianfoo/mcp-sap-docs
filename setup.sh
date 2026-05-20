@@ -216,6 +216,27 @@ else
   git submodule status --recursive || true
 fi
 
+# Download local auxiliary datasets required by variant-enabled tools.
+_UI5_LIB_DIFF_ENABLED="$({
+  node --input-type=module -e '
+    import fs from "node:fs";
+    import path from "node:path";
+    const variant = (process.env.MCP_VARIANT || "").trim()
+      || (fs.existsSync(path.resolve(process.cwd(), ".mcp-variant"))
+          ? fs.readFileSync(path.resolve(process.cwd(), ".mcp-variant"), "utf8").trim()
+          : "")
+      || "sap-docs";
+    const configPath = path.resolve(process.cwd(), "config", "variants", `${variant}.json`);
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    console.log(config.tools?.ui5LibDiff ? "true" : "false");
+  ';
+} 2>/dev/null || true)"
+if [ "$_UI5_LIB_DIFF_ENABLED" = "true" ]; then
+  printf '📘 Downloading local UI5 lib diff bundle...\n'
+  npm run download:ui5-lib-diff
+fi
+unset _UI5_LIB_DIFF_ENABLED
+
 # Remove stale SQLite auxiliary files before building the FTS index.
 # A crashed previous build can leave orphaned -shm/-wal files behind; SQLite then
 # tries to apply the old WAL against the freshly created empty database and fails

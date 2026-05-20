@@ -83,6 +83,18 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
       fi; \
     done
 
+# Download setup-time auxiliary datasets for variant-enabled tools. The
+# ui5_version_diff runtime reads only the local bundle produced here.
+RUN UI5_LIB_DIFF_ENABLED="$(node --input-type=module -e ' \
+      import fs from "node:fs"; \
+      const variant = (process.env.MCP_VARIANT || "sap-docs").trim(); \
+      const config = JSON.parse(fs.readFileSync(`config/variants/${variant}.json`, "utf8")); \
+      console.log(config.tools?.ui5LibDiff ? "true" : "false"); \
+    ')" && \
+    if [ "$UI5_LIB_DIFF_ENABLED" = "true" ]; then \
+      npm run download:ui5-lib-diff; \
+    fi
+
 # Build TypeScript and FTS5 index
 RUN npm run build
 
