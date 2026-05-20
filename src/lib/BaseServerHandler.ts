@@ -656,7 +656,7 @@ FUNCTION NAME: ui5_version_diff
 List the new features, fixes, deprecations, and SAPUI5 What's New entries that landed between two UI5 releases, or inspect one exact release. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
 
 DATA SOURCE: local all-changes bundle at UI5_LIB_DIFF_BUNDLE_PATH (default: dist/data/ui5-lib-diff/all-changes.json).
-The runtime tool is local-only and does not fetch hosted URLs. Refresh the bundle during setup with npm run download:ui5-lib-diff.
+The runtime tool is local-only and does not fetch hosted URLs. Refresh the bundle during setup with npm run download:ui5-lib-diff. If a requested release is newer than the local bundle, the response includes meta.notes and meta.generatedAt so the caller can tell setup data is stale.
 
 RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version). If a requested patch version is unavailable, the tool uses the nearest lower available version with the same major.minor, matching the web app. For one release, pass version instead of a range.
 
@@ -667,17 +667,15 @@ PARAMETERS:
 • types (optional): subset of ["FEATURE", "FIX", "DEPRECATED"]. Defaults to all three.
 • ui5_library (optional): case-insensitive substring filter on the UI5 library, e.g. "sap.m", "sap.ui.core", "sap.fe".
 • query (optional): case-insensitive substring filter on change text and What's New title/description, e.g. "Table", "ObjectStatus", "ManagedObject".
-• limit (optional, default 200, max 1000): maximum diff entries and What's New entries returned. counts.* still reflect the full totals.
 
 RETURNS JSON with:
 • mode, library, from_version, to_version, version?
 • versionsInRange: versions covered by the range (newest first)
 • counts: { FEATURE, FIX, DEPRECATED } totals across the full range
 • totalEntries: sum of counts
-• truncated: true when totalEntries > entries.length
 • entries: [{ version, date, library, type, text, commit_url? }]
-• whatsNewEntries, whatsNewTotalEntries, whatsNewTruncated: SAPUI5 What's New entries for the same version/range
-• meta: { availableVersions, minVersion, maxVersion, sourceDataPath, cacheSource, requested, resolved, notes? } — "notes" is a list of soft signals (version resolution, out-of-range hints, coercion warnings)
+• whatsNewEntries, whatsNewTotalEntries: SAPUI5 What's New entries for the same version/range
+• meta: { availableVersions, minVersion, maxVersion, generatedAt, sourceDataPath, cacheSource, requested, resolved, notes? } — "notes" is a list of soft signals (version resolution, stale-bundle hints, out-of-range hints, coercion warnings)
 • sourceUrl: browser URL for human inspection of the same range
 
 USE CASES:
@@ -723,14 +721,7 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                 },
                 query: {
                   type: "string",
-                  description: "Case-insensitive substring filter on the change text."
-                },
-                limit: {
-                  type: "number",
-                  description: "Maximum entries to return. Default 200, max 1000. counts.* still reflect the full totals.",
-                  minimum: 1,
-                  maximum: 1000,
-                  default: 200
+                  description: "Case-insensitive substring filter on change text and What's New title/description."
                 }
               },
               anyOf: [
@@ -760,7 +751,6 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   additionalProperties: false
                 },
                 totalEntries: { type: "number" },
-                truncated: { type: "boolean" },
                 entries: {
                   type: "array",
                   items: {
@@ -797,13 +787,16 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   }
                 },
                 whatsNewTotalEntries: { type: "number" },
-                whatsNewTruncated: { type: "boolean" },
                 meta: {
                   type: "object",
                   properties: {
                     availableVersions: { type: "number" },
                     minVersion: { type: "string" },
                     maxVersion: { type: "string" },
+                    generatedAt: {
+                      type: "string",
+                      description: "Generation timestamp from the local all-changes bundle, when available."
+                    },
                     sourceDataPath: {
                       type: "string",
                       description: "Local all-changes JSON bundle used for this result."
@@ -819,14 +812,14 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                     notes: {
                       type: "array",
                       items: { type: "string" },
-                      description: "Soft signals: out-of-range hints, coercion warnings, empty-range tips."
+                      description: "Soft signals: stale-bundle hints, version resolution, out-of-range hints, coercion warnings, empty-range tips."
                     }
                   },
                   additionalProperties: true
                 },
                 sourceUrl: { type: "string" }
               },
-              required: ["mode", "library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "truncated", "entries", "whatsNewEntries", "whatsNewTotalEntries", "whatsNewTruncated", "sourceUrl"],
+              required: ["mode", "library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "entries", "whatsNewEntries", "whatsNewTotalEntries", "sourceUrl"],
               additionalProperties: true
             }
           },
@@ -1591,7 +1584,6 @@ RETURNS (JSON):
           types,
           ui5_library,
           query,
-          limit,
         } = (args ?? {}) as {
           library?: Ui5LibDiffLibrary;
           version?: string;
@@ -1600,7 +1592,6 @@ RETURNS (JSON):
           types?: Ui5ChangeType[];
           ui5_library?: string;
           query?: string;
-          limit?: number;
         };
 
         const timing = logger.logToolStart(
@@ -1627,7 +1618,7 @@ RETURNS (JSON):
         console.log(`🔍 [UI5_VERSION_DIFF] Library: ${library ?? "SAPUI5"}`);
         console.log(`🔍 [UI5_VERSION_DIFF] Range: ${version ?? `${from_version ?? "?"} -> ${to_version ?? "?"}`}`);
         console.log(`🔍 [UI5_VERSION_DIFF] Types: ${Array.isArray(types) ? types.join(",") : "ALL"}`);
-        console.log(`🔍 [UI5_VERSION_DIFF] ui5_library filter: ${ui5_library ?? "(none)"}, query: ${query ?? "(none)"}, limit: ${limit ?? 200}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] ui5_library filter: ${ui5_library ?? "(none)"}, query: ${query ?? "(none)"}`);
         console.log(`🔍 [UI5_VERSION_DIFF] Cache: ${JSON.stringify(cacheStats)}`);
 
         try {
@@ -1639,17 +1630,16 @@ RETURNS (JSON):
             types,
             ui5_library,
             query,
-            limit,
           });
 
           console.log(
-            `🔍 [UI5_VERSION_DIFF] versions=${result.versionsInRange.length} total=${result.totalEntries} returned=${result.entries.length} truncated=${result.truncated}`
+            `🔍 [UI5_VERSION_DIFF] versions=${result.versionsInRange.length} total=${result.totalEntries} returned=${result.entries.length} whatsNew=${result.whatsNewTotalEntries}`
           );
           console.log(`🔍 [UI5_VERSION_DIFF] ========================================\n`);
 
           logger.logToolSuccess(name, timing.requestId, timing.startTime, result.entries.length, {
             totalEntries: result.totalEntries,
-            truncated: result.truncated,
+            whatsNewTotalEntries: result.whatsNewTotalEntries,
             versionsInRange: result.versionsInRange.length,
             counts: result.counts,
           });

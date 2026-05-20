@@ -34,11 +34,20 @@ function writeBundleFixture(fixtureText: string): string {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-"));
   const bundlePath = path.join(tmpDir, "all-changes.json");
   const fixture = JSON.parse(fixtureText);
+  writeBundle(bundlePath, fixture);
+  return bundlePath;
+}
+
+function writeBundle(
+  bundlePath: string,
+  fixture: any[],
+  generatedAt = "2026-05-20T00:00:00.000Z"
+): void {
   fs.writeFileSync(
     bundlePath,
     JSON.stringify({
       schemaVersion: 1,
-      generatedAt: "2026-05-20T00:00:00.000Z",
+      generatedAt,
       datasets: {
         SAPUI5: fixture,
         OpenUI5: fixture,
@@ -67,7 +76,6 @@ function writeBundleFixture(fixtureText: string): string {
     }),
     "utf-8"
   );
-  return bundlePath;
 }
 
 describe("compareUi5Versions", () => {
@@ -196,15 +204,14 @@ describe("filterUi5Diff", () => {
     expect(result.versionsInRange.length).toBe(0);
   });
 
-  it("respects limit but keeps full counts", () => {
+  it("returns all matching entries without applying a tool-level limit", () => {
     const result = filterUi5Diff(fixture, {
       from_version: "1.108.0",
       to_version: "1.140.0",
-      limit: 2,
     });
-    expect(result.entries.length).toBe(2);
+    expect(result.entries.length).toBe(7);
     expect(result.totalEntries).toBe(7);
-    expect(result.truncated).toBe(true);
+    expect("truncated" in result).toBe(false);
   });
 
   it("populates meta with dataset bounds regardless of range", () => {
@@ -227,23 +234,6 @@ describe("filterUi5Diff", () => {
     expect(libs).toContain("deprecated");
   });
 
-  it("clamps limit to the [1, 1000] range", () => {
-    const high = filterUi5Diff(fixture, {
-      from_version: "1.108.0",
-      to_version: "1.140.0",
-      limit: 99999,
-    });
-    expect(high.entries.length).toBeLessThanOrEqual(1000);
-    expect(high.truncated).toBe(false); // dataset is small; limit doesn't bite
-
-    const low = filterUi5Diff(fixture, {
-      from_version: "1.108.0",
-      to_version: "1.140.0",
-      limit: -5 as any,
-    });
-    expect(low.entries.length).toBeLessThanOrEqual(1);
-  });
-
   it("coerces a malformed types argument and records a note", () => {
     const result = filterUi5Diff(fixture, {
       from_version: "1.108.0",
@@ -263,7 +253,8 @@ describe("filterUi5Diff", () => {
     });
     expect(result.meta.notes ?? []).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("newer than the newest version in the dataset"),
+        expect.stringContaining("newer than the newest version in the local bundle"),
+        expect.stringContaining("will not fetch newer data"),
       ])
     );
   });
@@ -400,12 +391,12 @@ describe("getUi5VersionDiff input validation", () => {
       library: "SAPUI5",
       from_version: "1.108.0",
       to_version: "1.130.0",
-      limit: 1,
     });
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.meta.sourceDataPath).toBe(bundlePath);
     expect(result.meta.cacheSource).toBe("disk");
+    expect(result.meta.generatedAt).toBe("2026-05-20T00:00:00.000Z");
     expect(result.whatsNewEntries?.length).toBe(1);
     expect(result.sourceUrl).toBe(
       "https://ui5-lib-diff.marianzeis.de/?versionFrom=1.108.0&versionTo=1.130.0&ui5Type=SAPUI5"
@@ -425,7 +416,6 @@ describe("getUi5VersionDiff input validation", () => {
       library: "SAPUI5",
       from_version: "1.108.0",
       to_version: "1.130.0",
-      limit: 1,
     });
     fs.unlinkSync(bundlePath);
 
@@ -433,13 +423,34 @@ describe("getUi5VersionDiff input validation", () => {
       library: "OpenUI5",
       from_version: "1.108.0",
       to_version: "1.130.0",
-      limit: 1,
     });
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.library).toBe("OpenUI5");
     expect(result.meta.sourceDataPath).toBe(bundlePath);
     expect(result.meta.cacheSource).toBe("disk");
+    expect(result.meta.generatedAt).toBe("2026-05-20T00:00:00.000Z");
+  });
+
+  it("refreshes from the local file when the in-memory bundle is missing a requested version", async () => {
+    const fixturePath = path.join(__dirname, "fixtures", "ui5-lib-diff-sample.json");
+    const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf-8"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-refresh-"));
+    const bundlePath = path.join(tmpDir, "all-changes.json");
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+
+    writeBundle(bundlePath, fixture.slice(0, 3), "2026-05-19T00:00:00.000Z");
+    await getUi5VersionDiff({ version: "1.130.0" });
+
+    writeBundle(bundlePath, fixture, "2026-05-20T00:00:00.000Z");
+    const result = await getUi5VersionDiff({ version: "1.140.0" });
+
+    expect(result.version).toBe("1.140.0");
+    expect(result.totalEntries).toBe(1);
+    expect(result.entries).toEqual([
+      expect.objectContaining({ version: "1.140.0", text: "sap.m.Button: badge support" }),
+    ]);
+    expect(result.meta.generatedAt).toBe("2026-05-20T00:00:00.000Z");
   });
 
   it("fails clearly when the local bundle is missing", async () => {

@@ -71,7 +71,7 @@ An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to
 |------|-------------|
 | `sap_discovery_center_search` | Search the SAP Discovery Center service catalog for BTP services by keyword, category, or license model. |
 | `sap_discovery_center_service` | Get comprehensive BTP service details: pricing plans, product roadmap, documentation links, and key features. Accepts a service UUID or name. |
-| `ui5_version_diff` | List FEATURE / FIX / DEPRECATED changes and SAPUI5 What's New entries for a version or range from a local all-changes bundle (`dist/data/ui5-lib-diff/all-changes.json`). `npm run setup` refreshes it automatically; use `npm run download:ui5-lib-diff` for a manual refresh. Pair with the [`ui5-version-upgrade` skill](.claude/skills/ui5-version-upgrade/SKILL.md) and `@ui5/mcp-server` for a full upgrade workflow. |
+| `ui5_version_diff` | List all matching FEATURE / FIX / DEPRECATED changes and SAPUI5 What's New entries for a version or range from a local all-changes bundle (`dist/data/ui5-lib-diff/all-changes.json`). `npm run setup` refreshes it automatically; use `npm run download:ui5-lib-diff` during setup/rebuild for a manual refresh. Pair with the [`ui5-version-upgrade` skill](.claude/skills/ui5-version-upgrade/SKILL.md) and `@ui5/mcp-server` for a full upgrade workflow. |
 
 ### `abap` variant only
 

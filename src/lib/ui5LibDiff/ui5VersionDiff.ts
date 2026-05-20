@@ -84,8 +84,6 @@ export interface Ui5VersionDiffOptions {
   ui5_library?: string;
   /** Substring filter on the change text (case-insensitive). */
   query?: string;
-  /** Maximum entries to return. Default: 200, max: 1000. */
-  limit?: number;
 }
 
 export interface Ui5WhatsNewEntry {
@@ -110,16 +108,15 @@ export interface Ui5VersionDiffResult {
   versionsInRange: string[];
   counts: Record<Ui5ChangeType, number>;
   totalEntries: number;
-  truncated: boolean;
   entries: Ui5ChangeEntry[];
   whatsNewEntries: Ui5WhatsNewEntry[];
   whatsNewTotalEntries: number;
-  whatsNewTruncated: boolean;
   sourceUrl: string;
   meta: {
     availableVersions: number;
     minVersion?: string;
     maxVersion?: string;
+    generatedAt?: string;
     sourceDataPath?: string;
     cacheSource?: "disk";
     requested?: {
@@ -144,14 +141,13 @@ export interface Ui5VersionDiffResult {
 
 const BUNDLE_CACHE_KEY = "all-changes";
 const UI5_LIBRARIES: Ui5LibDiffLibrary[] = ["SAPUI5", "OpenUI5"];
-const DEFAULT_LIMIT = 200;
-const MAX_LIMIT = 1000;
 
 interface LoadedDataset {
   data: RawVersionBlock[];
   whatsNew: RawWhatsNewEntry[];
   sourceDataPath: string;
   cacheSource: "disk";
+  generatedAt?: string;
 }
 
 interface LoadedBundle {
@@ -346,6 +342,7 @@ function cacheLoadedBundle(bundle: LoadedBundle, reportDrift = true): void {
       whatsNew: bundle.whatsNew,
       sourceDataPath: bundle.sourceDataPath,
       cacheSource: bundle.cacheSource,
+      generatedAt: bundle.generatedAt,
     });
     if (reportDrift) {
       reportNonCanonicalDrift(library, data);
@@ -379,7 +376,7 @@ async function loadConsolidated(
     if (loadedFromBundle) return loadedFromBundle;
   } catch (err) {
     throw new Error(
-      `ui5-lib-diff local bundle unavailable at ${localBundlePath()}. Run npm run download:ui5-lib-diff or point UI5_LIB_DIFF_BUNDLE_PATH to a local all-changes.json file. Details: ${
+      `ui5-lib-diff local bundle unavailable at ${localBundlePath()}. Refresh the bundle during setup with npm run download:ui5-lib-diff or point UI5_LIB_DIFF_BUNDLE_PATH to a local all-changes.json file. Details: ${
         err instanceof Error ? err.message : String(err)
       })`
     );
@@ -388,6 +385,40 @@ async function loadConsolidated(
   throw new Error(
     `ui5-lib-diff local bundle at ${localBundlePath()} did not contain ${library}`
   );
+}
+
+function requestedVersionCandidates(options: Ui5VersionDiffOptions): string[] {
+  return [options.version, options.from_version, options.to_version].filter(
+    (version): version is string => Boolean(version)
+  );
+}
+
+function shouldReloadLocalBundle(
+  data: RawVersionBlock[],
+  options: Ui5VersionDiffOptions
+): boolean {
+  const availableVersions = new Set(
+    data.map((block) => block.version).filter(Boolean)
+  );
+  return requestedVersionCandidates(options).some(
+    (version) => !availableVersions.has(version)
+  );
+}
+
+async function reloadConsolidatedFromDisk(
+  library: Ui5LibDiffLibrary
+): Promise<LoadedDataset | null> {
+  try {
+    const bundle = await readLocalBundle();
+    cacheLoadedBundle(bundle);
+    return memoryCache.get(library) ?? null;
+  } catch (err) {
+    console.warn(
+      `[ui5VersionDiff] Could not refresh local UI5 diff bundle from ${localBundlePath()}; using cached data:`,
+      err
+    );
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -412,13 +443,13 @@ function resolveAvailableVersion(
 
   if (nearest) {
     notes.push(
-      `${label} ${requested} is not available; using nearest available ${requestedMinor}.x version ${nearest}.`
+      `${label} ${requested} is not available in the local bundle; using nearest available ${requestedMinor}.x version ${nearest}. If you expected a newer release, refresh the bundle during setup.`
     );
     return nearest;
   }
 
   notes.push(
-    `${label} ${requested} is not available and no ${requestedMinor}.x version exists in the dataset.`
+    `${label} ${requested} is not available in the local bundle and no ${requestedMinor}.x version exists. The runtime is local-only and will not fetch newer data; refresh the bundle during setup.`
   );
   return requested;
 }
@@ -434,12 +465,10 @@ function filterWhatsNew(
   options: Ui5VersionDiffOptions,
   mode: "range" | "version",
   fromVersion: string,
-  toVersion: string,
-  limit: number
+  toVersion: string
 ): {
   entries: Ui5WhatsNewEntry[];
   totalEntries: number;
-  truncated: boolean;
 } {
   const queryFilter = options.query?.toLowerCase().trim() || "";
   const allowedMinorKeys = new Set<string>();
@@ -475,7 +504,7 @@ function filterWhatsNew(
     return true;
   });
 
-  const entries = matching.slice(0, limit).map((item) => ({
+  const entries = matching.map((item) => ({
     version: item.Version ?? "",
     title: stripHtml(item.Title ?? ""),
     description: stripHtml(item.Description ?? ""),
@@ -490,7 +519,6 @@ function filterWhatsNew(
   return {
     entries,
     totalEntries: matching.length,
-    truncated: matching.length > entries.length,
   };
 }
 
@@ -532,10 +560,6 @@ export function filterUi5Diff(
       : ["FEATURE", "FIX", "DEPRECATED"]
   );
 
-  const limit = Math.min(
-    Math.max(Math.floor(options.limit ?? DEFAULT_LIMIT), 1),
-    MAX_LIMIT
-  );
   const libFilter = options.ui5_library?.toLowerCase().trim() || "";
   const queryFilter = options.query?.toLowerCase().trim() || "";
   const availableVersions = data
@@ -613,16 +637,14 @@ export function filterUi5Diff(
 
         counts[type]++;
 
-        if (entries.length < limit) {
-          entries.push({
-            version,
-            date: block.date,
-            library: libName,
-            type,
-            text,
-            commit_url: change.commit_url,
-          });
-        }
+        entries.push({
+          version,
+          date: block.date,
+          library: libName,
+          type,
+          text,
+          commit_url: change.commit_url,
+        });
       }
     }
   }
@@ -639,7 +661,7 @@ export function filterUi5Diff(
   }
   if (maxVersion && compareUi5Versions(toCmp, maxVersion) > 0) {
     notes.push(
-      `${mode === "version" ? "version" : "to_version"} ${toCmp} is newer than the newest version in the dataset (${maxVersion}); upgrade to a future release isn't covered yet.`
+      `${mode === "version" ? "version" : "to_version"} ${toCmp} is newer than the newest version in the local bundle (${maxVersion}). The runtime is local-only and will not fetch newer data; refresh the bundle during setup.`
     );
   }
   if (versionsInRange.length === 0) {
@@ -663,8 +685,7 @@ export function filterUi5Diff(
     options,
     mode,
     fromCmp,
-    toCmp,
-    limit
+    toCmp
   );
 
   return {
@@ -676,11 +697,9 @@ export function filterUi5Diff(
     versionsInRange,
     counts,
     totalEntries,
-    truncated: totalEntries > entries.length,
     entries,
     whatsNewEntries: whatsNewResult.entries,
     whatsNewTotalEntries: whatsNewResult.totalEntries,
-    whatsNewTruncated: whatsNewResult.truncated,
     sourceUrl: "https://ui5-lib-diff.marianzeis.de/",
     meta: {
       availableVersions: data.length,
@@ -731,7 +750,10 @@ export async function getUi5VersionDiff(
   }
 
   const library = options.library ?? "SAPUI5";
-  const loaded = await loadConsolidated(library);
+  let loaded = await loadConsolidated(library);
+  if (shouldReloadLocalBundle(loaded.data, options)) {
+    loaded = (await reloadConsolidatedFromDisk(library)) ?? loaded;
+  }
   const result = filterUi5Diff(loaded.data, { ...options, library }, loaded.whatsNew);
   return {
     ...result,
@@ -744,6 +766,7 @@ export async function getUi5VersionDiff(
       ...result.meta,
       sourceDataPath: loaded.sourceDataPath,
       cacheSource: loaded.cacheSource,
+      generatedAt: loaded.generatedAt,
     },
   };
 }
@@ -761,7 +784,7 @@ export async function prefetchUi5LibDiff(): Promise<void> {
     );
   } catch (err) {
     console.error(
-      `⚠️ [ui5VersionDiff] Local UI5 diff bundle unavailable at ${localBundlePath()}. Run npm run download:ui5-lib-diff before using ui5_version_diff:`,
+      `⚠️ [ui5VersionDiff] Local UI5 diff bundle unavailable at ${localBundlePath()}. Refresh it during setup with npm run download:ui5-lib-diff before using ui5_version_diff:`,
       err
     );
   }
