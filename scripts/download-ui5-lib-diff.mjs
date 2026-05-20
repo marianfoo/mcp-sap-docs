@@ -9,6 +9,10 @@ const sourceUrl =
 const targetPath =
   process.env.UI5_LIB_DIFF_BUNDLE_PATH ||
   "dist/data/ui5-lib-diff/all-changes.json";
+const timeoutMs = Number.parseInt(
+  process.env.UI5_LIB_DIFF_DOWNLOAD_TIMEOUT_MS || "60000",
+  10
+);
 
 function validateBundle(value) {
   if (!value || typeof value !== "object") {
@@ -25,7 +29,22 @@ function validateBundle(value) {
 
 console.log(`Downloading UI5 lib diff bundle from ${sourceUrl}`);
 
-const response = await fetch(sourceUrl);
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), timeoutMs);
+let response;
+try {
+  response = await fetch(sourceUrl, { signal: controller.signal });
+} catch (error) {
+  if (error instanceof Error && error.name === "AbortError") {
+    throw new Error(
+      `Timed out after ${timeoutMs}ms while downloading UI5 lib diff bundle from ${sourceUrl}`
+    );
+  }
+  throw error;
+} finally {
+  clearTimeout(timeout);
+}
+
 if (!response.ok) {
   throw new Error(`Failed to download UI5 lib diff bundle: HTTP ${response.status}`);
 }
