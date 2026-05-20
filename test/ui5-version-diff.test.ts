@@ -43,6 +43,27 @@ function writeBundleFixture(fixtureText: string): string {
         SAPUI5: fixture,
         OpenUI5: fixture,
       },
+      whatsNew: [
+        {
+          id: 1,
+          Version: "1.130",
+          Title: "<span>sap.m.ObjectStatus</span>",
+          Description: "ObjectStatus now supports emptyIndicatorMode.",
+          Type: "Changed",
+          Action: "Info Only",
+          Category: "Control",
+          Valid_as_Of: "2024-09-12",
+          outputloio: "abc123",
+        },
+        {
+          id: 2,
+          Version: "1.140",
+          Title: "sap.m.Button",
+          Description: "Badge support.",
+          Type: "New",
+          Category: "Control",
+        },
+      ],
     }),
     "utf-8"
   );
@@ -259,26 +280,111 @@ describe("filterUi5Diff", () => {
       ])
     );
   });
+
+  it("resolves unavailable patch versions to the nearest lower available patch", () => {
+    const result = filterUi5Diff(fixture, {
+      from_version: "1.120.5",
+      to_version: "1.130.9",
+      types: ["DEPRECATED"],
+    });
+
+    expect(result.from_version).toBe("1.120.0");
+    expect(result.to_version).toBe("1.130.0");
+    expect(result.meta.notes ?? []).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("from_version 1.120.5 is not available"),
+        expect.stringContaining("to_version 1.130.9 is not available"),
+      ])
+    );
+  });
+
+  it("supports single-version requests", () => {
+    const result = filterUi5Diff(fixture, {
+      version: "1.130.0",
+    });
+
+    expect(result.mode).toBe("version");
+    expect(result.version).toBe("1.130.0");
+    expect(result.versionsInRange).toEqual(["1.130.0"]);
+    expect(result.totalEntries).toBe(3);
+  });
+
+  it("always includes What's New entries for the same range", () => {
+    const result = filterUi5Diff(
+      fixture,
+      {
+        from_version: "1.120.0",
+        to_version: "1.130.0",
+        query: "ObjectStatus",
+      },
+      [
+        {
+          id: 1,
+          Version: "1.130",
+          Title: "<span>sap.m.ObjectStatus</span>",
+          Description: "ObjectStatus now supports emptyIndicatorMode.",
+          Type: "Changed",
+          Category: "Control",
+        },
+        {
+          id: 2,
+          Version: "1.140",
+          Title: "sap.m.Button",
+          Description: "Badge support.",
+          Type: "New",
+          Category: "Control",
+        },
+      ]
+    );
+
+    expect(result.whatsNewTotalEntries).toBe(1);
+    expect(result.whatsNewEntries).toEqual([
+      expect.objectContaining({
+        version: "1.130",
+        title: "sap.m.ObjectStatus",
+        description: "ObjectStatus now supports emptyIndicatorMode.",
+      }),
+    ]);
+  });
 });
 
 describe("getUi5VersionDiff input validation", () => {
-  it("rejects from_version === to_version (degenerate range)", async () => {
-    await expect(
-      getUi5VersionDiff({ from_version: "1.130.0", to_version: "1.130.0" })
-    ).rejects.toThrow(/strictly less than/);
+  it("treats from_version === to_version as a single-version request", async () => {
+    const fixturePath = path.join(__dirname, "fixtures", "ui5-lib-diff-sample.json");
+    const fixture = fs.readFileSync(fixturePath, "utf-8");
+    const bundlePath = writeBundleFixture(fixture);
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+
+    const result = await getUi5VersionDiff({
+      from_version: "1.130.0",
+      to_version: "1.130.0",
+    });
+
+    expect(result.mode).toBe("version");
+    expect(result.version).toBe("1.130.0");
   });
 
   it("rejects from_version > to_version", async () => {
     await expect(
       getUi5VersionDiff({ from_version: "1.140.0", to_version: "1.108.0" })
-    ).rejects.toThrow(/strictly less than/);
+    ).rejects.toThrow(/less than or equal/);
   });
 
-  it("rejects missing parameters", async () => {
+  it("accepts a single to_version as single-version mode", async () => {
+    const fixturePath = path.join(__dirname, "fixtures", "ui5-lib-diff-sample.json");
+    const fixture = fs.readFileSync(fixturePath, "utf-8");
+    const bundlePath = writeBundleFixture(fixture);
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+
+    const result = await getUi5VersionDiff({ to_version: "1.130.0" });
+    expect(result.mode).toBe("version");
+    expect(result.version).toBe("1.130.0");
+  });
+
+  it("rejects completely missing parameters", async () => {
     await expect(
-      // @ts-expect-error intentionally missing required field
-      getUi5VersionDiff({ to_version: "1.130.0" })
-    ).rejects.toThrow(/requires from_version/);
+      getUi5VersionDiff({})
+    ).rejects.toThrow(/requires either version/);
   });
 
   it("reads the local all-changes bundle and reports metadata", async () => {
@@ -300,6 +406,7 @@ describe("getUi5VersionDiff input validation", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.meta.sourceDataPath).toBe(bundlePath);
     expect(result.meta.cacheSource).toBe("disk");
+    expect(result.whatsNewEntries?.length).toBe(1);
     expect(result.sourceUrl).toBe(
       "https://ui5-lib-diff.marianzeis.de/?versionFrom=1.108.0&versionTo=1.130.0&ui5Type=SAPUI5"
     );

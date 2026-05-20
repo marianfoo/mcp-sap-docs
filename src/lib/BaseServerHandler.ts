@@ -653,30 +653,31 @@ USE CASES:
 
 FUNCTION NAME: ui5_version_diff
 
-List the new features, fixes, and deprecations that landed between two UI5 releases. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
+List the new features, fixes, deprecations, and SAPUI5 What's New entries that landed between two UI5 releases, or inspect one exact release. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
 
 DATA SOURCE: local all-changes bundle at UI5_LIB_DIFF_BUNDLE_PATH (default: dist/data/ui5-lib-diff/all-changes.json).
 The runtime tool is local-only and does not fetch hosted URLs. Refresh the bundle during setup with npm run download:ui5-lib-diff.
 
-RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version).
+RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version). If a requested patch version is unavailable, the tool uses the nearest lower available version with the same major.minor, matching the web app. For one release, pass version instead of a range.
 
 PARAMETERS:
 • library (optional, default "SAPUI5"): "SAPUI5" or "OpenUI5".
-• from_version (required): version you are upgrading FROM, e.g. "1.108.0".
-• to_version (required): version you are upgrading TO, e.g. "1.130.0".
+• version (optional): exact release to inspect, e.g. "1.130.0". Can also be supplied as the only from_version or only to_version.
+• from_version + to_version (optional range pair): version you are upgrading FROM/TO, e.g. "1.108.0" -> "1.130.0".
 • types (optional): subset of ["FEATURE", "FIX", "DEPRECATED"]. Defaults to all three.
 • ui5_library (optional): case-insensitive substring filter on the UI5 library, e.g. "sap.m", "sap.ui.core", "sap.fe".
-• query (optional): case-insensitive substring filter on the change text, e.g. "Table", "ObjectStatus", "ManagedObject".
-• limit (optional, default 200, max 1000): maximum entries returned. counts.* still reflect the full totals.
+• query (optional): case-insensitive substring filter on change text and What's New title/description, e.g. "Table", "ObjectStatus", "ManagedObject".
+• limit (optional, default 200, max 1000): maximum diff entries and What's New entries returned. counts.* still reflect the full totals.
 
 RETURNS JSON with:
-• library, from_version, to_version
+• mode, library, from_version, to_version, version?
 • versionsInRange: versions covered by the range (newest first)
 • counts: { FEATURE, FIX, DEPRECATED } totals across the full range
 • totalEntries: sum of counts
 • truncated: true when totalEntries > entries.length
 • entries: [{ version, date, library, type, text, commit_url? }]
-• meta: { availableVersions, minVersion, maxVersion, sourceDataPath, cacheSource, notes? } — "notes" is a list of soft signals (out-of-range hints, coercion warnings)
+• whatsNewEntries, whatsNewTotalEntries, whatsNewTruncated: SAPUI5 What's New entries for the same version/range
+• meta: { availableVersions, minVersion, maxVersion, sourceDataPath, cacheSource, requested, resolved, notes? } — "notes" is a list of soft signals (version resolution, out-of-range hints, coercion warnings)
 • sourceUrl: browser URL for human inspection of the same range
 
 USE CASES:
@@ -687,6 +688,7 @@ USE CASES:
 
 EXAMPLES:
 ui5_version_diff(from_version="1.108.0", to_version="1.130.0", types=["DEPRECATED"])
+ui5_version_diff(version="1.130.0", ui5_library="sap.m")
 ui5_version_diff(library="OpenUI5", from_version="1.120.0", to_version="1.130.0", ui5_library="sap.m")
 ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatus")`,
             inputSchema: {
@@ -698,13 +700,17 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   description: "Which UI5 flavour to diff. Defaults to SAPUI5.",
                   default: "SAPUI5"
                 },
+                version: {
+                  type: "string",
+                  description: "Single UI5 release to inspect, e.g. \"1.130.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
+                },
                 from_version: {
                   type: "string",
-                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\". Use the full x.y.z form — \"1.108\" matches only \"1.108.0\" exactly and will miss patch releases like \"1.108.5\". Must be strictly less than to_version."
+                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
                 },
                 to_version: {
                   type: "string",
-                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\". Use the full x.y.z form. Must be strictly greater than from_version."
+                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
                 },
                 types: {
                   type: "array",
@@ -727,14 +733,21 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   default: 200
                 }
               },
-              required: ["from_version", "to_version"]
+              anyOf: [
+                { required: ["version"] },
+                { required: ["from_version", "to_version"] },
+                { required: ["from_version"] },
+                { required: ["to_version"] }
+              ]
             },
             outputSchema: {
               type: "object",
               properties: {
+                mode: { type: "string", enum: ["range", "version"] },
                 library: { type: "string" },
                 from_version: { type: "string" },
                 to_version: { type: "string" },
+                version: { type: "string" },
                 versionsInRange: { type: "array", items: { type: "string" } },
                 counts: {
                   type: "object",
@@ -764,6 +777,27 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                     additionalProperties: true
                   }
                 },
+                whatsNewEntries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      version: { type: "string" },
+                      title: { type: "string" },
+                      description: { type: "string" },
+                      type: { type: "string" },
+                      action: { type: "string" },
+                      category: { type: "string" },
+                      validAsOf: { type: "string" },
+                      url: { type: "string" },
+                      id: {}
+                    },
+                    required: ["version", "title", "description"],
+                    additionalProperties: true
+                  }
+                },
+                whatsNewTotalEntries: { type: "number" },
+                whatsNewTruncated: { type: "boolean" },
                 meta: {
                   type: "object",
                   properties: {
@@ -779,6 +813,9 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                       enum: ["disk"],
                       description: "The UI5 diff runtime is local-only; responses come from the local bundle on disk."
                     },
+                    requested: { type: "object", additionalProperties: true },
+                    resolved: { type: "object", additionalProperties: true },
+                    whatsNewAvailable: { type: "number" },
                     notes: {
                       type: "array",
                       items: { type: "string" },
@@ -789,7 +826,7 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                 },
                 sourceUrl: { type: "string" }
               },
-              required: ["library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "truncated", "entries", "sourceUrl"],
+              required: ["mode", "library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "truncated", "entries", "whatsNewEntries", "whatsNewTotalEntries", "whatsNewTruncated", "sourceUrl"],
               additionalProperties: true
             }
           },
@@ -1548,6 +1585,7 @@ RETURNS (JSON):
 
         const {
           library,
+          version,
           from_version,
           to_version,
           types,
@@ -1556,6 +1594,7 @@ RETURNS (JSON):
           limit,
         } = (args ?? {}) as {
           library?: Ui5LibDiffLibrary;
+          version?: string;
           from_version?: string;
           to_version?: string;
           types?: Ui5ChangeType[];
@@ -1566,19 +1605,19 @@ RETURNS (JSON):
 
         const timing = logger.logToolStart(
           name,
-          `${library ?? "SAPUI5"} ${from_version ?? "?"} -> ${to_version ?? "?"}`,
+          `${library ?? "SAPUI5"} ${version ?? `${from_version ?? "?"} -> ${to_version ?? "?"}`}`,
           clientMetadata
         );
 
-        if (!from_version || !to_version) {
+        if (!version && !from_version && !to_version) {
           logger.logToolError(
             name,
             timing.requestId,
             timing.startTime,
-            new Error("Missing from_version or to_version")
+            new Error("Missing version or range")
           );
           return createErrorResponse(
-            "Missing required parameters: from_version and to_version (e.g. from_version=\"1.108.0\", to_version=\"1.130.0\").",
+            "Missing required parameters: pass version=\"1.130.0\" for one release, or from_version=\"1.108.0\" and to_version=\"1.130.0\" for a range.",
             timing.requestId
           );
         }
@@ -1586,14 +1625,15 @@ RETURNS (JSON):
         const cacheStats = getUi5LibDiffCacheStats();
         console.log(`\n🔍 [UI5_VERSION_DIFF] ========================================`);
         console.log(`🔍 [UI5_VERSION_DIFF] Library: ${library ?? "SAPUI5"}`);
-        console.log(`🔍 [UI5_VERSION_DIFF] Range: ${from_version} -> ${to_version}`);
-        console.log(`🔍 [UI5_VERSION_DIFF] Types: ${types ? types.join(",") : "ALL"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Range: ${version ?? `${from_version ?? "?"} -> ${to_version ?? "?"}`}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Types: ${Array.isArray(types) ? types.join(",") : "ALL"}`);
         console.log(`🔍 [UI5_VERSION_DIFF] ui5_library filter: ${ui5_library ?? "(none)"}, query: ${query ?? "(none)"}, limit: ${limit ?? 200}`);
         console.log(`🔍 [UI5_VERSION_DIFF] Cache: ${JSON.stringify(cacheStats)}`);
 
         try {
           const result: Ui5VersionDiffResult = await getUi5VersionDiff({
             library,
+            version,
             from_version,
             to_version,
             types,

@@ -25,6 +25,9 @@ function validateBundle(value) {
   if (!Array.isArray(datasets.SAPUI5) || !Array.isArray(datasets.OpenUI5)) {
     throw new Error("Expected datasets.SAPUI5 and datasets.OpenUI5 arrays");
   }
+  if ("whatsNew" in value && !Array.isArray(value.whatsNew)) {
+    throw new Error("Expected optional whatsNew field to be an array");
+  }
 }
 
 console.log(`Downloading UI5 lib diff bundle from ${sourceUrl}`);
@@ -59,5 +62,5 @@ await writeFile(tempPath, `${JSON.stringify(parsed)}\n`, "utf8");
 await rename(tempPath, targetPath);
 
 console.log(
-  `Wrote ${targetPath} (${parsed.datasets.SAPUI5.length} SAPUI5 versions, ${parsed.datasets.OpenUI5.length} OpenUI5 versions)`
+  `Wrote ${targetPath} (${parsed.datasets.SAPUI5.length} SAPUI5 versions, ${parsed.datasets.OpenUI5.length} OpenUI5 versions, ${(parsed.whatsNew || []).length} What's New entries)`
 );

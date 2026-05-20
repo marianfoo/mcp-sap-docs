@@ -3,7 +3,7 @@
 // https://github.com/marianfoo/ui5-lib-diff (powering https://ui5-lib-diff.marianzeis.de/).
 //
 // The preferred static API is a one-file bundle:
-//   { schemaVersion, generatedAt, datasets: { SAPUI5: [...], OpenUI5: [...] } }
+//   { schemaVersion, generatedAt, datasets: { SAPUI5: [...], OpenUI5: [...] }, whatsNew: [...] }
 // Each dataset is an array of version blocks:
 //   [{ version, date, libraries: [{ library, changes: [{ type, text, commit_url?, id? }] }] }]
 // Runtime access is local-only; setup/download scripts are responsible for
@@ -47,6 +47,19 @@ interface RawBundle {
   schemaVersion?: number;
   generatedAt?: string;
   datasets?: Partial<Record<Ui5LibDiffLibrary, RawVersionBlock[]>>;
+  whatsNew?: RawWhatsNewEntry[];
+}
+
+interface RawWhatsNewEntry {
+  id?: number | string;
+  Version?: string;
+  Title?: string;
+  Description?: string;
+  Type?: string;
+  Action?: string;
+  Category?: string;
+  Valid_as_Of?: string;
+  outputloio?: string;
 }
 
 /** A single filtered change emitted by the tool. */
@@ -61,8 +74,10 @@ export interface Ui5ChangeEntry {
 
 export interface Ui5VersionDiffOptions {
   library?: Ui5LibDiffLibrary;
-  from_version: string;
-  to_version: string;
+  /** Exact version to inspect. If provided, range semantics do not apply. */
+  version?: string;
+  from_version?: string;
+  to_version?: string;
   /** Filter to specific change types. Defaults to all three. */
   types?: Ui5ChangeType[];
   /** Substring filter on the UI5 library name (case-insensitive, e.g. "sap.m"). */
@@ -73,16 +88,33 @@ export interface Ui5VersionDiffOptions {
   limit?: number;
 }
 
+export interface Ui5WhatsNewEntry {
+  version: string;
+  title: string;
+  description: string;
+  type?: string;
+  action?: string;
+  category?: string;
+  validAsOf?: string;
+  url?: string;
+  id?: number | string;
+}
+
 export interface Ui5VersionDiffResult {
+  mode: "range" | "version";
   library: Ui5LibDiffLibrary;
   from_version: string;
   to_version: string;
+  version?: string;
   /** Versions that fall in the requested range (exclusive of from, inclusive of to). */
   versionsInRange: string[];
   counts: Record<Ui5ChangeType, number>;
   totalEntries: number;
   truncated: boolean;
   entries: Ui5ChangeEntry[];
+  whatsNewEntries: Ui5WhatsNewEntry[];
+  whatsNewTotalEntries: number;
+  whatsNewTruncated: boolean;
   sourceUrl: string;
   meta: {
     availableVersions: number;
@@ -90,6 +122,17 @@ export interface Ui5VersionDiffResult {
     maxVersion?: string;
     sourceDataPath?: string;
     cacheSource?: "disk";
+    requested?: {
+      version?: string;
+      from_version?: string;
+      to_version?: string;
+    };
+    resolved?: {
+      version?: string;
+      from_version?: string;
+      to_version?: string;
+    };
+    whatsNewAvailable?: number;
     /** Soft signals for the caller: out-of-range hints, coercion notes, etc. */
     notes?: string[];
   };
@@ -106,12 +149,14 @@ const MAX_LIMIT = 1000;
 
 interface LoadedDataset {
   data: RawVersionBlock[];
+  whatsNew: RawWhatsNewEntry[];
   sourceDataPath: string;
   cacheSource: "disk";
 }
 
 interface LoadedBundle {
   datasets: Record<Ui5LibDiffLibrary, RawVersionBlock[]>;
+  whatsNew: RawWhatsNewEntry[];
   sourceDataPath: string;
   cacheSource: "disk";
   generatedAt?: string;
@@ -130,9 +175,11 @@ function normalizeBaseUrl(url: string): string {
 }
 
 function buildUi5LibDiffAppUrl(options: Ui5VersionDiffOptions): string {
+  const from = options.from_version ?? options.version ?? "";
+  const to = options.to_version ?? options.version ?? "";
   const params = new URLSearchParams({
-    versionFrom: options.from_version,
-    versionTo: options.to_version,
+    versionFrom: from,
+    versionTo: to,
     ui5Type: options.library ?? "SAPUI5",
   });
   return `${normalizeBaseUrl(CONFIG.UI5_LIB_DIFF_APP_BASE_URL)}/?${params.toString()}`;
@@ -165,6 +212,33 @@ export function compareUi5Versions(a: string, b: string): number {
     if (aa[i] !== bb[i]) return aa[i] - bb[i];
   }
   return 0;
+}
+
+function ui5MinorKey(version: string): string {
+  return version
+    .trim()
+    .replace(/^v/i, "")
+    .split(".")
+    .slice(0, 2)
+    .join(".");
+}
+
+function normalizeWhatsNewVersion(version: string): string {
+  const [major, minor] = parseUi5Version(version);
+  return `${major}.${minor}`;
+}
+
+function stripHtml(value = ""): string {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +329,7 @@ function parseBundleJson(
       SAPUI5: sapui5,
       OpenUI5: openui5,
     },
+    whatsNew: Array.isArray(raw?.whatsNew) ? raw.whatsNew : [],
     sourceDataPath,
     cacheSource: "disk",
     generatedAt:
@@ -268,6 +343,7 @@ function cacheLoadedBundle(bundle: LoadedBundle, reportDrift = true): void {
     const data = bundle.datasets[library];
     memoryCache.set(library, {
       data,
+      whatsNew: bundle.whatsNew,
       sourceDataPath: bundle.sourceDataPath,
       cacheSource: bundle.cacheSource,
     });
@@ -318,16 +394,128 @@ async function loadConsolidated(
 // Filtering
 // ---------------------------------------------------------------------------
 
+function resolveAvailableVersion(
+  availableVersions: string[],
+  requested: string,
+  label: "version" | "from_version" | "to_version",
+  notes: string[]
+): string {
+  if (availableVersions.includes(requested)) {
+    return requested;
+  }
+
+  const requestedMinor = ui5MinorKey(requested);
+  const nearest = availableVersions
+    .filter((version) => ui5MinorKey(version) === requestedMinor)
+    .sort((a, b) => compareUi5Versions(b, a))
+    .find((version) => compareUi5Versions(version, requested) <= 0);
+
+  if (nearest) {
+    notes.push(
+      `${label} ${requested} is not available; using nearest available ${requestedMinor}.x version ${nearest}.`
+    );
+    return nearest;
+  }
+
+  notes.push(
+    `${label} ${requested} is not available and no ${requestedMinor}.x version exists in the dataset.`
+  );
+  return requested;
+}
+
+function whatsNewUrl(item: RawWhatsNewEntry): string | undefined {
+  return item.outputloio
+    ? `https://help.sap.com/whats-new/67f60363b57f4ac0b23efd17fa192d60?locale=en-US&Component=${item.outputloio}`
+    : undefined;
+}
+
+function filterWhatsNew(
+  whatsNew: RawWhatsNewEntry[],
+  options: Ui5VersionDiffOptions,
+  mode: "range" | "version",
+  fromVersion: string,
+  toVersion: string,
+  limit: number
+): {
+  entries: Ui5WhatsNewEntry[];
+  totalEntries: number;
+  truncated: boolean;
+} {
+  const queryFilter = options.query?.toLowerCase().trim() || "";
+  const allowedMinorKeys = new Set<string>();
+
+  if (mode === "version") {
+    allowedMinorKeys.add(normalizeWhatsNewVersion(toVersion));
+  }
+
+  const matching = whatsNew.filter((item) => {
+    if (!item.Version) return false;
+    const itemVersion = `${item.Version}.0`;
+    const inRange =
+      mode === "version"
+        ? allowedMinorKeys.has(normalizeWhatsNewVersion(itemVersion))
+        : compareUi5Versions(itemVersion, fromVersion) > 0 &&
+          compareUi5Versions(itemVersion, toVersion) <= 0;
+    if (!inRange) return false;
+
+    if (queryFilter) {
+      const searchable = [
+        item.Title,
+        item.Description,
+        item.Type,
+        item.Action,
+        item.Category,
+      ]
+        .map((value) => stripHtml(value ?? ""))
+        .join(" ")
+        .toLowerCase();
+      if (!searchable.includes(queryFilter)) return false;
+    }
+
+    return true;
+  });
+
+  const entries = matching.slice(0, limit).map((item) => ({
+    version: item.Version ?? "",
+    title: stripHtml(item.Title ?? ""),
+    description: stripHtml(item.Description ?? ""),
+    type: item.Type,
+    action: item.Action,
+    category: item.Category,
+    validAsOf: item.Valid_as_Of,
+    url: whatsNewUrl(item),
+    id: item.id,
+  }));
+
+  return {
+    entries,
+    totalEntries: matching.length,
+    truncated: matching.length > entries.length,
+  };
+}
+
 /**
  * Apply the diff filters to an already-loaded dataset.
  * Pure function so unit tests can drive it from fixtures.
  */
 export function filterUi5Diff(
   data: RawVersionBlock[],
-  options: Ui5VersionDiffOptions
+  options: Ui5VersionDiffOptions,
+  whatsNew: RawWhatsNewEntry[] = []
 ): Ui5VersionDiffResult {
   const library = options.library ?? "SAPUI5";
   const notes: string[] = [];
+  const requestedVersion =
+    options.version ??
+    (!options.to_version && options.from_version ? options.from_version : undefined) ??
+    (!options.from_version && options.to_version ? options.to_version : undefined);
+  const mode: "range" | "version" =
+    requestedVersion ||
+    (options.from_version &&
+      options.to_version &&
+      compareUi5Versions(options.from_version, options.to_version) === 0)
+      ? "version"
+      : "range";
 
   // Defensive coercion: an MCP client that doesn't validate against the
   // input schema could send `types: "FEATURE"` (string). Without this
@@ -350,9 +538,36 @@ export function filterUi5Diff(
   );
   const libFilter = options.ui5_library?.toLowerCase().trim() || "";
   const queryFilter = options.query?.toLowerCase().trim() || "";
-
-  const fromCmp = options.from_version;
-  const toCmp = options.to_version;
+  const availableVersions = data
+    .map((block) => block.version)
+    .filter((version): version is string => Boolean(version));
+  const resolvedVersion =
+    mode === "version"
+      ? resolveAvailableVersion(
+          availableVersions,
+          requestedVersion ?? options.from_version ?? options.to_version ?? "",
+          "version",
+          notes
+        )
+      : undefined;
+  const fromCmp =
+    mode === "range"
+      ? resolveAvailableVersion(
+          availableVersions,
+          options.from_version ?? "",
+          "from_version",
+          notes
+        )
+      : resolvedVersion ?? "";
+  const toCmp =
+    mode === "range"
+      ? resolveAvailableVersion(
+          availableVersions,
+          options.to_version ?? "",
+          "to_version",
+          notes
+        )
+      : resolvedVersion ?? "";
 
   const counts: Record<Ui5ChangeType, number> = {
     FEATURE: 0,
@@ -377,9 +592,12 @@ export function filterUi5Diff(
       maxVersion = version;
     }
 
-    // Range: changes that landed AFTER from_version, up to and including to_version.
-    if (compareUi5Versions(version, fromCmp) <= 0) continue;
-    if (compareUi5Versions(version, toCmp) > 0) continue;
+    const inScope =
+      mode === "version"
+        ? compareUi5Versions(version, toCmp) === 0
+        : compareUi5Versions(version, fromCmp) > 0 &&
+          compareUi5Versions(version, toCmp) <= 0;
+    if (!inScope) continue;
 
     versionsInRange.push(version);
 
@@ -414,20 +632,24 @@ export function filterUi5Diff(
 
   // Surface out-of-range hints so the caller (LLM or human) knows when the
   // requested range falls outside what the dataset actually carries.
-  if (minVersion && compareUi5Versions(options.from_version, minVersion) < 0) {
+  if (mode === "range" && minVersion && compareUi5Versions(fromCmp, minVersion) < 0) {
     notes.push(
-      `from_version ${options.from_version} predates the oldest version in the dataset (${minVersion}); the lower bound is effectively that version.`
+      `from_version ${fromCmp} predates the oldest version in the dataset (${minVersion}); the lower bound is effectively that version.`
     );
   }
-  if (maxVersion && compareUi5Versions(options.to_version, maxVersion) > 0) {
+  if (maxVersion && compareUi5Versions(toCmp, maxVersion) > 0) {
     notes.push(
-      `to_version ${options.to_version} is newer than the newest version in the dataset (${maxVersion}); upgrade to a future release isn't covered yet.`
+      `${mode === "version" ? "version" : "to_version"} ${toCmp} is newer than the newest version in the dataset (${maxVersion}); upgrade to a future release isn't covered yet.`
     );
   }
   if (versionsInRange.length === 0) {
-    notes.push(
-      `No versions matched the range (${options.from_version}, ${options.to_version}]. Tip: use the full x.y.z form — "1.120" matches "1.120.0" exactly and will miss "1.120.5".`
-    );
+    if (mode === "version") {
+      notes.push(`No exact version block matched ${toCmp}.`);
+    } else {
+      notes.push(
+        `No versions matched the range (${fromCmp}, ${toCmp}]. Tip: unavailable patch versions are resolved to the nearest lower available version with the same major.minor, matching the web app.`
+      );
+    }
   }
   if (Array.isArray(options.types) && requestedTypes.length === 0 && options.types.length > 0) {
     notes.push(
@@ -436,21 +658,45 @@ export function filterUi5Diff(
   }
 
   const totalEntries = counts.FEATURE + counts.FIX + counts.DEPRECATED;
+  const whatsNewResult = filterWhatsNew(
+    whatsNew,
+    options,
+    mode,
+    fromCmp,
+    toCmp,
+    limit
+  );
 
   return {
+    mode,
     library,
-    from_version: options.from_version,
-    to_version: options.to_version,
+    from_version: fromCmp,
+    to_version: toCmp,
+    ...(mode === "version" ? { version: toCmp } : {}),
     versionsInRange,
     counts,
     totalEntries,
     truncated: totalEntries > entries.length,
     entries,
+    whatsNewEntries: whatsNewResult.entries,
+    whatsNewTotalEntries: whatsNewResult.totalEntries,
+    whatsNewTruncated: whatsNewResult.truncated,
     sourceUrl: "https://ui5-lib-diff.marianzeis.de/",
     meta: {
       availableVersions: data.length,
       minVersion,
       maxVersion,
+      whatsNewAvailable: whatsNew.length,
+      requested: {
+        ...(requestedVersion ? { version: requestedVersion } : {}),
+        ...(options.from_version ? { from_version: options.from_version } : {}),
+        ...(options.to_version ? { to_version: options.to_version } : {}),
+      },
+      resolved: {
+        ...(mode === "version"
+          ? { version: toCmp }
+          : { from_version: fromCmp, to_version: toCmp }),
+      },
       ...(notes.length > 0 ? { notes } : {}),
     },
   };
@@ -463,24 +709,37 @@ export function filterUi5Diff(
 export async function getUi5VersionDiff(
   options: Ui5VersionDiffOptions
 ): Promise<Ui5VersionDiffResult> {
-  if (!options.from_version || !options.to_version) {
-    throw new Error("ui5_version_diff requires from_version and to_version");
-  }
-  // Strict <: from == to is a degenerate range that, given the
-  // exclusive-from / inclusive-to semantics, would silently return zero
-  // entries. Surface that as an error so the caller can fix the inputs.
-  if (compareUi5Versions(options.from_version, options.to_version) >= 0) {
+  const requestedSingleVersion =
+    options.version ??
+    (!options.to_version && options.from_version ? options.from_version : undefined) ??
+    (!options.from_version && options.to_version ? options.to_version : undefined);
+
+  if (!requestedSingleVersion && (!options.from_version || !options.to_version)) {
     throw new Error(
-      `from_version (${options.from_version}) must be strictly less than to_version (${options.to_version}). The range is exclusive at from_version and inclusive at to_version, so from == to has no changes by definition.`
+      "ui5_version_diff requires either version, or from_version and to_version"
+    );
+  }
+  if (
+    !requestedSingleVersion &&
+    options.from_version &&
+    options.to_version &&
+    compareUi5Versions(options.from_version, options.to_version) > 0
+  ) {
+    throw new Error(
+      `from_version (${options.from_version}) must be less than or equal to to_version (${options.to_version}). Use version="${options.from_version}" to inspect a single release.`
     );
   }
 
   const library = options.library ?? "SAPUI5";
   const loaded = await loadConsolidated(library);
-  const result = filterUi5Diff(loaded.data, { ...options, library });
+  const result = filterUi5Diff(loaded.data, { ...options, library }, loaded.whatsNew);
   return {
     ...result,
-    sourceUrl: buildUi5LibDiffAppUrl({ ...options, library }),
+    sourceUrl: buildUi5LibDiffAppUrl({
+      library,
+      from_version: result.from_version,
+      to_version: result.to_version,
+    }),
     meta: {
       ...result.meta,
       sourceDataPath: loaded.sourceDataPath,
@@ -498,7 +757,7 @@ export async function prefetchUi5LibDiff(): Promise<void> {
     const bundle = await readLocalBundle();
     cacheLoadedBundle(bundle);
     console.log(
-      `✅ [ui5VersionDiff] Loaded local UI5 diff bundle from ${bundle.sourceDataPath} (${bundle.datasets.SAPUI5.length} SAPUI5 versions, ${bundle.datasets.OpenUI5.length} OpenUI5 versions)`
+      `✅ [ui5VersionDiff] Loaded local UI5 diff bundle from ${bundle.sourceDataPath} (${bundle.datasets.SAPUI5.length} SAPUI5 versions, ${bundle.datasets.OpenUI5.length} OpenUI5 versions, ${bundle.whatsNew.length} What's New entries)`
     );
   } catch (err) {
     console.error(

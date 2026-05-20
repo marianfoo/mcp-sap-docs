@@ -7,7 +7,7 @@ description: Plan and execute a SAPUI5/OpenUI5 version upgrade. Use when the use
 
 A migration workflow for SAPUI5/OpenUI5 projects. Use two MCP servers together:
 
-- **`mcp-sap-docs`** provides `ui5_version_diff`, backed by a local ui5-lib-diff all-changes JSON bundle. It answers "what changed between versions?"
+- **`mcp-sap-docs`** provides `ui5_version_diff`, backed by a local ui5-lib-diff all-changes JSON bundle. It answers "what changed between versions?" and includes SAPUI5 What's New entries for the same range.
 - **SAP `@ui5/mcp-server`** runs against the local project. It answers "what does this app use and what is broken?"
 
 Do not scrape the ui5-lib-diff browser route for JSON. The browser URL with `versionFrom`, `versionTo`, and `ui5Type` is client-rendered. Use `ui5_version_diff`; it reads the local `all-changes.json` bundle and returns a small structured result. `npm run setup` refreshes the bundle automatically; if it is missing, run `npm run download:ui5-lib-diff` in the MCP server repo or point `UI5_LIB_DIFF_BUNDLE_PATH` to a local copy.
@@ -45,7 +45,7 @@ Call:
 ui5_version_diff(library, from_version, to_version)
 ```
 
-Summarize `versionsInRange`, `counts`, `totalEntries`, and any `meta.notes`. Keep `meta.sourceDataPath` for traceability.
+Summarize `versionsInRange`, `counts`, `totalEntries`, `whatsNewTotalEntries`, and any `meta.notes`. Keep `meta.sourceDataPath` for traceability. If the user asks about one release, call `ui5_version_diff(library, version=<x.y.z>)`.
 
 ### 2. Get project facts
 
@@ -113,10 +113,10 @@ After making fixes, rerun the linter and manifest validation. Treat these tool r
 
 Default to one concise Markdown report:
 
-1. **Scope**: flavor, from/to, versions covered, counts, source data path.
+1. **Scope**: flavor, from/to or single version, versions covered, counts, What's New count, source data path.
 2. **Required fixes**: deprecated API, replacement, file:line, evidence.
 3. **Workarounds to remove**: local workaround, matching UI5 fix, commit URL.
-4. **Relevant features**: grouped by used UI5 library.
+4. **Relevant features and What's New**: grouped by used UI5 library or product area.
 5. **Manifest and linter status**: pass/fail with actionable details.
 6. **Edit plan**: concrete changes in order.
 
@@ -124,8 +124,8 @@ Keep raw diff output out of the report. If `truncated` is true, narrow with `ui5
 
 ## Guardrails
 
-- Use exact `x.y.z` versions. `1.120` equals `1.120.0` and can miss patch releases such as `1.120.5`.
-- `from_version` must be strictly less than `to_version`; the range is `(from_version, to_version]`.
+- Prefer exact `x.y.z` versions. If a requested patch is unavailable, `ui5_version_diff` resolves it to the nearest lower available patch with the same major.minor, matching the ui5-lib-diff web app.
+- For ranges, use `(from_version, to_version]`. For one release, use `version=<x.y.z>` or pass only one version field.
 - Do not run scaffolding tools (`create_ui5_app`, `create_integration_card`) unless the user requested creation.
 - Do not run project-local UI5 MCP tools without a real project path.
 - Do not present every deprecation as required work. The app must use it, or the linter/code search must make it relevant.

@@ -13,6 +13,7 @@ export {
   type Ui5VersionDiffOptions,
   type Ui5VersionDiffResult,
   type Ui5ChangeEntry,
+  type Ui5WhatsNewEntry,
   type Ui5ChangeType,
   type Ui5LibDiffLibrary,
 } from "./ui5VersionDiff.js";
