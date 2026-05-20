@@ -2,13 +2,14 @@
 // Fetch, cache, and filter the consolidated change data published by
 // https://github.com/marianfoo/ui5-lib-diff (powering https://ui5-lib-diff.marianzeis.de/).
 //
-// Each consolidated JSON is an array of version blocks:
+// The preferred static API is a one-file bundle:
+//   { schemaVersion, generatedAt, datasets: { SAPUI5: [...], OpenUI5: [...] } }
+// Each dataset is an array of version blocks:
 //   [{ version, date, libraries: [{ library, changes: [{ type, text, commit_url?, id? }] }] }]
-// The data covers both SAPUI5 and OpenUI5; we expose a single tool with a
-// `library` selector so callers can pick the flavour matching their project.
+// Runtime access is local-only; setup/download scripts are responsible for
+// refreshing the bundle before the server starts.
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { TtlCache } from "../softwareHeroes/core.js";
 import { CONFIG } from "../config.js";
 
@@ -39,6 +40,13 @@ interface RawVersionBlock {
   version: string;
   date?: string;
   libraries: RawLibraryBlock[];
+}
+
+/** One-file bundle published by ui5-lib-diff for local-first consumers. */
+interface RawBundle {
+  schemaVersion?: number;
+  generatedAt?: string;
+  datasets?: Partial<Record<Ui5LibDiffLibrary, RawVersionBlock[]>>;
 }
 
 /** A single filtered change emitted by the tool. */
@@ -80,6 +88,8 @@ export interface Ui5VersionDiffResult {
     availableVersions: number;
     minVersion?: string;
     maxVersion?: string;
+    sourceDataPath?: string;
+    cacheSource?: "disk";
     /** Soft signals for the caller: out-of-range hints, coercion notes, etc. */
     notes?: string[];
   };
@@ -89,26 +99,47 @@ export interface Ui5VersionDiffResult {
 // Configuration
 // ---------------------------------------------------------------------------
 
-const SOURCE_BASE_URL =
-  "https://raw.githubusercontent.com/marianfoo/ui5-lib-diff/main/de.marianzeis.ui5libdiff/webapp/data";
-
-const FILE_NAMES: Record<Ui5LibDiffLibrary, string> = {
-  SAPUI5: "consolidatedSAPUI5.json",
-  OpenUI5: "consolidatedOpenUI5.json",
-};
-
+const BUNDLE_CACHE_KEY = "all-changes";
+const UI5_LIBRARIES: Ui5LibDiffLibrary[] = ["SAPUI5", "OpenUI5"];
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;
 
+interface LoadedDataset {
+  data: RawVersionBlock[];
+  sourceDataPath: string;
+  cacheSource: "disk";
+}
+
+interface LoadedBundle {
+  datasets: Record<Ui5LibDiffLibrary, RawVersionBlock[]>;
+  sourceDataPath: string;
+  cacheSource: "disk";
+  generatedAt?: string;
+}
+
 // 24h memory cache, shared across calls within a single process.
-const memoryCache = new TtlCache<RawVersionBlock[]>(
+const memoryCache = new TtlCache<LoadedDataset>(
+  CONFIG.UI5_LIB_DIFF_CACHE_TTL_MS
+);
+const bundleMemoryCache = new TtlCache<LoadedBundle>(
   CONFIG.UI5_LIB_DIFF_CACHE_TTL_MS
 );
 
-function diskCachePath(library: Ui5LibDiffLibrary): string {
-  // CWD-relative by default (see CONFIG.UI5_LIB_DIFF_CACHE_DIR). The disk
-  // cache is wiped whenever `dist/` is removed, e.g. during a full build.
-  return join(CONFIG.UI5_LIB_DIFF_CACHE_DIR, FILE_NAMES[library]);
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+function buildUi5LibDiffAppUrl(options: Ui5VersionDiffOptions): string {
+  const params = new URLSearchParams({
+    versionFrom: options.from_version,
+    versionTo: options.to_version,
+    ui5Type: options.library ?? "SAPUI5",
+  });
+  return `${normalizeBaseUrl(CONFIG.UI5_LIB_DIFF_APP_BASE_URL)}/?${params.toString()}`;
+}
+
+function localBundlePath(): string {
+  return CONFIG.UI5_LIB_DIFF_BUNDLE_PATH;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,7 +179,7 @@ const CANONICAL_TYPES: ReadonlySet<Ui5ChangeType> = new Set([
 
 /**
  * The upstream data is canonicalized at the source as of
- * https://github.com/marianfoo/ui5-lib-diff (parseChanges.js#normalizeType):
+ * https://github.com/marianfoo/ui5-lib-diff (lib/ui5DiffData.js#normalizeChangeType):
  * every `type` is one of "FEATURE" | "FIX" | "DEPRECATED" and the historic
  * casing variants ("Feature", "feature", "Fix") plus internal/legacy
  * markers ("INTERNAL", the "INETRNAL" typo, "[INTERNAL] ALP", "LEGACY")
@@ -202,91 +233,85 @@ function reportNonCanonicalDrift(
 }
 
 // ---------------------------------------------------------------------------
-// Data loading (memory -> network -> disk fallback)
+// Data loading (memory -> local all-changes bundle)
 // ---------------------------------------------------------------------------
 
-async function writeDiskCache(
-  library: Ui5LibDiffLibrary,
-  data: RawVersionBlock[]
-): Promise<void> {
-  const path = diskCachePath(library);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify(data), "utf-8");
+function parseBundleJson(
+  json: unknown,
+  sourceDataPath: string
+): LoadedBundle {
+  const raw = json as RawBundle | undefined;
+  const sapui5 = raw?.datasets?.SAPUI5;
+  const openui5 = raw?.datasets?.OpenUI5;
+
+  if (!Array.isArray(sapui5) || !Array.isArray(openui5)) {
+    throw new Error(
+      "Expected JSON object with datasets.SAPUI5 and datasets.OpenUI5 arrays"
+    );
+  }
+
+  return {
+    datasets: {
+      SAPUI5: sapui5,
+      OpenUI5: openui5,
+    },
+    sourceDataPath,
+    cacheSource: "disk",
+    generatedAt:
+      typeof raw?.generatedAt === "string" ? raw.generatedAt : undefined,
+  };
 }
 
-async function readDiskCache(
-  library: Ui5LibDiffLibrary
-): Promise<RawVersionBlock[] | undefined> {
-  try {
-    const raw = await readFile(diskCachePath(library), "utf-8");
-    return JSON.parse(raw) as RawVersionBlock[];
-  } catch {
-    return undefined;
+function cacheLoadedBundle(bundle: LoadedBundle, reportDrift = true): void {
+  bundleMemoryCache.set(BUNDLE_CACHE_KEY, bundle);
+  for (const library of UI5_LIBRARIES) {
+    const data = bundle.datasets[library];
+    memoryCache.set(library, {
+      data,
+      sourceDataPath: bundle.sourceDataPath,
+      cacheSource: bundle.cacheSource,
+    });
+    if (reportDrift) {
+      reportNonCanonicalDrift(library, data);
+    }
   }
 }
 
-async function fetchConsolidated(
-  library: Ui5LibDiffLibrary
-): Promise<RawVersionBlock[]> {
-  const url = `${SOURCE_BASE_URL}/${FILE_NAMES[library]}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    CONFIG.UI5_LIB_DIFF_TIMEOUT_MS
-  );
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} for ${url}`);
-    }
-    const json = (await response.json()) as RawVersionBlock[];
-    if (!Array.isArray(json)) {
-      throw new Error(`Expected JSON array from ${url}`);
-    }
-    return json;
-  } finally {
-    clearTimeout(timeout);
-  }
+async function readLocalBundle(): Promise<LoadedBundle> {
+  const path = localBundlePath();
+  const raw = await readFile(path, "utf-8");
+  return parseBundleJson(JSON.parse(raw), path);
 }
 
 async function loadConsolidated(
   library: Ui5LibDiffLibrary
-): Promise<RawVersionBlock[]> {
+): Promise<LoadedDataset> {
   const cached = memoryCache.get(library);
   if (cached) return cached;
 
+  const cachedBundle = bundleMemoryCache.get(BUNDLE_CACHE_KEY);
+  if (cachedBundle) {
+    cacheLoadedBundle(cachedBundle, false);
+    const hydrated = memoryCache.get(library);
+    if (hydrated) return hydrated;
+  }
+
   try {
-    const fresh = await fetchConsolidated(library);
-    memoryCache.set(library, fresh);
-    reportNonCanonicalDrift(library, fresh);
-    // Fire-and-forget on the request hot path: the caller already has the
-    // data, the disk write is just a future-restart optimization. The
-    // prefetch path below awaits this same write because there is no
-    // caller waiting.
-    writeDiskCache(library, fresh).catch((err) =>
-      console.error(
-        `⚠️ [ui5VersionDiff] Failed to persist ${library} disk cache:`,
-        err
-      )
-    );
-    return fresh;
-  } catch (networkErr) {
-    console.error(
-      `⚠️ [ui5VersionDiff] Network fetch failed for ${library}, trying disk cache:`,
-      networkErr
-    );
-    const disk = await readDiskCache(library);
-    if (disk) {
-      memoryCache.set(library, disk);
-      reportNonCanonicalDrift(library, disk);
-      return disk;
-    }
+    const bundle = await readLocalBundle();
+    cacheLoadedBundle(bundle);
+    const loadedFromBundle = memoryCache.get(library);
+    if (loadedFromBundle) return loadedFromBundle;
+  } catch (err) {
     throw new Error(
-      `ui5-lib-diff data unavailable for ${library}: network failed and no disk cache exists (${
-        networkErr instanceof Error ? networkErr.message : String(networkErr)
+      `ui5-lib-diff local bundle unavailable at ${localBundlePath()}. Run npm run download:ui5-lib-diff or point UI5_LIB_DIFF_BUNDLE_PATH to a local all-changes.json file. Details: ${
+        err instanceof Error ? err.message : String(err)
       })`
     );
   }
+
+  throw new Error(
+    `ui5-lib-diff local bundle at ${localBundlePath()} did not contain ${library}`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -451,47 +476,49 @@ export async function getUi5VersionDiff(
   }
 
   const library = options.library ?? "SAPUI5";
-  const data = await loadConsolidated(library);
-  return filterUi5Diff(data, { ...options, library });
+  const loaded = await loadConsolidated(library);
+  const result = filterUi5Diff(loaded.data, { ...options, library });
+  return {
+    ...result,
+    sourceUrl: buildUi5LibDiffAppUrl({ ...options, library }),
+    meta: {
+      ...result.meta,
+      sourceDataPath: loaded.sourceDataPath,
+      cacheSource: loaded.cacheSource,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Startup prefetch (fire-and-forget, never throws)
+// Startup local bundle warmup (never throws)
 // ---------------------------------------------------------------------------
 
 export async function prefetchUi5LibDiff(): Promise<void> {
-  await Promise.all(
-    (Object.keys(FILE_NAMES) as Ui5LibDiffLibrary[]).map(async (library) => {
-      try {
-        const data = await fetchConsolidated(library);
-        memoryCache.set(library, data);
-        reportNonCanonicalDrift(library, data);
-        await writeDiskCache(library, data);
-        console.log(
-          `✅ [ui5VersionDiff] Prefetched ${library}: ${data.length} versions`
-        );
-      } catch (err) {
-        console.error(
-          `⚠️ [ui5VersionDiff] Prefetch failed for ${library}:`,
-          err
-        );
-        const disk = await readDiskCache(library);
-        if (disk) {
-          memoryCache.set(library, disk);
-          reportNonCanonicalDrift(library, disk);
-          console.log(
-            `📂 [ui5VersionDiff] Loaded ${library} from disk cache: ${disk.length} versions`
-          );
-        }
-      }
-    })
-  );
+  try {
+    const bundle = await readLocalBundle();
+    cacheLoadedBundle(bundle);
+    console.log(
+      `✅ [ui5VersionDiff] Loaded local UI5 diff bundle from ${bundle.sourceDataPath} (${bundle.datasets.SAPUI5.length} SAPUI5 versions, ${bundle.datasets.OpenUI5.length} OpenUI5 versions)`
+    );
+  } catch (err) {
+    console.error(
+      `⚠️ [ui5VersionDiff] Local UI5 diff bundle unavailable at ${localBundlePath()}. Run npm run download:ui5-lib-diff before using ui5_version_diff:`,
+      err
+    );
+  }
 }
 
 export function getUi5LibDiffCacheStats() {
   return {
+    bundle: bundleMemoryCache.has(BUNDLE_CACHE_KEY),
     SAPUI5: memoryCache.has("SAPUI5"),
     OpenUI5: memoryCache.has("OpenUI5"),
+    bundlePath: localBundlePath(),
     ttlMs: CONFIG.UI5_LIB_DIFF_CACHE_TTL_MS,
   };
+}
+
+export function clearUi5LibDiffCachesForTests(): void {
+  memoryCache.clear();
+  bundleMemoryCache.clear();
 }

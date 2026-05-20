@@ -655,8 +655,8 @@ FUNCTION NAME: ui5_version_diff
 
 List the new features, fixes, and deprecations that landed between two UI5 releases. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
 
-DATA SOURCE: https://ui5-lib-diff.marianzeis.de/ (https://github.com/marianfoo/ui5-lib-diff)
-Consolidated change data is fetched per library and cached for 24 hours.
+DATA SOURCE: local all-changes bundle at UI5_LIB_DIFF_BUNDLE_PATH (default: dist/data/ui5-lib-diff/all-changes.json).
+The runtime tool is local-only and does not fetch hosted URLs. Refresh the bundle during setup with npm run download:ui5-lib-diff.
 
 RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version).
 
@@ -676,8 +676,8 @@ RETURNS JSON with:
 • totalEntries: sum of counts
 • truncated: true when totalEntries > entries.length
 • entries: [{ version, date, library, type, text, commit_url? }]
-• meta: { availableVersions, minVersion, maxVersion, notes? } — "notes" is a list of soft signals (out-of-range hints, coercion warnings)
-• sourceUrl
+• meta: { availableVersions, minVersion, maxVersion, sourceDataPath, cacheSource, notes? } — "notes" is a list of soft signals (out-of-range hints, coercion warnings)
+• sourceUrl: browser URL for human inspection of the same range
 
 USE CASES:
 • Upgrade planning: "What deprecations should I clean up before moving 1.108 -> 1.130?"
@@ -770,6 +770,15 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                     availableVersions: { type: "number" },
                     minVersion: { type: "string" },
                     maxVersion: { type: "string" },
+                    sourceDataPath: {
+                      type: "string",
+                      description: "Local all-changes JSON bundle used for this result."
+                    },
+                    cacheSource: {
+                      type: "string",
+                      enum: ["disk"],
+                      description: "The UI5 diff runtime is local-only; responses come from the local bundle on disk."
+                    },
                     notes: {
                       type: "array",
                       items: { type: "string" },

@@ -1,118 +1,138 @@
 ---
 name: ui5-version-upgrade
-description: Plan and execute a SAPUI5/OpenUI5 version upgrade. Use when the user is bumping the UI5 version in manifest.json / ui5.yaml and wants to know which deprecated APIs they still use, which workarounds can be dropped, and which fixes already shipped. Combines this server's `ui5_version_diff` tool with the SAP `@ui5/mcp-server` tools (`run_ui5_linter`, `run_manifest_validation`, `get_api_reference`, `get_project_info`, `get_version_info`).
+description: Plan and execute a SAPUI5/OpenUI5 version upgrade. Use when the user is bumping the UI5 version in manifest.json, ui5.yaml, package.json, or an existing UI5 app and wants to identify deprecations in use, fixes that remove local workarounds, relevant new features, manifest/schema issues, and API replacements. Combines this server's `ui5_version_diff` tool with SAP's `@ui5/mcp-server` tools.
 ---
 
 # UI5 Version Upgrade
 
-A migration-assist workflow for SAPUI5/OpenUI5 projects. Two MCP servers cooperate here:
+A migration workflow for SAPUI5/OpenUI5 projects. Use two MCP servers together:
 
-- **This server** (`mcp-sap-docs`) provides `ui5_version_diff`: lists FEATURE / FIX / DEPRECATED changes between two UI5 releases from [ui5-lib-diff](https://github.com/marianfoo/ui5-lib-diff).
-- **`@ui5/mcp-server`** (separate, by SAP, runs locally per project) provides code-level tools: `run_ui5_linter`, `run_manifest_validation`, `get_api_reference`, `get_project_info`, `get_version_info`, etc.
+- **`mcp-sap-docs`** provides `ui5_version_diff`, backed by a local ui5-lib-diff all-changes JSON bundle. It answers "what changed between versions?"
+- **SAP `@ui5/mcp-server`** runs against the local project. It answers "what does this app use and what is broken?"
 
-The skill expects both to be configured. If `@ui5/mcp-server` is not available, fall back to manual code-grep for the code-level steps and tell the user which tool would have helped.
+Do not scrape the ui5-lib-diff browser route for JSON. The browser URL with `versionFrom`, `versionTo`, and `ui5Type` is client-rendered. Use `ui5_version_diff`; it reads the local `all-changes.json` bundle and returns a small structured result. `npm run setup` refreshes the bundle automatically; if it is missing, run `npm run download:ui5-lib-diff` in the MCP server repo or point `UI5_LIB_DIFF_BUNDLE_PATH` to a local copy.
 
-## When to use
+## UI5 MCP tools to use
 
-Trigger this skill when the user says any of:
+Current SAP `@ui5/mcp-server` capabilities include:
 
-- "I'm upgrading from UI5 X.Y to X.Z, what do I need to fix?"
-- "What's deprecated between 1.108 and 1.130?"
-- "Can I drop this workaround now that we're on 1.130?"
-- "Migrate the manifest to UI5 1.x"
-- "Audit our UI5 code for deprecations"
+- `get_project_info`: read project metadata and UI5 configuration.
+- `get_version_info`: retrieve UI5 framework version information.
+- `get_guidelines`: fetch UI5 coding standards and best practices.
+- `get_api_reference`: fetch UI5 API documentation for controls/classes/methods.
+- `run_ui5_linter`: run `@ui5/linter` against the app.
+- `run_manifest_validation`: validate `webapp/manifest.json`.
+- `get_typescript_conversion_guidelines`: guidance for JavaScript-to-TypeScript UI5 work.
+- `create_ui5_app`, `create_integration_card`, `get_integration_cards_guidelines`: scaffolding/card-specific work. Use only when the user asks for creation or card work.
 
-## Inputs to gather first
+## Inputs
 
-Before running anything, get:
+Determine these before producing recommendations:
 
-1. **Project root** — needed by `@ui5/mcp-server` tools that operate per-project.
-2. **`from_version`** — current UI5 version. Read it from the project. If `@ui5/mcp-server` is available, call `get_project_info` / `get_version_info`. Otherwise read `webapp/manifest.json` (`sap.platform.cf.ui5VersionNumber` or `sap.ui5.dependencies.minUI5Version`) or `ui5.yaml` / `package.json` (`@sapui5/distribution-metadata`, `@openui5/...`).
-3. **`to_version`** — the version the user wants to move to. If unsure, suggest the latest LTS minor available in `versionsInRange` after a probe call.
-4. **`library`** — "SAPUI5" if commercial libs (`sap.suite.*`, `sap.ui.comp`, `sap.fe`, `sap.ui.mdc`) are present; "OpenUI5" otherwise.
+1. **Project root**: required for UI5 MCP project tools.
+2. **Current version** (`from_version`): prefer `get_project_info` / `get_version_info`; otherwise read `webapp/manifest.json`, `ui5.yaml`, and `package.json`.
+3. **Target version** (`to_version`): ask if absent. Use the full `x.y.z` form.
+4. **Library flavor**: use `SAPUI5` if the app depends on commercial libraries such as `sap.ui.comp`, `sap.suite.*`, `sap.fe`, `sap.ui.mdc`, or FLP/ushell; otherwise use `OpenUI5`.
+5. **Declared UI5 libraries**: read `sap.ui5.dependencies.libs` and use them to focus feature/fix review.
 
 ## Workflow
 
-### 1. Establish the upgrade scope
+### 1. Establish scope
+
+Call:
 
 ```text
-ui5_version_diff(library, from_version, to_version)            # full picture (counts)
+ui5_version_diff(library, from_version, to_version)
 ```
 
-Read `counts` and `versionsInRange`. Print a one-paragraph summary:
-"Upgrading $library from $from to $to covers N versions, with F features, X fixes, D deprecations."
+Summarize `versionsInRange`, `counts`, `totalEntries`, and any `meta.notes`. Keep `meta.sourceDataPath` for traceability.
 
-### 2. List deprecations and map them to code
+### 2. Get project facts
+
+Call:
+
+```text
+get_project_info(projectPath=<project root>)
+get_version_info(projectPath=<project root>)
+get_guidelines()
+```
+
+Use `get_guidelines` once per workflow to anchor coding recommendations. Do not repeatedly fetch broad guidelines inside loops.
+
+### 3. Find deprecations actually used
+
+Call:
 
 ```text
 ui5_version_diff(library, from_version, to_version, types=["DEPRECATED"], limit=1000)
+run_ui5_linter(projectPath=<project root>)
 ```
 
-For each deprecation entry, the `text` typically starts with `[sap.x.y.Control#method]` or names a control. For each one:
+Cross-reference diff deprecations with linter findings and code search. Report only confirmed or strongly suspected usage in the app. Skip deprecations that do not match the project.
 
-- If `@ui5/mcp-server` is available: call `run_ui5_linter` on the project. The linter already flags deprecated API usage; cross-reference its findings with the diff entries to know **which deprecations actually affect this project**. Do not list every deprecation — only the ones the linter confirms are in use.
-- Otherwise, grep the project (`webapp/**/*.{js,ts,xml,json}`) for the control / API names from the entries and report a confirmed-use list.
-
-For each confirmed-in-use deprecation, fetch the replacement details:
+For confirmed APIs, call:
 
 ```text
-get_api_reference(name=<the replacement API mentioned in the deprecation text>)
+get_api_reference(name=<control/class/method>)
 ```
 
-Produce a table: deprecated API → replacement → file:line where used.
+Use this for replacement details. Do not invent replacements from memory.
 
-### 3. Find workarounds that can be dropped
+### 4. Find removable workarounds
 
-Ask the user which symptoms / bug numbers / phrases their codebase still works around (look in comments: `TODO`, `FIXME`, `workaround`, `BCP`, internal ticket IDs). For each candidate:
+Search project comments and code for `TODO`, `FIXME`, `workaround`, BCP/ticket IDs, and symptom words. For each meaningful symptom:
 
 ```text
-ui5_version_diff(library, from_version, to_version, types=["FIX"], query=<symptom keyword>)
+ui5_version_diff(library, from_version, to_version, types=["FIX"], query=<symptom>)
 ```
 
-If `entries.length > 0`, the workaround can likely be removed. Cite the commit URL from the entry so the user can review the actual fix.
+If there is a matching fix, cite the entry and commit URL, then verify whether the local workaround can be removed safely.
 
-### 4. Surface relevant new features
+### 5. Surface relevant features
+
+For each declared UI5 library:
 
 ```text
-ui5_version_diff(library, from_version, to_version, types=["FEATURE"], ui5_library=<each lib the project depends on>)
+ui5_version_diff(library, from_version, to_version, types=["FEATURE"], ui5_library=<declared lib>, limit=50)
 ```
 
-Iterate over the project's declared dependencies (from `manifest.json` → `sap.ui5.dependencies.libs`). Keep the list focused on libs the project actually uses — don't dump every new feature in every library.
+Keep this selective. Mention features that plausibly affect the app's libraries or current code, not every framework feature.
 
-### 5. Validate the manifest for the target version
+### 6. Validate manifest and rerun after edits
+
+Call:
 
 ```text
-run_manifest_validation(manifestPath=<project>/webapp/manifest.json)
+run_manifest_validation(manifestPath=<project root>/webapp/manifest.json)
+run_ui5_linter(projectPath=<project root>)
 ```
 
-Report any schema violations that the new version surfaces.
+After making fixes, rerun the linter and manifest validation. Treat these tool results as stronger evidence than general release-note text.
 
-### 6. Re-lint after changes
+## Output
 
-When the user has applied fixes, run `run_ui5_linter` again to verify the deprecation count dropped.
+Default to one concise Markdown report:
 
-## Output format
+1. **Scope**: flavor, from/to, versions covered, counts, source data path.
+2. **Required fixes**: deprecated API, replacement, file:line, evidence.
+3. **Workarounds to remove**: local workaround, matching UI5 fix, commit URL.
+4. **Relevant features**: grouped by used UI5 library.
+5. **Manifest and linter status**: pass/fail with actionable details.
+6. **Edit plan**: concrete changes in order.
 
-Default to a single Markdown report with these sections, in this order:
+Keep raw diff output out of the report. If `truncated` is true, narrow with `ui5_library` or `query`.
 
-1. **Scope** — library, from → to, counts, versions covered
-2. **Deprecations to address** — table of (API, replacement, file:line, commit_url)
-3. **Workarounds that can be removed** — list with the commit_url that proves the fix shipped
-4. **New features worth adopting** — bulleted per library, only the ones relevant to declared deps
-5. **Manifest validation results** — pass/fail with details
-6. **Next steps** — concrete edits to make, in order
+## Guardrails
 
-Keep entries terse. Link to commits, don't paste them. If `ui5_version_diff` returns `truncated: true` for any call, mention that and offer to drill down by `ui5_library` or `query`.
+- Use exact `x.y.z` versions. `1.120` equals `1.120.0` and can miss patch releases such as `1.120.5`.
+- `from_version` must be strictly less than `to_version`; the range is `(from_version, to_version]`.
+- Do not run scaffolding tools (`create_ui5_app`, `create_integration_card`) unless the user requested creation.
+- Do not run project-local UI5 MCP tools without a real project path.
+- Do not present every deprecation as required work. The app must use it, or the linter/code search must make it relevant.
+- Prefer structured tool results and small filtered calls over passing large intermediate lists through the model.
 
-## Constraints
+## Fallbacks
 
-- **Do not paste full `ui5_version_diff` results into the report** — they are long. Summarize counts, then list only project-relevant entries.
-- **Do not invent deprecations.** Only list what `ui5_version_diff` actually returned for the given range.
-- **Never call `@ui5/mcp-server` tools speculatively** — always pass a real project path you obtained from the user or detected on disk.
-- The `@ui5/mcp-server` tool is `run_ui5_linter` (note the `_linter` suffix), not `run_ui5_lint`.
-
-## Failure modes
-
-- `ui5_version_diff` returns `from_version must be <= to_version`: swap the order or ask the user.
-- `@ui5/mcp-server` is not installed: tell the user how to add it (`npm i -D @ui5/mcp-server`) and proceed with degraded coverage (no linter cross-reference, no manifest validation, no API reference lookup).
-- A deprecation mentions an API the user doesn't seem to use: skip silently — the goal is signal, not exhaustiveness.
+- If SAP `@ui5/mcp-server` is unavailable, proceed with degraded coverage: use `ui5_version_diff`, local file inspection, and `rg` across `webapp/**/*.{js,ts,xml,json}`. Tell the user which UI5 MCP checks were skipped.
+- If `ui5_version_diff` reports that the local bundle is missing, run `npm run download:ui5-lib-diff` in the MCP server repo or point `UI5_LIB_DIFF_BUNDLE_PATH` to a local copy.
+- If no versions match, check version spelling and patch-level availability before concluding that there were no changes.

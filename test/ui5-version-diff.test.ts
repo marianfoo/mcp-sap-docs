@@ -3,20 +3,51 @@
  * Pure unit tests against a fixture file — no network calls.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CONFIG } from "../dist/src/lib/config.js";
 import {
   filterUi5Diff,
   compareUi5Versions,
   parseUi5Version,
   normalizeChangeType,
   getUi5VersionDiff,
+  clearUi5LibDiffCachesForTests,
 } from "../dist/src/lib/ui5LibDiff/ui5VersionDiff.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const originalFetch = globalThis.fetch;
+const originalBundlePath = CONFIG.UI5_LIB_DIFF_BUNDLE_PATH;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  globalThis.fetch = originalFetch;
+  CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = originalBundlePath;
+  clearUi5LibDiffCachesForTests();
+});
+
+function writeBundleFixture(fixtureText: string): string {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-"));
+  const bundlePath = path.join(tmpDir, "all-changes.json");
+  const fixture = JSON.parse(fixtureText);
+  fs.writeFileSync(
+    bundlePath,
+    JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: "2026-05-20T00:00:00.000Z",
+      datasets: {
+        SAPUI5: fixture,
+        OpenUI5: fixture,
+      },
+    }),
+    "utf-8"
+  );
+  return bundlePath;
+}
 
 describe("compareUi5Versions", () => {
   it("orders versions numerically, not lexicographically", () => {
@@ -248,5 +279,75 @@ describe("getUi5VersionDiff input validation", () => {
       // @ts-expect-error intentionally missing required field
       getUi5VersionDiff({ to_version: "1.130.0" })
     ).rejects.toThrow(/requires from_version/);
+  });
+
+  it("reads the local all-changes bundle and reports metadata", async () => {
+    const fixturePath = path.join(__dirname, "fixtures", "ui5-lib-diff-sample.json");
+    const fixture = fs.readFileSync(fixturePath, "utf-8");
+    const bundlePath = writeBundleFixture(fixture);
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as any;
+
+    const result = await getUi5VersionDiff({
+      library: "SAPUI5",
+      from_version: "1.108.0",
+      to_version: "1.130.0",
+      limit: 1,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.meta.sourceDataPath).toBe(bundlePath);
+    expect(result.meta.cacheSource).toBe("disk");
+    expect(result.sourceUrl).toBe(
+      "https://ui5-lib-diff.marianzeis.de/?versionFrom=1.108.0&versionTo=1.130.0&ui5Type=SAPUI5"
+    );
+  });
+
+  it("uses one cached local bundle for both SAPUI5 and OpenUI5", async () => {
+    const fixturePath = path.join(__dirname, "fixtures", "ui5-lib-diff-sample.json");
+    const fixture = fs.readFileSync(fixturePath, "utf-8");
+    const bundlePath = writeBundleFixture(fixture);
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = bundlePath;
+
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as any;
+
+    await getUi5VersionDiff({
+      library: "SAPUI5",
+      from_version: "1.108.0",
+      to_version: "1.130.0",
+      limit: 1,
+    });
+    fs.unlinkSync(bundlePath);
+
+    const result = await getUi5VersionDiff({
+      library: "OpenUI5",
+      from_version: "1.108.0",
+      to_version: "1.130.0",
+      limit: 1,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.library).toBe("OpenUI5");
+    expect(result.meta.sourceDataPath).toBe(bundlePath);
+    expect(result.meta.cacheSource).toBe("disk");
+  });
+
+  it("fails clearly when the local bundle is missing", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ui5-lib-diff-missing-"));
+    CONFIG.UI5_LIB_DIFF_BUNDLE_PATH = path.join(tmpDir, "all-changes.json");
+    const fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as any;
+
+    await expect(
+      getUi5VersionDiff({
+        library: "SAPUI5",
+        from_version: "1.108.0",
+        to_version: "1.130.0",
+      })
+    ).rejects.toThrow(/local bundle unavailable/);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

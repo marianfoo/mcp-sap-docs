@@ -26,6 +26,7 @@
     "test:urls:status": "npm run build:tsc && npx tsx test/url-status.ts",
     "test:prod": "node scripts/test-live-prod.mjs",
     "check-version": "node scripts/check-version.js",
+    "download:ui5-lib-diff": "node scripts/download-ui5-lib-diff.mjs",
     "setup": "bash setup.sh",
     "setup:submodules": "bash -lc 'git submodule sync --recursive && git submodule update --init --recursive --depth 1 && git submodule status --recursive'",
     "test:software-heroes": "npm run build:tsc && npx vitest run test/software-heroes-core.test.ts test/software-heroes-afm.test.ts test/software-heroes-content-search.test.ts",

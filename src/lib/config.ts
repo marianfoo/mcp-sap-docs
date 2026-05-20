@@ -74,9 +74,13 @@ export const CONFIG = {
   // Cache TTL in milliseconds (default: 24 hours)
   UI5_LIB_DIFF_CACHE_TTL_MS: Number(process.env.UI5_LIB_DIFF_CACHE_TTL_MS || 86400000),
 
-  // Request timeout when fetching the consolidated JSON files (default: 30 seconds)
-  UI5_LIB_DIFF_TIMEOUT_MS: Number(process.env.UI5_LIB_DIFF_TIMEOUT_MS || 30000),
+  // Local all-changes bundle consumed by ui5_version_diff at runtime.
+  UI5_LIB_DIFF_BUNDLE_PATH: process.env.UI5_LIB_DIFF_BUNDLE_PATH || "dist/data/ui5-lib-diff/all-changes.json",
 
-  // Disk cache directory for ui5-lib-diff data (survives server restarts)
-  UI5_LIB_DIFF_CACHE_DIR: process.env.UI5_LIB_DIFF_CACHE_DIR || "dist/data/ui5-lib-diff",
+  // Setup-time source URL for downloading the local all-changes bundle.
+  // The runtime tool does not fetch this URL; it only reads UI5_LIB_DIFF_BUNDLE_PATH.
+  UI5_LIB_DIFF_DOWNLOAD_URL: process.env.UI5_LIB_DIFF_DOWNLOAD_URL || "https://ui5-lib-diff.marianzeis.de/api/v1/all-changes.json",
+
+  // Human-facing UI route returned in tool metadata for inspection.
+  UI5_LIB_DIFF_APP_BASE_URL: process.env.UI5_LIB_DIFF_APP_BASE_URL || "https://ui5-lib-diff.marianzeis.de",
 };
