@@ -723,13 +723,7 @@ ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatu
                   type: "string",
                   description: "Case-insensitive substring filter on change text and What's New title/description."
                 }
-              },
-              anyOf: [
-                { required: ["version"] },
-                { required: ["from_version", "to_version"] },
-                { required: ["from_version"] },
-                { required: ["to_version"] }
-              ]
+              }
             },
             outputSchema: {
               type: "object",
