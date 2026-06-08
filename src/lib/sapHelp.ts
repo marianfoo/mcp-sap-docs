@@ -72,15 +72,21 @@ function parseDocsPathParts(urlOrPath: string): { productUrlSeg: string; deliver
 }
 
 /**
- * Search SAP Help using the private elasticsearch endpoint
+ * Search SAP Help using the private elasticsearch endpoint.
+ *
+ * @param version Optional SAP Help docs-portal version filter. Accepts either a full
+ *   `YYYY.FPS` string (e.g. "2022.002" = S/4HANA 2022 FPS02) or a bare release year
+ *   (e.g. "2022" = that release's "Latest"). Empty/undefined → unfiltered (Latest across
+ *   all versions, the prior behaviour). The endpoint filters server-side on this value.
  */
-export async function searchSapHelp(query: string): Promise<SearchResponse> {
+export async function searchSapHelp(query: string, version?: string): Promise<SearchResponse> {
   try {
+    const v = (version ?? "").trim();
     const searchParams = {
       transtype: "standard,html,pdf,others",
       state: "PRODUCTION,TEST,DRAFT",
       product: "",
-      version: "",
+      version: v,
       q: query,
       to: "19", // Limit to 20 results (0-19)
       area: "content",
@@ -116,11 +122,15 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
     // Store the search results for later retrieval
     const searchResults: SearchResult[] = results.map((hit, index) => {
       const helpId = deriveSapHelpId(hit, index);
+      // Encode the requested version into the id so a later `fetch` can retrieve the
+      // version-correct content without the caller re-supplying it. No version → plain id
+      // (prior behaviour). getSapHelpContent parses the `--v<version>` suffix back off.
+      const sapHelpId = v ? `sap-help-${helpId}--v${v}` : `sap-help-${helpId}`;
 
       return {
-        library_id: `sap-help-${helpId}`,
+        library_id: sapHelpId,
         topic: '',
-        id: `sap-help-${helpId}`,
+        id: sapHelpId,
         title: hit.title,
         url: ensureAbsoluteUrl(hit.url),
         snippet: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
@@ -191,24 +201,54 @@ export async function searchSapHelp(query: string): Promise<SearchResponse> {
  * First gets metadata, then page content
  */
 export async function getSapHelpContent(resultId: string): Promise<string> {
-  try {
-    // Extract loio from the result ID
-    const helpId = resultId.replace('sap-help-', '');
-    if (!helpId || helpId === resultId) {
-      throw new Error("Invalid SAP Help result ID. Use an ID from sap_help_search results.");
-    }
+  // Parse the optional version suffix encoded by search ("sap-help-<loio>--v<version>") so
+  // fetch retrieves the same release the caller searched. No suffix → latest (prior behaviour).
+  // (loio ids are hex and url-slug ids are sanitised, so "--v" only appears as our delimiter.)
+  const raw = resultId.replace('sap-help-', '');
+  if (!raw || raw === resultId) {
+    throw new Error("Invalid SAP Help result ID. Use an ID from sap_help_search results.");
+  }
+  const sepIdx = raw.indexOf('--v');
+  const helpId = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
+  const version = sepIdx >= 0 ? (raw.slice(sepIdx + 3).trim() || undefined) : undefined;
 
-    // First try to get from cache
+  // Try the version-specific content first; on empty/error fall back ONCE to the default
+  // (latest) path — exactly what fetch returned before this feature, so we are never worse
+  // than the prior behaviour. This is not a retry of the same request: the fallback is a
+  // different, known-good request (the pre-version code path).
+  let content = await resolveSapHelpContent(helpId, version);
+  if (content === null && version) {
+    content = await resolveSapHelpContent(helpId, undefined);
+  }
+  if (content === null) {
+    throw new Error(`Failed to get SAP Help content for ${helpId}`);
+  }
+  return content;
+}
+
+/**
+ * Resolve SAP Help page content for a loio at a given version.
+ * Returns rendered markdown, or `null` when content can't be retrieved (so the caller can
+ * fall back). `version`:
+ *   - undefined → default/latest path, byte-for-byte the pre-version behaviour
+ *   - set       → version-pinned: re-search for that release's deliverable and request the
+ *                 version-matched build (older "LATEST" builds can be partial/500 on some pages)
+ */
+async function resolveSapHelpContent(helpId: string, version?: string): Promise<string | null> {
+  const reSearchVersion = version ?? "";        // "" = latest (prior behaviour)
+  const metadataVersion = version ?? "LATEST";  // version-matched build, else latest
+  try {
+    // With a requested version, always re-search version-pinned so we get THAT release's
+    // deliverable — the shared cache is keyed by loio only and may hold a different version.
     const cache = global.sapHelpSearchCache || new Map();
-    let hit = cache.get(helpId);
+    let hit = version ? undefined : cache.get(helpId);
 
     if (!hit) {
-      // If not in cache, search again to get the full hit data
       const searchParams = {
-        transtype: "standard,html,pdf,others", 
+        transtype: "standard,html,pdf,others",
         state: "PRODUCTION,TEST,DRAFT",
         product: "",
-        version: "",
+        version: reSearchVersion,
         q: helpId, // Search by LOIO or stable derived id to find the specific document
         to: "19",
         area: "content",
@@ -216,27 +256,15 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
         excludeNotSearchable: "1",
         language: "en-US",
       };
-
       const searchUrl = `${BASE}/http.svc/elasticsearch?${toQuery(searchParams)}`;
       const searchResponse = await fetch(searchUrl, {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "mcp-sap-docs/help-get",
-          Referer: BASE,
-        },
+        headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-get", Referer: BASE },
       });
-
-      if (!searchResponse.ok) {
-        throw new Error(`Failed to find document: ${searchResponse.status} ${searchResponse.statusText}`);
-      }
-
+      if (!searchResponse.ok) return null;
       const searchData: SapHelpSearchResponse = await searchResponse.json();
       const results = searchData?.data?.results || [];
       hit = results.find((r, index) => validLoio(r.loio) === helpId || deriveSapHelpId(r, index) === helpId);
-
-      if (!hit) {
-        throw new Error(`SAP Help document ${helpId} not found`);
-      }
+      if (!hit) return null;
     }
 
     if (!validLoio(hit.loio)) {
@@ -256,7 +284,6 @@ This SAP Help search result does not expose a LOIO page id through the search AP
 ---
 
 *This content is from the SAP Help Portal and represents official SAP documentation.*`;
-
       return truncateContent(fullContent).content;
     }
 
@@ -264,81 +291,49 @@ This SAP Help search result does not expose a LOIO page id through the search AP
     const topic_url = `${hit.loio}.html`;
     let product_url = hit.productId;
     let deliverable_url;
-
     try {
       const { productUrlSeg, deliverableLoio } = parseDocsPathParts(hit.url);
       deliverable_url = deliverableLoio;
       if (!product_url) product_url = productUrlSeg;
     } catch (e) {
-      if (!product_url) {
-        throw new Error("Could not determine product_url from hit; missing productId and unparsable url");
-      }
+      if (!product_url) return null;
     }
 
     const language = hit.language || "en-US";
 
-    // Get deliverable metadata
     const metadataParams = {
       product_url,
       topic_url,
-      version: "LATEST",
+      version: metadataVersion,
       loadlandingpageontopicnotfound: "true",
       deliverable_url,
       language,
       deliverableInfo: "1",
       toc: "1",
     };
-
     const metadataUrl = `${BASE}/http.svc/deliverableMetadata?${toQuery(metadataParams)}`;
     const metadataResponse = await fetch(metadataUrl, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "mcp-sap-docs/help-metadata",
-        Referer: BASE,
-      },
+      headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-metadata", Referer: BASE },
     });
-
-    if (!metadataResponse.ok) {
-      throw new Error(`Metadata request failed: ${metadataResponse.status} ${metadataResponse.statusText}`);
-    }
+    if (!metadataResponse.ok) return null;
 
     const metadataData: SapHelpMetadataResponse = await metadataResponse.json();
     const deliverable_id = metadataData?.data?.deliverable?.id;
     const buildNo = metadataData?.data?.deliverable?.buildNo;
     const file_path = metadataData?.data?.filePath || topic_url;
+    if (!deliverable_id || !buildNo || !file_path) return null;
 
-    if (!deliverable_id || !buildNo || !file_path) {
-      throw new Error("Missing required metadata: deliverable_id, buildNo, or file_path");
-    }
-
-    // Get page content
-    const pageParams = {
-      deliverableInfo: "1",
-      deliverable_id,
-      buildNo,
-      file_path,
-    };
-
+    const pageParams = { deliverableInfo: "1", deliverable_id, buildNo, file_path };
     const pageUrl = `${BASE}/http.svc/pagecontent?${toQuery(pageParams)}`;
     const pageResponse = await fetch(pageUrl, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "mcp-sap-docs/help-content",
-        Referer: BASE,
-      },
+      headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-content", Referer: BASE },
     });
-
-    if (!pageResponse.ok) {
-      throw new Error(`Page content request failed: ${pageResponse.status} ${pageResponse.statusText}`);
-    }
+    if (!pageResponse.ok) return null;
 
     const pageData: SapHelpPageContentResponse = await pageResponse.json();
     const title = pageData?.data?.currentPage?.t || pageData?.data?.deliverable?.title || hit.title;
     const bodyHtml = pageData?.data?.body || "";
-
-    if (!bodyHtml) {
-      return `# ${title}\n\nNo content available for this page.`;
-    }
+    if (!bodyHtml) return null; // empty body → allow fallback to the default path
 
     // Convert HTML to readable text while preserving structure
     const cleanText = bodyHtml
@@ -360,7 +355,6 @@ This SAP Help search result does not expose a LOIO page id through the search AP
       .replace(/^\s+|\s+$/g, '') // Trim
       .trim();
 
-    // Build the full content with metadata
     const fullContent = `# ${title}
 
 **Source:** SAP Help Portal
@@ -378,12 +372,8 @@ ${cleanText}
 
 *This content is from the SAP Help Portal and represents official SAP documentation.*`;
 
-    // Apply intelligent truncation if content is too large
-    const truncationResult = truncateContent(fullContent);
-    
-    return truncationResult.content;
-
-  } catch (error: any) {
-    throw new Error(`Failed to get SAP Help content: ${error.message}`);
+    return truncateContent(fullContent).content;
+  } catch {
+    return null; // any error → allow fallback (caller throws if no path succeeds)
   }
 }

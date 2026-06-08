@@ -33,7 +33,10 @@
     "test:fetch-sap-help": "npm run build:tsc && npx vitest run test/fetch-sap-help.test.ts",
     "test:sap-objects": "npm run build:tsc && npx vitest run test/sap-released-objects.test.ts",
     "test:embeddings": "npm run build:tsc && npx vitest run test/embeddings.test.ts",
-    "test:ui5-version-diff": "npm run build:tsc && npx vitest run test/ui5-version-diff.test.ts"
+    "test:ui5-version-diff": "npm run build:tsc && npx vitest run test/ui5-version-diff.test.ts",
+    "eval": "npm run build:tsc && node test/eval/run-eval.js",
+    "eval:update": "npm run build:tsc && node test/eval/run-eval.js --update",
+    "test:version-filter": "npm run build:tsc && npx vitest run test/version-filter-sap-help.test.ts"
   },
   "ts-node": {
     "esm": true

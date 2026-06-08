@@ -356,6 +356,10 @@ ESCALATION: If search returns no useful results (especially for specific error m
                   type: "array",
                   items: { type: "string" },
                   description: "Optional: specific source IDs to search. If not provided, searches all ABAP sources."
+                },
+                version: {
+                  type: "string",
+                  description: "Optional SAP product version filter, applied ONLY to online SAP Help (help.sap.com) results — offline docs are unaffected. Use it to get release-correct documentation (a feature absent in older releases will not be returned). Format: SAP Help docs-portal version. Either a full 'YYYY.FPS' string (e.g. '2022.002' = S/4HANA 2022 FPS02, '2025.001' = 2025 FPS01) or a bare release year (e.g. '2022') when only the release is known but not the feature/support-package stack. Omit if the release is unknown — SAP Help then returns the latest version. Derive from the target system if possible (e.g. SAP_BASIS 757 → S/4HANA 2022; the S4CORE support-package level gives the FPS digit)."
                 }
               },
               required: ["query"]
@@ -1164,14 +1168,16 @@ RETURNS (JSON):
           includeOnline = true,  // Online search enabled by default
           includeSamples = true,
           abapFlavor = 'auto',
-          sources
-        } = args as { 
+          sources,
+          version
+        } = args as {
           query: string;
           k?: number;
           includeOnline?: boolean;
           includeSamples?: boolean;
           abapFlavor?: 'standard' | 'cloud' | 'auto';
           sources?: string[];
+          version?: string;
         };
         
         // Validate and constrain k parameter (max 100 results)
@@ -1183,7 +1189,7 @@ RETURNS (JSON):
         // DEBUG: Log all input parameters
         console.log(`\n🔍 [SEARCH TOOL] ========================================`);
         console.log(`🔍 [SEARCH TOOL] Query: "${query}"`);
-        console.log(`🔍 [SEARCH TOOL] Parameters: k=${resultCount}, includeOnline=${includeOnline}, includeSamples=${includeSamples}, abapFlavor=${abapFlavor}`);
+        console.log(`🔍 [SEARCH TOOL] Parameters: k=${resultCount}, includeOnline=${includeOnline}, includeSamples=${includeSamples}, abapFlavor=${abapFlavor}, version=${version || 'latest'}`);
         console.log(`🔍 [SEARCH TOOL] Sources filter: ${sources ? sources.join(', ') : 'all'}`);
         console.log(`🔍 [SEARCH TOOL] Request ID: ${timing.requestId}`);
         
@@ -1192,12 +1198,13 @@ RETURNS (JSON):
           console.log(`🔍 [SEARCH TOOL] Calling unified search...`);
           const searchStartTime = Date.now();
           
-          const results = await search(query, { 
+          const results = await search(query, {
             k: resultCount,
             includeOnline,
             includeSamples,
             abapFlavor,
-            sources
+            sources,
+            version
           });
           
           const searchDuration = Date.now() - searchStartTime;
@@ -1263,10 +1270,11 @@ RETURNS (JSON):
             };
           });
           
-          logger.logToolSuccess(name, timing.requestId, timing.startTime, topResults.length, { 
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, topResults.length, {
             includeOnline,
             includeSamples,
-            abapFlavor
+            abapFlavor,
+            version: version || 'latest'
           });
           
           // DEBUG: Log output summary
