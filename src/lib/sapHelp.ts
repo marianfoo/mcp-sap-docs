@@ -7,8 +7,39 @@ import {
   SapHelpPageContentResponse 
 } from "./types.js";
 import { truncateContent } from "./truncate.js";
+import { htmlToMarkdown } from "./htmlToMarkdown.js";
 
 const BASE = "https://help.sap.com";
+
+/**
+ * Structured citation for a SAP Help document: the stable cross-release identity
+ * (`loio`), the resolved page title/url, and the exact deliverable build the
+ * content came from. `deliverableId`/`buildNo` are only available on the full LOIO
+ * fetch path; the no-LOIO branch leaves them (and `loio`) undefined/null.
+ */
+export interface SapHelpCitation {
+  loio?: string | null;
+  product?: string;
+  /**
+   * The version the caller asked for, parsed from the id suffix ("2025.001"); undefined when
+   * the id carried no version (i.e. latest was requested). Compare against `version` to detect
+   * whether version-pinning succeeded or the fetch fell back to latest.
+   */
+  requestedVersion?: string;
+  /**
+   * The build actually served. On a successful pinned fetch this equals `requestedVersion`;
+   * when the pinned build is unavailable and the fetch falls back to latest (or no version was
+   * requested), it is the SAP Help API's display string for what came back (e.g. "2025 FPS01").
+   * So it also reveals what "latest" currently resolves to.
+   */
+  version?: string;
+  language?: string;
+  url?: string;
+  title?: string;
+  // The SAP Help API returns these as numbers; keep them faithful rather than coercing.
+  deliverableId?: string | number;
+  buildNo?: string | number;
+}
 
 // ---------- Utils ----------
 function toQuery(params: Record<string, any>): string {
@@ -201,6 +232,18 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
  * First gets metadata, then page content
  */
 export async function getSapHelpContent(resultId: string): Promise<string> {
+  return (await getSapHelpDocument(resultId)).text;
+}
+
+/**
+ * Like `getSapHelpContent`, but also returns the structured citation (loio / product /
+ * version / url / title plus the resolved deliverable build). The fetch handler uses this
+ * to surface citation metadata; `getSapHelpContent` is the thin string-only wrapper kept
+ * unchanged for existing callers.
+ */
+export async function getSapHelpDocument(
+  resultId: string
+): Promise<{ text: string; citation: SapHelpCitation }> {
   // Parse the optional version suffix encoded by search ("sap-help-<loio>--v<version>") so
   // fetch retrieves the same release the caller searched. No suffix → latest (prior behaviour).
   // (loio ids are hex and url-slug ids are sanitised, so "--v" only appears as our delimiter.)
@@ -216,14 +259,17 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
   // (latest) path — exactly what fetch returned before this feature, so we are never worse
   // than the prior behaviour. This is not a retry of the same request: the fallback is a
   // different, known-good request (the pre-version code path).
-  let content = await resolveSapHelpContent(helpId, version);
-  if (content === null && version) {
-    content = await resolveSapHelpContent(helpId, undefined);
+  let resolved = await resolveSapHelpContent(helpId, version);
+  if (resolved === null && version) {
+    resolved = await resolveSapHelpContent(helpId, undefined);
   }
-  if (content === null) {
+  if (resolved === null) {
     throw new Error(`Failed to get SAP Help content for ${helpId}`);
   }
-  return content;
+  // requestedVersion is known only here (the inner resolve sees `undefined` on the fallback
+  // call, so it can't record what was originally asked for). Stamp it on the citation so the
+  // caller can compare requested-vs-served and tell whether pinning held or fell back.
+  return { text: resolved.content, citation: { ...resolved.citation, requestedVersion: version } };
 }
 
 /**
@@ -234,7 +280,10 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
  *   - set       → version-pinned: re-search for that release's deliverable and request the
  *                 version-matched build (older "LATEST" builds can be partial/500 on some pages)
  */
-async function resolveSapHelpContent(helpId: string, version?: string): Promise<string | null> {
+async function resolveSapHelpContent(
+  helpId: string,
+  version?: string
+): Promise<{ content: string; citation: SapHelpCitation } | null> {
   const reSearchVersion = version ?? "";        // "" = latest (prior behaviour)
   const metadataVersion = version ?? "LATEST";  // version-matched build, else latest
   try {
@@ -284,7 +333,15 @@ This SAP Help search result does not expose a LOIO page id through the search AP
 ---
 
 *This content is from the SAP Help Portal and represents official SAP documentation.*`;
-      return truncateContent(fullContent).content;
+      const citation: SapHelpCitation = {
+        loio: null,
+        product: hit.product || hit.productId,
+        version: version || hit.version || hit.versionId,
+        language: hit.language || "en-US",
+        url: ensureAbsoluteUrl(hit.url),
+        title: hit.title,
+      };
+      return { content: truncateContent(fullContent).content, citation };
     }
 
     // Prepare metadata request parameters
@@ -335,25 +392,8 @@ This SAP Help search result does not expose a LOIO page id through the search AP
     const bodyHtml = pageData?.data?.body || "";
     if (!bodyHtml) return null; // empty body → allow fallback to the default path
 
-    // Convert HTML to readable text while preserving structure
-    const cleanText = bodyHtml
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove styles
-      .replace(/<h([1-6])[^>]*>/gi, (_, level) => '\n' + '#'.repeat(parseInt(level)) + ' ') // Convert headings
-      .replace(/<\/h[1-6]>/gi, '\n') // Close headings
-      .replace(/<p[^>]*>/gi, '\n') // Paragraphs
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<br[^>]*>/gi, '\n') // Line breaks
-      .replace(/<li[^>]*>/gi, '• ') // List items
-      .replace(/<\/li>/gi, '\n')
-      .replace(/<code[^>]*>/gi, '`') // Inline code
-      .replace(/<\/code>/gi, '`')
-      .replace(/<pre[^>]*>/gi, '\n```\n') // Code blocks
-      .replace(/<\/pre>/gi, '\n```\n')
-      .replace(/<[^>]+>/g, '') // Remove remaining HTML tags
-      .replace(/\s*\n\s*\n\s*/g, '\n\n') // Clean up multiple newlines
-      .replace(/^\s+|\s+$/g, '') // Trim
-      .trim();
+    // Convert the HTML fragment to Markdown, preserving tables, nested lists and code.
+    const cleanText = htmlToMarkdown(bodyHtml);
 
     const fullContent = `# ${title}
 
@@ -372,7 +412,17 @@ ${cleanText}
 
 *This content is from the SAP Help Portal and represents official SAP documentation.*`;
 
-    return truncateContent(fullContent).content;
+    const citation: SapHelpCitation = {
+      loio: hit.loio,
+      product: hit.product || hit.productId || product_url,
+      version: version || hit.version || hit.versionId,
+      language,
+      url: ensureAbsoluteUrl(hit.url),
+      title,
+      deliverableId: deliverable_id,
+      buildNo,
+    };
+    return { content: truncateContent(fullContent).content, citation };
   } catch {
     return null; // any error → allow fallback (caller throws if no path succeeds)
   }

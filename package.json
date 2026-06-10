@@ -36,7 +36,9 @@
     "test:ui5-version-diff": "npm run build:tsc && npx vitest run test/ui5-version-diff.test.ts",
     "eval": "npm run build:tsc && node test/eval/run-eval.js",
     "eval:update": "npm run build:tsc && node test/eval/run-eval.js --update",
-    "test:version-filter": "npm run build:tsc && npx vitest run test/version-filter-sap-help.test.ts"
+    "test:version-filter": "npm run build:tsc && npx vitest run test/version-filter-sap-help.test.ts",
+    "test:citations": "npm run build:tsc && npx vitest run test/citations-sap-help.test.ts",
+    "test:html-to-md": "npm run build:tsc && npx vitest run test/html-to-md.test.ts"
   },
   "ts-node": {
     "esm": true
@@ -50,6 +52,8 @@
     "express": "^4.21.2",
     "fast-glob": "^3.3.2",
     "gray-matter": "^4.0.3",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -57,6 +61,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.23",
     "@types/node": "^20.11.19",
+    "@types/turndown": "^5.0.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.4",
     "vitest": "^2.1.5"

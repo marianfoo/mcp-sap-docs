@@ -17,6 +17,13 @@ export type SearchResult = {
   relFile: string;
   finalScore: number;
   sourceKind: 'offline' | 'sap_help' | 'sap_community' | 'software_heroes' | 'semantic';
+  // Structured citation for online (SAP Help) hits — surfaced in the MCP search result
+  // metadata so the agent can cite/dedup/verify the version without a fetch round-trip.
+  citation?: {
+    loio?: string;
+    product?: string;
+    version?: string;
+  };
   // Debug info for ranking analysis
   debug?: {
     bm25Score?: number;
@@ -271,6 +278,17 @@ function processOnlineSource(
       relFile: '',
       finalScore,
       sourceKind,
+      // SAP Help hits carry loio/product/version in their metadata (set by searchSapHelp);
+      // preserve it as a citation so the MCP layer can expose it in the result metadata.
+      ...(sourceKind === 'sap_help' && r.metadata
+        ? {
+            citation: {
+              loio: r.metadata.loio ?? undefined,
+              product: r.metadata.product,
+              version: r.metadata.version
+            }
+          }
+        : {}),
       debug: { rank, rrfScore, boost }
     };
   });
