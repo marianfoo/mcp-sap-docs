@@ -176,8 +176,9 @@ async function main() {
   console.log(`   📍 Location: ${DST}`);
 }
 
-import { fileURLToPath } from "url";
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL keeps this entry-point check working on Windows (see build-fts.ts).
+import { pathToFileURL } from "url";
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     await main();
   } catch (error) {
