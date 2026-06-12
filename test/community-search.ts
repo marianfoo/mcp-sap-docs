@@ -355,7 +355,8 @@ process.on('SIGINT', () => {
 });
 
 // Run the tests if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+import { pathToFileURL } from "url";
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch(error => {
     console.error('💥 Unexpected error:', error);
     process.exit(1);
