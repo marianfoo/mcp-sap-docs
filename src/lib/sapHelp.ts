@@ -1,14 +1,21 @@
 import { createHash } from "node:crypto";
 import {
-  SearchResponse, 
-  SearchResult, 
-  SapHelpSearchResponse, 
-  SapHelpMetadataResponse, 
-  SapHelpPageContentResponse 
+  SearchResponse,
+  SearchResult,
+  SapHelpSearchResult,
+  SapHelpSearchResponse,
+  SapHelpMetadataResponse,
+  SapHelpPageContentResponse
 } from "./types.js";
 import { truncateContent } from "./truncate.js";
 
 const BASE = "https://help.sap.com";
+
+// Result-id encoding for the search↔fetch round-trip. A help id is either a loio (hex) or a
+// sanitised "url-<slug>-<hash>" — both live in [A-Za-z0-9_-] and can never contain "~", so we use
+// it as the version delimiter and let the opaque versionId ride through verbatim (see encodeSapHelpId).
+const ID_PREFIX = "sap-help-";
+const VERSION_SEP = "~";
 
 // ---------- Utils ----------
 function toQuery(params: Record<string, any>): string {
@@ -71,46 +78,42 @@ function parseDocsPathParts(urlOrPath: string): { productUrlSeg: string; deliver
   return { productUrlSeg, deliverableLoio };
 }
 
-/**
- * Search SAP Help using the private elasticsearch endpoint.
- *
- * @param version Optional SAP Help docs-portal version filter. Accepts either a full
- *   `YYYY.FPS` string (e.g. "2022.002" = S/4HANA 2022 FPS02) or a bare release year
- *   (e.g. "2022" = that release's "Latest"). Empty/undefined → unfiltered (Latest across
- *   all versions, the prior behaviour). The endpoint filters server-side on this value.
- */
+/** One raw SAP Help search request. Returns the hit array (empty if none); throws on HTTP error. */
+async function fetchHelpResults(query: string, version: string): Promise<SapHelpSearchResult[]> {
+  const searchParams = {
+    transtype: "standard,html,pdf,others",
+    state: "PRODUCTION,TEST,DRAFT",
+    product: "",
+    version,
+    q: query,
+    to: "19", // Limit to 20 results (0-19)
+    area: "content",
+    advancedSearch: "0",
+    excludeNotSearchable: "1",
+    language: "en-US",
+  };
+  const response = await fetch(`${BASE}/http.svc/elasticsearch?${toQuery(searchParams)}`, {
+    headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-search", Referer: BASE },
+  });
+  if (!response.ok) {
+    throw new Error(`SAP Help search failed: ${response.status} ${response.statusText}`);
+  }
+  const data: SapHelpSearchResponse = await response.json();
+  return data?.data?.results || [];
+}
+
 export async function searchSapHelp(query: string, version?: string): Promise<SearchResponse> {
   try {
-    const v = (version ?? "").trim();
-    const searchParams = {
-      transtype: "standard,html,pdf,others",
-      state: "PRODUCTION,TEST,DRAFT",
-      product: "",
-      version: v,
-      q: query,
-      to: "19", // Limit to 20 results (0-19)
-      area: "content",
-      advancedSearch: "0",
-      excludeNotSearchable: "1",
-      language: "en-US",
-    };
-
-    const searchUrl = `${BASE}/http.svc/elasticsearch?${toQuery(searchParams)}`;
-    
-    const response = await fetch(searchUrl, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "mcp-sap-docs/help-search",
-        Referer: BASE,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`SAP Help search failed: ${response.status} ${response.statusText}`);
+    const requested = (version ?? "").trim();
+    // Never drop SAP Help on a too-narrow/invalid version: if the pinned query returns nothing,
+    // fall back ONCE to latest (unfiltered, the prior behaviour) so results are never lost by
+    // default. `usedVersion` then drives id encoding, so fetch follows whichever release we got.
+    let usedVersion = requested;
+    let results = await fetchHelpResults(query, requested);
+    if (!results.length && requested) {
+      results = await fetchHelpResults(query, "");
+      usedVersion = "";
     }
-
-    const data: SapHelpSearchResponse = await response.json();
-    const results = data?.data?.results || [];
 
     if (!results.length) {
       return {
@@ -122,10 +125,16 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
     // Store the search results for later retrieval
     const searchResults: SearchResult[] = results.map((hit, index) => {
       const helpId = deriveSapHelpId(hit, index);
-      // Encode the requested version into the id so a later `fetch` can retrieve the
-      // version-correct content without the caller re-supplying it. No version → plain id
-      // (prior behaviour). getSapHelpContent parses the `--v<version>` suffix back off.
-      const sapHelpId = v ? `sap-help-${helpId}--v${v}` : `sap-help-${helpId}`;
+      // Encode the release into the id so a later `fetch` retrieves the SAME release with no extra
+      // parameter (see encodeSapHelpId). No version → plain id (prior behaviour).
+      const sapHelpId = encodeSapHelpId(helpId, usedVersion);
+
+      // Surface the exact filter token (versionId) verbatim: it is opaque, case-sensitive and
+      // unguessable, so the caller pins a later search by copying it from a result, not deriving it.
+      const versionToken = hit.versionId || "";
+      const versionLabel = hit.version || hit.versionId || "Latest";
+      const versionText = versionToken ? `${versionLabel}, versionId ${versionToken}` : versionLabel;
+      const desc = `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${versionText})`;
 
       return {
         library_id: sapHelpId,
@@ -133,17 +142,18 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
         id: sapHelpId,
         title: hit.title,
         url: ensureAbsoluteUrl(hit.url),
-        snippet: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
+        snippet: desc,
         score: 0,
         metadata: {
           source: "help",
           loio: validLoio(hit.loio),
           product: hit.product || hit.productId,
-          version: hit.version || hit.versionId,
+          version: versionLabel,
+          versionId: versionToken || undefined,
           rank: index + 1
         },
         // Legacy fields for backward compatibility
-        description: `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${hit.version || hit.versionId || "Latest"})`,
+        description: desc,
         totalSnippets: 1,
         source: "help"
       };
@@ -197,20 +207,37 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
 }
 
 /**
+ * Encode/parse the release into a search-result id so `fetch` retrieves the same release the
+ * caller searched, with no extra parameter. The version is the SAP Help `versionId` — an opaque,
+ * exact, case-sensitive token whose shape varies across products ("2025.001", "2.0.08", "10.0",
+ * "2211", "Cloud", "2026_06"), so it is carried verbatim after the reserved "~" delimiter (which
+ * help ids never contain). No version → plain id. parseSapHelpId returns helpId "" for a
+ * malformed (non-"sap-help-") id so the caller can reject it.
+ */
+export function encodeSapHelpId(helpId: string, version?: string): string {
+  const v = (version ?? "").trim();
+  return v ? `${ID_PREFIX}${helpId}${VERSION_SEP}${v}` : `${ID_PREFIX}${helpId}`;
+}
+
+export function parseSapHelpId(resultId: string): { helpId: string; version?: string } {
+  const raw = resultId.startsWith(ID_PREFIX) ? resultId.slice(ID_PREFIX.length) : "";
+  const i = raw.indexOf(VERSION_SEP);
+  return i < 0
+    ? { helpId: raw, version: undefined }
+    : { helpId: raw.slice(0, i), version: raw.slice(i + 1) || undefined };
+}
+
+/**
  * Get full content of a SAP Help page using the private APIs
  * First gets metadata, then page content
  */
 export async function getSapHelpContent(resultId: string): Promise<string> {
-  // Parse the optional version suffix encoded by search ("sap-help-<loio>--v<version>") so
-  // fetch retrieves the same release the caller searched. No suffix → latest (prior behaviour).
-  // (loio ids are hex and url-slug ids are sanitised, so "--v" only appears as our delimiter.)
-  const raw = resultId.replace('sap-help-', '');
-  if (!raw || raw === resultId) {
+  // fetch retrieves the same release the caller searched: search encodes the version into
+  // the id, parseSapHelpId pulls it back off. No suffix → latest (prior behaviour).
+  const { helpId, version } = parseSapHelpId(resultId);
+  if (!helpId) {
     throw new Error("Invalid SAP Help result ID. Use an ID from sap_help_search results.");
   }
-  const sepIdx = raw.indexOf('--v');
-  const helpId = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
-  const version = sepIdx >= 0 ? (raw.slice(sepIdx + 3).trim() || undefined) : undefined;
 
   // Try the version-specific content first; on empty/error fall back ONCE to the default
   // (latest) path — exactly what fetch returned before this feature, so we are never worse

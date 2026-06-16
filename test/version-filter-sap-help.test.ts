@@ -86,8 +86,23 @@ describe("SAP Help `version` filter (item 1 acceptance)", () => {
   );
 });
 
+describe("SAP Help search never loses results to a bad version (item 1c)", () => {
+  it(
+    "a non-existent version falls back to latest instead of returning empty",
+    async (ctx) => {
+      // The version filter is an exact server-side match: a bogus token matches 0 docs. search
+      // must fall back to unfiltered (latest) so SAP Help is never silently dropped.
+      const res = await liveSearch(ctx, "1999.001", true);
+      expect((res.results ?? []).length).toBeGreaterThan(0);
+      // Fell back to latest → ids are NOT pinned to the bogus version.
+      expect((res.results ?? []).some((r) => (r.id || "").includes("~1999.001"))).toBe(false);
+    },
+    NET_TIMEOUT
+  );
+});
+
 describe("SAP Help version-routed fetch (item 1b)", () => {
-  // The search result id now carries the version ("sap-help-<loio>--v2025.001"); fetch must
+  // The search result id now carries the versionId ("sap-help-<loio>~2025.001"); fetch must
   // self-route to that release's content with no extra parameter from the caller.
   it(
     "fetch resolves a version-pinned id to non-empty, on-topic content",
@@ -95,7 +110,7 @@ describe("SAP Help version-routed fetch (item 1b)", () => {
       const res = await liveSearch(ctx, NEW_VERSION, true);
       const hit = (res.results ?? []).find((r) => r.metadata?.loio === FEATURE_LOIO);
       if (!hit) ctx.skip();
-      expect(hit!.id).toContain(`--v${NEW_VERSION}`); // version encoded into the id
+      expect(hit!.id).toContain(`~${NEW_VERSION}`); // versionId encoded into the id
       const content = await getSapHelpContent(hit!.id);
       expect(content.length).toBeGreaterThan(200);
       expect(content).toMatch(/Task Planning/i);
@@ -110,7 +125,7 @@ describe("SAP Help version-routed fetch (item 1b)", () => {
       // default path rather than return empty/throw — i.e. never worse than today.
       let content: string;
       try {
-        content = await getSapHelpContent(`sap-help-${FEATURE_LOIO}--v1999.001`);
+        content = await getSapHelpContent(`sap-help-${FEATURE_LOIO}~1999.001`);
       } catch (e: any) {
         console.warn(`[version-filter] fetch threw (likely offline), skipping: ${e?.message}`);
         ctx.skip();

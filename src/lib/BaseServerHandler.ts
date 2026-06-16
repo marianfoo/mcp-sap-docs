@@ -359,7 +359,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
                 },
                 version: {
                   type: "string",
-                  description: "Optional SAP product version filter, applied ONLY to online SAP Help (help.sap.com) results — offline docs are unaffected. Use it to get release-correct documentation (a feature absent in older releases will not be returned). Format: SAP Help docs-portal version. Either a full 'YYYY.FPS' string (e.g. '2022.002' = S/4HANA 2022 FPS02, '2025.001' = 2025 FPS01) or a bare release year (e.g. '2022') when only the release is known but not the feature/support-package stack. Omit if the release is unknown — SAP Help then returns the latest version. Derive from the target system if possible (e.g. SAP_BASIS 757 → S/4HANA 2022; the S4CORE support-package level gives the FPS digit)."
+                  description: "Optional SAP release filter, applied ONLY to online SAP Help (help.sap.com) — offline docs are unaffected. Omit it for the latest content (the right default for most queries). To pin an older release, copy a result's `versionId` value EXACTLY and pass it back here — it is case-sensitive and its format varies by product (e.g. '2025.001', '2.0.08', '10.0', '2211', 'Cloud', '2026_06'). Discover valid values in one step: run the same search WITHOUT version first; every result shows its `versionId`. Never invent, reformat, or guess the token (a bare year like '2025' is usually a different release). If a version matches nothing, the latest results are returned instead, so no results are lost."
                 }
               },
               required: ["query"]
