@@ -17,6 +17,16 @@ export type SearchResult = {
   relFile: string;
   finalScore: number;
   sourceKind: 'offline' | 'sap_help' | 'sap_community' | 'software_heroes' | 'semantic';
+  // Structured citation for online (SAP Help) hits — surfaced in the MCP search result
+  // metadata so the agent can cite/dedup/verify the version without a fetch round-trip.
+  citation?: {
+    loio?: string;
+    product?: string;
+    /** Pinnable release token (e.g. "2025.001") — pass back as `version` to re-pin the same release. */
+    versionId?: string;
+    /** Human display label of the release (e.g. "2025 FPS01 (Feb 2026)") — for showing, not filtering. */
+    version?: string;
+  };
   // Debug info for ranking analysis
   debug?: {
     bm25Score?: number;
@@ -271,6 +281,19 @@ function processOnlineSource(
       relFile: '',
       finalScore,
       sourceKind,
+      // SAP Help hits carry loio/product/versionId/version in their metadata (set by searchSapHelp);
+      // preserve it as a citation so the MCP layer exposes it in the result metadata. versionId is
+      // the pinnable token — without it the agent only sees the display string and can't re-pin.
+      ...(sourceKind === 'sap_help' && r.metadata
+        ? {
+            citation: {
+              loio: r.metadata.loio ?? undefined,
+              product: r.metadata.product,
+              versionId: r.metadata.versionId,
+              version: r.metadata.version
+            }
+          }
+        : {}),
       debug: { rank, rrfScore, boost }
     };
   });
