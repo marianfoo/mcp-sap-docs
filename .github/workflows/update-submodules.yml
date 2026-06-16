@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Update submodules on server with database safety checks
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
