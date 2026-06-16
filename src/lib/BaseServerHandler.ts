@@ -262,7 +262,7 @@ Unified search for ABAP + RAP development documentation. It searches across cura
 
 Use this to discover the best document IDs, then call \`fetch(id=...)\` to retrieve full content.
 
-LANGUAGE: Query in ENGLISH — the corpus and ranking are English-only; non-English queries return poor results.
+LANGUAGE: Query in ENGLISH — the corpus and ranking are primarily English; non-English queries return weaker results.
 
 SOURCES OVERVIEW
 
@@ -330,7 +330,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
               properties: {
                 query: {
                   type: "string",
-                  description: "Search terms for ABAP/RAP documentation, in ENGLISH (corpus is English-only). Be specific and use technical terms."
+                  description: "Search terms for ABAP/RAP documentation, in ENGLISH (corpus is primarily English). Be specific and use technical terms."
                 },
                 k: {
                   type: "number",
@@ -610,7 +610,7 @@ USE CASES:
               properties: {
                 query: {
                   type: "string",
-                  description: "Feature keywords to search for, in ENGLISH (matrix is English-only). If empty or not provided, returns all features."
+                  description: "Feature keywords to search for, in ENGLISH (matrix is English). If empty or not provided, returns all features."
                 },
                 limit: {
                   type: "number",
@@ -868,7 +868,7 @@ WORKFLOW:
               properties: {
                 query: {
                   type: "string",
-                  description: "Search terms for SAP Community, in ENGLISH (corpus is English-only). Be specific - use error messages, symptoms, or technical terms."
+                  description: "Search terms for SAP Community, in ENGLISH (corpus is primarily English). Be specific - use error messages, symptoms, or technical terms."
                 },
                 k: {
                   type: "number",

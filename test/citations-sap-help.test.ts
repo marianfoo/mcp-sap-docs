@@ -111,6 +111,10 @@ describe("SAP Help structured citations (item 8)", () => {
       }
       expect(hit.citation?.loio).toBe(FEATURE_LOIO);
       expect(hit.citation?.version).toBeTruthy();
+      // The pinnable token must reach the unified search citation (not just the fetch path),
+      // else an agent searching for a topic can't re-pin a release without a fetch round-trip.
+      expect(hit.citation?.versionId).toBeTruthy();
+      expect(hit.citation?.versionId).not.toMatch(/\s/);
     },
     NET_TIMEOUT
   );
