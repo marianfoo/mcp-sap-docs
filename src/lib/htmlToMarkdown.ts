@@ -23,6 +23,14 @@ const service = new TurndownService({
 // converter handle GFM-style HTML if other sources are routed through it later.
 service.use(gfm);
 
+// Don't backslash-escape Markdown punctuation in text. Turndown escapes `_ * . # [ ]` etc. so
+// they can't be re-parsed as Markdown, but this output is read by an LLM, not re-rendered — and
+// the escaping corrupts technical identifiers (`API_TASKPLANNINGELEMENT` → `API\_TASK…`), which
+// weaker models then copy verbatim with the stray backslash. The legacy converter never escaped;
+// matching that is more faithful. Pipe-escaping inside table cells is done explicitly in the cell
+// rule, so tables (and the headerless-table column count) are unaffected.
+service.escape = (s: string) => s;
+
 // Override the GFM cell rule: a `<td>`/`<th>` containing block elements (`<p>`, `<div>`)
 // converts to content with newlines, which breaks the single-line GFM row. Collapse any
 // internal newlines/runs of whitespace to a single space and escape literal pipes. The

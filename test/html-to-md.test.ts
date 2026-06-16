@@ -113,6 +113,16 @@ describe("htmlToMarkdown — conversion behaviour", () => {
     expect(htmlToMarkdown("")).toBe("");
   });
 
+  it("does NOT backslash-escape Markdown punctuation in identifiers (faithful for LLMs)", () => {
+    // Turndown escapes `_ * .` by default, which mangles API/field names a weak model then
+    // copies verbatim. We disable escaping; the identifier must survive byte-for-byte.
+    const md = htmlToMarkdown(`<p>Call <span>API_TASK_PLANNING</span>; rate is 3*x; see file_1.txt.</p>`);
+    expect(md).toContain("API_TASK_PLANNING");
+    expect(md).toContain("3*x");
+    expect(md).toContain("file_1.txt");
+    expect(md).not.toContain("\\");
+  });
+
   // The following pin the combined-`gfm` behaviours. They don't appear in SAP Help bodies
   // today, but this is a general converter — guard them in case other sources are added.
   it("language-tags a div.highlight code block without double-fencing", () => {

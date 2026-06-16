@@ -34,11 +34,13 @@ export interface SapHelpCitation {
    */
   requestedVersion?: string;
   /**
-   * The build actually served. On a successful pinned fetch this equals `requestedVersion`;
-   * when the pinned build is unavailable and the fetch falls back to latest (or no version was
-   * requested), it is the SAP Help API's display string for what came back (e.g. "2025 FPS01").
-   * So it also reveals what "latest" currently resolves to.
+   * The exact, pinnable SAP Help version token of the SERVED document (e.g. "2025.001", "2.0.08",
+   * "Cloud"). Pass it straight back as search's `version` to pin a follow-up to the same release —
+   * no guessing. Compare with `requestedVersion`: if they differ, the pinned build was unavailable
+   * and the fetch fell back to latest. Always present when SAP Help exposes a version.
    */
+  versionId?: string;
+  /** Human display label of the served release (e.g. "2025 FPS01 (Feb 2026)") — for showing, not filtering. */
   version?: string;
   language?: string;
   url?: string;
@@ -363,7 +365,8 @@ This SAP Help search result does not expose a LOIO page id through the search AP
       const citation: SapHelpCitation = {
         loio: null,
         product: hit.product || hit.productId,
-        version: version || hit.version || hit.versionId,
+        versionId: hit.versionId,                  // pinnable token of the served doc
+        version: hit.version || hit.versionId,     // human display label
         language: hit.language || "en-US",
         url: ensureAbsoluteUrl(hit.url),
         title: hit.title,
@@ -442,7 +445,8 @@ ${cleanText}
     const citation: SapHelpCitation = {
       loio: hit.loio,
       product: hit.product || hit.productId || product_url,
-      version: version || hit.version || hit.versionId,
+      versionId: hit.versionId,                  // pinnable token of the served doc
+      version: hit.version || hit.versionId,     // human display label
       language,
       url: ensureAbsoluteUrl(hit.url),
       title,

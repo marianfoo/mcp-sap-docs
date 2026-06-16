@@ -57,9 +57,11 @@ describe("SAP Help structured citations (item 8)", () => {
       expect(citation.loio).toBe(FEATURE_LOIO);
       // requestedVersion is parsed from the id — deterministic, no network dependence.
       expect(citation.requestedVersion).toBe(VERSION);
-      // version is the SERVED build: equals requestedVersion on a successful pinned fetch, or
-      // the API display string when the pinned build 500s and the fetch falls back to latest.
-      // Either way it must be a non-empty string the agent can compare against requestedVersion.
+      // versionId is the served doc's exact, pinnable token (not the spaced display string) — a
+      // caller passes it straight back as `version` to re-pin. Present and token-shaped (no spaces).
+      expect(citation.versionId).toBeTruthy();
+      expect(citation.versionId).not.toMatch(/\s/);
+      // version is the human display label of the served release — a non-empty string for showing.
       expect(citation.version && citation.version.length).toBeGreaterThan(0);
       expect(citation.url).toMatch(/^https:\/\/help\.sap\.com\//);
       expect(citation.title && citation.title.length).toBeGreaterThan(0);

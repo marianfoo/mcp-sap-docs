@@ -1370,6 +1370,7 @@ RETURNS (JSON):
                 loio: citation.loio ?? undefined,
                 product: citation.product,
                 requestedVersion: citation.requestedVersion,
+                versionId: citation.versionId,
                 version: citation.version,
                 language: citation.language,
                 deliverableId: citation.deliverableId,
