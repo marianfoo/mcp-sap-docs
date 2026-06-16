@@ -13,7 +13,7 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
-const VERSION = "0.3.45"; // x-release-please-version
+const VERSION = "0.3.46"; // x-release-please-version
 const variant = getVariantConfig();
 
 
