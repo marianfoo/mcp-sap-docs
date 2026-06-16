@@ -27,5 +27,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh workflow run deploy-mcp-sap-docs.yml --ref main
-          gh workflow run sync-to-abap-main.yml --ref main
+          gh workflow run deploy-mcp-sap-docs.yml --ref main -R ${{ github.repository }}
+          gh workflow run sync-to-abap-main.yml --ref main -R ${{ github.repository }}
