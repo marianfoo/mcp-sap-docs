@@ -38,6 +38,57 @@ service.addRule("tableCellSingleLine", {
   },
 });
 
+// SAP's DITA pipeline (notably older NetWeaver-era ABAP reference docs) emits tables with
+// NO heading row — the first row is plain `<td>` cells inside `<tbody>`, with column labels
+// rendered via CSS, not `<th>`/`<thead>`. The gfm plugin only converts tables whose first
+// row is a heading row and otherwise `keep()`s the table as RAW HTML (a GFM pipe table is
+// invalid without a header). That left big reference tables (e.g. "ABAP System Fields", 178
+// rows) as verbose raw HTML — poor fidelity for the LLM and ~10x larger. SAP's reference
+// tables almost always use row 0 as the conceptual header, so we promote it: emit the first
+// row as the header and inject the separator the plugin omitted.
+//
+// `isHeadingRow`/`isFirstTbody` mirror the gfm plugin's internal logic verbatim so this rule
+// fires exactly on the tables the plugin would otherwise keep as raw HTML — header-bearing
+// tables fall through to the plugin's (proven) table rule untouched.
+const everyCell = Array.prototype.every;
+function isFirstTbody(element: Node): boolean {
+  const previousSibling = element.previousSibling;
+  return (
+    element.nodeName === "TBODY" &&
+    (!previousSibling ||
+      (previousSibling.nodeName === "THEAD" && /^\s*$/i.test(previousSibling.textContent ?? "")))
+  );
+}
+function isHeadingRow(tr: Node | undefined): boolean {
+  if (!tr) return false;
+  const parentNode = tr.parentNode;
+  if (!parentNode) return false;
+  return (
+    parentNode.nodeName === "THEAD" ||
+    (parentNode.firstChild === tr &&
+      (parentNode.nodeName === "TABLE" || isFirstTbody(parentNode)) &&
+      everyCell.call(tr.childNodes, (n: Node) => n.nodeName === "TH"))
+  );
+}
+service.addRule("headerlessTable", {
+  filter: (node) =>
+    node.nodeName === "TABLE" &&
+    (node as HTMLTableElement).rows.length > 0 &&
+    !isHeadingRow((node as HTMLTableElement).rows[0]),
+  replacement: (content) => {
+    // `content` is the rows already rendered as "| a | b |" lines by the cell/row rules, but
+    // with no separator (the plugin emits the separator only for heading rows). Treat row 0
+    // as the header and inject a separator sized to its column count.
+    const rows = content.split("\n").filter((l) => l.trim() !== "");
+    if (rows.length === 0) return "";
+    // Count unescaped pipes in the header row; columns = pipes - 1.
+    const cols = (rows[0].match(/(?<!\\)\|/g) || []).length - 1;
+    if (cols < 1) return `\n\n${content}\n\n`;
+    const separator = `| ${Array(cols).fill("---").join(" | ")} |`;
+    return `\n\n${[rows[0], separator, ...rows.slice(1)].join("\n")}\n\n`;
+  },
+});
+
 // Drop non-content elements outright (their text would otherwise leak into the output).
 service.remove(["script", "style", "noscript"]);
 
