@@ -1,0 +1,109 @@
+[
+  {
+    "version": "1.108.0",
+    "date": "2022.10.13",
+    "libraries": [
+      {
+        "library": "sap.m",
+        "changes": [
+          {
+            "type": "FEATURE",
+            "text": "sap.m.Wizard: navigateToStep added",
+            "commit_url": "https://github.com/SAP/openui5/commit/aaa",
+            "id": "aaa"
+          },
+          {
+            "type": "INTERNAL",
+            "text": "internal noise"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "version": "1.120.0",
+    "date": "2023.10.26",
+    "libraries": [
+      {
+        "library": "sap.m",
+        "changes": [
+          {
+            "type": "FEATURE",
+            "text": "sap.m.Input: new value help icon",
+            "commit_url": "https://github.com/SAP/openui5/commit/bbb"
+          },
+          {
+            "type": "Fix",
+            "text": "sap.m.Table: pagination scroll fix"
+          }
+        ]
+      },
+      {
+        "library": "sap.ui.core",
+        "changes": [
+          {
+            "type": "DEPRECATED",
+            "text": "sap.ui.core.ManagedObject: foo() replaced by bar()"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "version": "1.130.0",
+    "date": "2024.09.12",
+    "libraries": [
+      {
+        "library": "sap.m",
+        "changes": [
+          {
+            "type": "feature",
+            "text": "sap.m.ObjectStatus: emptyIndicatorMode added"
+          },
+          {
+            "type": "DEPRECATED",
+            "text": "sap.m.LegacyControl: use NewControl instead"
+          }
+        ]
+      },
+      {
+        "library": "deprecated",
+        "changes": [
+          {
+            "type": "DEPRECATED",
+            "text": "[sap.ui.comp.smarttable.SmartTable#getUseExportToExcel] replaced by enableExport"
+          }
+        ]
+      },
+      {
+        "library": "sap.fe.core",
+        "changes": [
+          {
+            "type": "LEGACY",
+            "text": "legacy entry"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "version": "1.140.0",
+    "date": "2025.04.10",
+    "libraries": [
+      {
+        "library": "sap.m",
+        "changes": [
+          {
+            "type": "FEATURE",
+            "text": "sap.m.Button: badge support"
+          },
+          {
+            "type": "FIX",
+            "text": "sap.fe.controls: AI notice at column level",
+            "commit_url": null
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -12,13 +12,8 @@ export class TerraformBtpUrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
-    const relPath = context.relFile.replace(/\.mdx?$/, '');
-    let url = this.config.baseUrl + this.config.pathPattern.replace('{file}', relPath);
-
-    if (context.anchor) {
-      url += this.getSeparator() + context.anchor;
-    }
-
-    return url;
+    const relPath = context.relFile.replace(/^docs\//, '').replace(/\.md$/, '');
+    const registryPath = relPath === 'index' ? '' : relPath;
+    return this.buildUrl(this.config.baseUrl, registryPath);
   }
 }

@@ -89,19 +89,18 @@ const url = buildUrl('https://example.com', 'docs', 'guides', 'tutorial');
 - Automatically detects sections: guides, features, tutorials, environments
 - Example: `https://sap.github.io/cloud-sdk/docs/js/guides/remote-debugging`
 
-### SAPUI5 (`/sapui5`, `/openui5-api`, `/openui5-samples`)
+### SAPUI5 and OpenUI5 (`/sapui5`, `/openui5-api`, `/openui5-samples`)
 
-- **SAPUI5 Docs**: Uses topic IDs from frontmatter or filename
-- **API Docs**: Uses control/namespace paths
-- **Samples**: Uses sample-specific paths
-- Example: `https://ui5.sap.com/#/topic/123e4567-e89b-12d3-a456-426614174000`
+- **SAPUI5 Docs**: Uses `https://ui5.sap.com/#/topic/...` topic IDs from frontmatter, LOIO/copy comments, or index links
+- **OpenUI5 API Docs**: Uses `https://sdk.openui5.org/#/api/...` control/namespace paths
+- **OpenUI5 Samples**: Uses `https://sdk.openui5.org/#/entity/.../sample/...` sample-specific paths
 
 ### CAP (`/cap`)
 
-- Uses docsify-style URLs with `#/` fragments
+- Uses direct capire VitePress URLs
 - Supports frontmatter `id` and `slug` fields
 - Handles CDS reference docs, tutorials, and guides
-- Example: `https://cap.cloud.sap/docs/#/guides/getting-started`
+- Example: `https://cap.cloud.sap/docs/guides/services/providing-services`
 
 ### wdi5 (`/wdi5`)
 
@@ -219,4 +218,3 @@ URL generation is configured through the metadata system. Each source should hav
 1. Confirm the source ID matches between metadata and dispatcher
 2. Verify the URL generation function is exported and imported correctly
 3. Check that the function returns non-null values for valid inputs
-

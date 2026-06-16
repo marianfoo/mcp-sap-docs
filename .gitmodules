@@ -98,3 +98,7 @@
 	path = sources/terraform-provider-btp
 	url = https://github.com/SAP/terraform-provider-btp.git
 	branch = main
+[submodule "sources/architecture-center"]
+	path = sources/architecture-center
+	url = https://github.com/SAP/architecture-center.git
+	branch = dev

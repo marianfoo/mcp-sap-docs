@@ -25,6 +25,16 @@ export class DsagUrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
+    if (context.frontmatter.permalink) {
+      const permalink = context.frontmatter.permalink.startsWith('/')
+        ? context.frontmatter.permalink
+        : `/${context.frontmatter.permalink}`;
+      let url = this.config.baseUrl.replace(/\/$/, '') + permalink;
+      if (context.anchor) {
+        url += '#' + context.anchor;
+      }
+      return url;
+    }
     
     // Transform the relative file path for GitHub Pages
     // Remove docs/ prefix and .md extension, add trailing slash
@@ -37,9 +47,13 @@ export class DsagUrlGenerator extends BaseUrlGenerator {
     
     // Remove .md extension
     urlPath = urlPath.replace(/\.md$/, '');
+
+    if (/^(?:index|README)$/i.test(urlPath)) {
+      urlPath = '';
+    }
     
     // Build the final URL with trailing slash
-    let url = `${this.config.baseUrl}/${urlPath}/`;
+    let url = urlPath ? `${this.config.baseUrl}/${urlPath}/` : `${this.config.baseUrl}/`;
     
     // Add anchor if available
     if (context.anchor) {
@@ -65,6 +79,9 @@ export function generateDsagUrl(relFile: string, content: string): string {
     urlPath = urlPath.substring(5);
   }
   urlPath = urlPath.replace(/\.md$/, '');
+  if (/^(?:index|README)$/i.test(urlPath)) {
+    urlPath = '';
+  }
   
-  return `${baseUrl}/${urlPath}/`;
+  return urlPath ? `${baseUrl}/${urlPath}/` : `${baseUrl}/`;
 }

@@ -28,7 +28,9 @@
     "/abap-docs-cloud",
     "/btp-cloud-platform",
     "/sap-artificial-intelligence",
-    "/terraform-provider-btp"
+    "/terraform-provider-btp",
+    "/teched2025-dt260",
+    "/architecture-center"
   ],
   "submodulePaths": [
     "sources/sapui5-docs",
@@ -54,12 +56,15 @@
     "sources/btp-cloud-platform",
     "sources/sap-artificial-intelligence",
     "sources/abap-atc-cr-cv-s4hc",
-    "sources/terraform-provider-btp"
+    "sources/terraform-provider-btp",
+    "sources/teched2025-dt260",
+    "sources/architecture-center"
   ],
   "tools": {
     "abapLint": false,
     "abapFeatureMatrix": true,
-    "discoveryCenter": true
+    "discoveryCenter": true,
+    "ui5LibDiff": true
   },
   "server": {
     "stdioName": "Local SAP Docs",

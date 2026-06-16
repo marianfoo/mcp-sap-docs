@@ -25,6 +25,10 @@ export class Wdi5UrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
+    if (/^(?:README|index)\.md$/i.test(context.relFile)) {
+      return `${this.config.baseUrl}/#/`;
+    }
+
     const identifier = this.getIdentifierFromFrontmatter(context.frontmatter);
     
     // Use frontmatter id for docsify-style URLs
@@ -109,4 +113,3 @@ export function generateWdi5ConfigUrl(options: Wdi5UrlOptions): string | null {
 export function generateWdi5SelectorUrl(options: Wdi5UrlOptions): string | null {
   return generateWdi5Url(options); // Now handled by the main generator
 }
-

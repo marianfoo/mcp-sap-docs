@@ -39,6 +39,13 @@ import {
   getObjectDetails,
   getReleasedObjectsContext,
 } from "./sapReleasedObjects/index.js";
+import {
+  getUi5VersionDiff,
+  getUi5LibDiffCacheStats,
+  type Ui5ChangeType,
+  type Ui5LibDiffLibrary,
+  type Ui5VersionDiffResult,
+} from "./ui5LibDiff/index.js";
 
 import { SearchResponse } from "./types.js";
 import { logger } from "./logger.js";
@@ -46,6 +53,8 @@ import { search } from "./search.js";
 import { CONFIG } from "./config.js";
 import { loadMetadata, getDocUrlConfig } from "./metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./url-generation/index.js";
+import { extractLibraryIdFromPath } from "./url-generation/utils.js";
+import { extractSourceUrlFromText, readSourceContentSync } from "./sourceContent.js";
 import { isToolEnabled, getVariantName } from "./variant.js";
 import { searchDiscoveryCenter, getDiscoveryCenterServiceDetails } from "./discoveryCenter/index.js";
 
@@ -75,7 +84,7 @@ interface DocumentResult {
 /**
  * Create structured JSON response for search results (ChatGPT-compatible)
  */
-function createSearchResponse(results: SearchResult[]): any {
+function createSearchResponse(results: SearchResult[], extra: Record<string, any> = {}): any {
   // Clean the results to avoid JSON serialization issues in MCP protocol
   const cleanedResults = results.map(result => ({
     // ChatGPT requires: id, title, url (other fields optional)
@@ -90,16 +99,42 @@ function createSearchResponse(results: SearchResult[]): any {
     metadata: result.metadata
   }));
   
+  const payload = { results: cleanedResults, ...extra };
+
   // ChatGPT expects: { "results": [...] } in JSON-encoded text content
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify({ results: cleanedResults })
+        text: JSON.stringify(payload)
       }
     ],
-    structuredContent: { results: cleanedResults }
+    structuredContent: payload
   };
+}
+
+function createEmptySearchResponse(message: string, requestId?: string, extra: Record<string, any> = {}): any {
+  return createSearchResponse([], {
+    error: message,
+    requestId: requestId || 'unknown',
+    ...extra
+  });
+}
+
+function isAbsoluteHttpUrl(url?: string): boolean {
+  return !!url && /^https?:\/\//i.test(url);
+}
+
+function chooseSearchResultUrl(docUrl: string | null, path: string | undefined, id: string): string {
+  if (isAbsoluteHttpUrl(docUrl || undefined)) {
+    return docUrl!;
+  }
+
+  if (isAbsoluteHttpUrl(path)) {
+    return path!;
+  }
+
+  return `#${id}`;
 }
 
 /**
@@ -613,6 +648,176 @@ USE CASES:
             }
           },
           {
+            name: "ui5_version_diff",
+            description: `UI5 VERSION DIFF: ui5_version_diff(library="SAPUI5", from_version="1.108.0", to_version="1.130.0")
+
+FUNCTION NAME: ui5_version_diff
+
+List the new features, fixes, deprecations, and SAPUI5 What's New entries that landed between two UI5 releases, or inspect one exact release. Use this when planning or executing an upgrade so you know which workarounds can be dropped, which APIs are now deprecated, and which fixes might replace local patches.
+
+DATA SOURCE: local all-changes bundle at UI5_LIB_DIFF_BUNDLE_PATH (default: dist/data/ui5-lib-diff/all-changes.json).
+The runtime tool is local-only and does not fetch hosted URLs. Refresh the bundle during setup with npm run download:ui5-lib-diff. If a requested release is newer than the local bundle, the response includes meta.notes and meta.generatedAt so the caller can tell setup data is stale.
+
+RANGE SEMANTICS: returns changes that landed AFTER from_version up to and including to_version (i.e. what you gain by upgrading from from_version to to_version). If a requested patch version is unavailable, the tool uses the nearest lower available version with the same major.minor, matching the web app. For one release, pass version instead of a range.
+
+PARAMETERS:
+• library (optional, default "SAPUI5"): "SAPUI5" or "OpenUI5".
+• version (optional): exact release to inspect, e.g. "1.130.0". Can also be supplied as the only from_version or only to_version.
+• from_version + to_version (optional range pair): version you are upgrading FROM/TO, e.g. "1.108.0" -> "1.130.0".
+• types (optional): subset of ["FEATURE", "FIX", "DEPRECATED"]. Defaults to all three.
+• ui5_library (optional): case-insensitive substring filter on the UI5 library, e.g. "sap.m", "sap.ui.core", "sap.fe".
+• query (optional): case-insensitive substring filter on change text and What's New title/description, e.g. "Table", "ObjectStatus", "ManagedObject".
+
+RETURNS JSON with:
+• mode, library, from_version, to_version, version?
+• versionsInRange: versions covered by the range (newest first)
+• counts: { FEATURE, FIX, DEPRECATED } totals across the full range
+• totalEntries: sum of counts
+• entries: [{ version, date, library, type, text, commit_url? }]
+• whatsNewEntries, whatsNewTotalEntries: SAPUI5 What's New entries for the same version/range
+• meta: { availableVersions, minVersion, maxVersion, generatedAt, sourceDataPath, cacheSource, requested, resolved, notes? } — "notes" is a list of soft signals (version resolution, stale-bundle hints, out-of-range hints, coercion warnings)
+• sourceUrl: browser URL for human inspection of the same range
+
+USE CASES:
+• Upgrade planning: "What deprecations should I clean up before moving 1.108 -> 1.130?"
+• Workaround cleanup: filter by query="<symptom>" to find the fix that replaces a local patch
+• Library-scoped review: ui5_library="sap.m" to focus on a single library
+• Combine with @ui5/mcp-server tools (run_ui5_linter, run_manifest_validation, get_api_reference) for code-level follow-up
+
+EXAMPLES:
+ui5_version_diff(from_version="1.108.0", to_version="1.130.0", types=["DEPRECATED"])
+ui5_version_diff(version="1.130.0", ui5_library="sap.m")
+ui5_version_diff(library="OpenUI5", from_version="1.120.0", to_version="1.130.0", ui5_library="sap.m")
+ui5_version_diff(from_version="1.96.0", to_version="1.120.0", query="ObjectStatus")`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                library: {
+                  type: "string",
+                  enum: ["SAPUI5", "OpenUI5"],
+                  description: "Which UI5 flavour to diff. Defaults to SAPUI5.",
+                  default: "SAPUI5"
+                },
+                version: {
+                  type: "string",
+                  description: "Single UI5 release to inspect, e.g. \"1.130.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
+                },
+                from_version: {
+                  type: "string",
+                  description: "Version you are upgrading from (exclusive bound), e.g. \"1.108.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
+                },
+                to_version: {
+                  type: "string",
+                  description: "Version you are upgrading to (inclusive bound), e.g. \"1.130.0\". If unavailable, resolves to the nearest lower available patch with the same major.minor."
+                },
+                types: {
+                  type: "array",
+                  items: { type: "string", enum: ["FEATURE", "FIX", "DEPRECATED"] },
+                  description: "Filter to a subset of change types. Defaults to all three."
+                },
+                ui5_library: {
+                  type: "string",
+                  description: "Case-insensitive substring filter on UI5 library name (e.g. \"sap.m\", \"sap.ui.core\")."
+                },
+                query: {
+                  type: "string",
+                  description: "Case-insensitive substring filter on change text and What's New title/description."
+                }
+              }
+            },
+            outputSchema: {
+              type: "object",
+              properties: {
+                mode: { type: "string", enum: ["range", "version"] },
+                library: { type: "string" },
+                from_version: { type: "string" },
+                to_version: { type: "string" },
+                version: { type: "string" },
+                versionsInRange: { type: "array", items: { type: "string" } },
+                counts: {
+                  type: "object",
+                  properties: {
+                    FEATURE: { type: "number" },
+                    FIX: { type: "number" },
+                    DEPRECATED: { type: "number" }
+                  },
+                  required: ["FEATURE", "FIX", "DEPRECATED"],
+                  additionalProperties: false
+                },
+                totalEntries: { type: "number" },
+                entries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      version: { type: "string" },
+                      date: { type: "string" },
+                      library: { type: "string" },
+                      type: { type: "string", enum: ["FEATURE", "FIX", "DEPRECATED"] },
+                      text: { type: "string" },
+                      commit_url: { type: "string" }
+                    },
+                    required: ["version", "library", "type", "text"],
+                    additionalProperties: true
+                  }
+                },
+                whatsNewEntries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      version: { type: "string" },
+                      title: { type: "string" },
+                      description: { type: "string" },
+                      type: { type: "string" },
+                      action: { type: "string" },
+                      category: { type: "string" },
+                      validAsOf: { type: "string" },
+                      url: { type: "string" },
+                      id: {}
+                    },
+                    required: ["version", "title", "description"],
+                    additionalProperties: true
+                  }
+                },
+                whatsNewTotalEntries: { type: "number" },
+                meta: {
+                  type: "object",
+                  properties: {
+                    availableVersions: { type: "number" },
+                    minVersion: { type: "string" },
+                    maxVersion: { type: "string" },
+                    generatedAt: {
+                      type: "string",
+                      description: "Generation timestamp from the local all-changes bundle, when available."
+                    },
+                    sourceDataPath: {
+                      type: "string",
+                      description: "Local all-changes JSON bundle used for this result."
+                    },
+                    cacheSource: {
+                      type: "string",
+                      enum: ["disk"],
+                      description: "The UI5 diff runtime is local-only; responses come from the local bundle on disk."
+                    },
+                    requested: { type: "object", additionalProperties: true },
+                    resolved: { type: "object", additionalProperties: true },
+                    whatsNewAvailable: { type: "number" },
+                    notes: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Soft signals: stale-bundle hints, version resolution, out-of-range hints, coercion warnings, empty-range tips."
+                    }
+                  },
+                  additionalProperties: true
+                },
+                sourceUrl: { type: "string" }
+              },
+              required: ["mode", "library", "from_version", "to_version", "versionsInRange", "counts", "totalEntries", "entries", "whatsNewEntries", "whatsNewTotalEntries", "sourceUrl"],
+              additionalProperties: true
+            }
+          },
+          {
             name: "sap_community_search",
             description: `SEARCH SAP COMMUNITY: sap_community_search(query="search terms")
 
@@ -939,6 +1144,10 @@ RETURNS (JSON):
         );
       }
 
+      if (!isToolEnabled("ui5LibDiff")) {
+        response.tools = response.tools.filter((tool) => tool.name !== "ui5_version_diff");
+      }
+
       return response;
     });
 
@@ -1017,7 +1226,7 @@ RETURNS (JSON):
           if (topResults.length === 0) {
             console.log(`⚠️ [SEARCH TOOL] No results found for query: "${query}"`);
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: false });
-            return createErrorResponse(
+            return createEmptySearchResponse(
               `No results for "${query}". Try ABAP keywords ("SELECT", "LOOP", "RAP"), add "cloud" for ABAP Cloud syntax, or be more specific.`,
               timing.requestId
             );
@@ -1031,13 +1240,14 @@ RETURNS (JSON):
             const topic = r.id.startsWith(libraryId) ? r.id.slice(libraryId.length + 1) : '';
             
             const config = getDocUrlConfig(libraryId);
-            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', r.text, config) : null;
+            const sourceContent = config ? readSourceContentSync(libraryId, r.relFile || '') : null;
+            const docUrl = config ? generateDocumentationUrl(libraryId, r.relFile || '', sourceContent || r.text, config) : null;
             
             return {
               // ChatGPT-required format: id, title, url
               id: r.id,
               title: r.text.split('\n')[0] || r.id,
-              url: docUrl || r.path || `#${r.id}`,
+              url: chooseSearchResultUrl(docUrl, r.path, r.id),
               // Additional fields
               library_id: libraryId,
               topic: topic,
@@ -1074,7 +1284,7 @@ RETURNS (JSON):
             
             if (!res.results.length) {
               logger.logToolSuccess(name, timing.requestId, timing.startTime, 0, { fallback: true });
-              return createErrorResponse(
+              return createEmptySearchResponse(
                 res.error || `No fallback results for "${query}". Try ABAP keywords ("SELECT", "LOOP", "RAP"), add "cloud" for ABAP Cloud syntax, or be more specific.`,
                 timing.requestId
               );
@@ -1097,7 +1307,7 @@ RETURNS (JSON):
             return createSearchResponse(fallbackResults);
           } catch (fallbackError) {
             logger.logToolError(name, timing.requestId, timing.startTime, fallbackError, true);
-            return createErrorResponse(
+            return createEmptySearchResponse(
               `Search temporarily unavailable. Wait 30 seconds and retry, or use more specific search terms.`,
               timing.requestId
             );
@@ -1135,13 +1345,15 @@ RETURNS (JSON):
           }
           
           // Transform document content to ChatGPT-compatible format
-          const config = getDocUrlConfig(library_id);
-          const docUrl = config ? generateDocumentationUrl(library_id, '', text, config) : null;
+          const fetchedSourceUrl = extractSourceUrlFromText(text);
+          const rootLibraryId = library_id.startsWith('/') ? extractLibraryIdFromPath(library_id) : library_id;
+          const config = getDocUrlConfig(rootLibraryId);
+          const docUrl = config ? generateDocumentationUrl(rootLibraryId, '', text, config) : null;
           const document: DocumentResult = {
             id: library_id,
             title: library_id.replace(/^\//, '').replace(/\//g, ' > ') + (topic ? ` (${topic})` : ''),
             text: text,
-            url: docUrl || `#${library_id}`,
+            url: fetchedSourceUrl || docUrl || `#${library_id}`,
             metadata: {
               source: 'abap-docs',
               library: library_id,
@@ -1243,23 +1455,11 @@ RETURNS (JSON):
 
           if (!communityResponse.results.length) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({
-                    error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
-                    requestId: timing.requestId,
-                    requestUrl,
-                  }),
-                },
-              ],
-              structuredContent: {
-                error: communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
-                requestId: timing.requestId,
-                requestUrl,
-              },
-            };
+            return createEmptySearchResponse(
+              communityResponse.error || `No SAP Community posts found for "${query}". Try different keywords.`,
+              timing.requestId,
+              { requestUrl }
+            );
           }
 
           const searchResults: SearchResult[] = communityResponse.results.map((r, index) => ({
@@ -1286,23 +1486,11 @@ RETURNS (JSON):
           };
         } catch (error) {
           logger.logToolError(name, timing.requestId, timing.startTime, error);
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({
-                  error: "Error searching SAP Community. Please try again later.",
-                  requestId: timing.requestId,
-                  requestUrl,
-                }),
-              },
-            ],
-            structuredContent: {
-              error: "Error searching SAP Community. Please try again later.",
-              requestId: timing.requestId,
-              requestUrl,
-            },
-          };
+          return createEmptySearchResponse(
+            "Error searching SAP Community. Please try again later.",
+            timing.requestId,
+            { requestUrl }
+          );
         }
       }
 
@@ -1367,6 +1555,98 @@ RETURNS (JSON):
           logger.logToolError(name, timing.requestId, timing.startTime, error);
           return createErrorResponse(
             `Error searching ABAP Feature Matrix: ${error}`,
+            timing.requestId
+          );
+        }
+      }
+
+      if (name === "ui5_version_diff") {
+        if (!isToolEnabled("ui5LibDiff")) {
+          const timing = logger.logToolStart(name, "disabled", clientMetadata);
+          logger.logToolError(name, timing.requestId, timing.startTime, new Error("Tool disabled for this variant"));
+          return createErrorResponse(
+            `Tool ${name} is disabled for MCP variant ${getVariantName()}.`,
+            timing.requestId
+          );
+        }
+
+        const {
+          library,
+          version,
+          from_version,
+          to_version,
+          types,
+          ui5_library,
+          query,
+        } = (args ?? {}) as {
+          library?: Ui5LibDiffLibrary;
+          version?: string;
+          from_version?: string;
+          to_version?: string;
+          types?: Ui5ChangeType[];
+          ui5_library?: string;
+          query?: string;
+        };
+
+        const timing = logger.logToolStart(
+          name,
+          `${library ?? "SAPUI5"} ${version ?? `${from_version ?? "?"} -> ${to_version ?? "?"}`}`,
+          clientMetadata
+        );
+
+        if (!version && !from_version && !to_version) {
+          logger.logToolError(
+            name,
+            timing.requestId,
+            timing.startTime,
+            new Error("Missing version or range")
+          );
+          return createErrorResponse(
+            "Missing required parameters: pass version=\"1.130.0\" for one release, or from_version=\"1.108.0\" and to_version=\"1.130.0\" for a range.",
+            timing.requestId
+          );
+        }
+
+        const cacheStats = getUi5LibDiffCacheStats();
+        console.log(`\n🔍 [UI5_VERSION_DIFF] ========================================`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Library: ${library ?? "SAPUI5"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Range: ${version ?? `${from_version ?? "?"} -> ${to_version ?? "?"}`}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Types: ${Array.isArray(types) ? types.join(",") : "ALL"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] ui5_library filter: ${ui5_library ?? "(none)"}, query: ${query ?? "(none)"}`);
+        console.log(`🔍 [UI5_VERSION_DIFF] Cache: ${JSON.stringify(cacheStats)}`);
+
+        try {
+          const result: Ui5VersionDiffResult = await getUi5VersionDiff({
+            library,
+            version,
+            from_version,
+            to_version,
+            types,
+            ui5_library,
+            query,
+          });
+
+          console.log(
+            `🔍 [UI5_VERSION_DIFF] versions=${result.versionsInRange.length} total=${result.totalEntries} returned=${result.entries.length} whatsNew=${result.whatsNewTotalEntries}`
+          );
+          console.log(`🔍 [UI5_VERSION_DIFF] ========================================\n`);
+
+          logger.logToolSuccess(name, timing.requestId, timing.startTime, result.entries.length, {
+            totalEntries: result.totalEntries,
+            whatsNewTotalEntries: result.whatsNewTotalEntries,
+            versionsInRange: result.versionsInRange.length,
+            counts: result.counts,
+          });
+
+          return {
+            content: [{ type: "text", text: JSON.stringify(result) }],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.logToolError(name, timing.requestId, timing.startTime, error);
+          const message = error instanceof Error ? error.message : String(error);
+          return createErrorResponse(
+            `Error running ui5_version_diff: ${message}`,
             timing.requestId
           );
         }

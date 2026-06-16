@@ -200,6 +200,67 @@ export function searchFTS(userQuery: string, filters: Filters = {}, limit = 20):
 }
 
 /**
+ * Lookup exact document titles/IDs before FTS prefix ranking.
+ * This catches keyword-document IDs such as ABAPSELECT, where FTS prefix matching
+ * can otherwise rank ABAPSELECTION-* pages first.
+ */
+export function lookupExactDocs(userQuery: string, filters: Filters = {}, limit = 10): FTSResult[] {
+  const exact = userQuery.trim().replace(/^\/+/, '');
+  if (!/^[A-Za-z0-9_-]{3,100}$/.test(exact)) {
+    return [];
+  }
+
+  const database = openDb();
+  const conditions = [
+    "(lower(title) = lower(?) OR lower(id) = lower(?) OR lower(id) LIKE lower(?))"
+  ];
+  const params: any[] = [exact, exact.startsWith('/') ? exact : `/${exact}`, `%/${exact}`];
+
+  if (filters.libraries?.length) {
+    const placeholders = filters.libraries.map(() => "?").join(",");
+    conditions.push(`libraryId IN (${placeholders})`);
+    params.push(...filters.libraries);
+  }
+
+  if (filters.types?.length) {
+    const placeholders = filters.types.map(() => "?").join(",");
+    conditions.push(`type IN (${placeholders})`);
+    params.push(...filters.types);
+  }
+
+  const sql = `
+    SELECT
+      id, libraryId, type, title, description, relFile, snippetCount,
+      title AS highlight,
+      -999.0 AS bm25Score
+    FROM docs
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY length(id), id
+    LIMIT ?
+  `;
+
+  try {
+    const stmt = database.prepare(sql);
+    const rows = stmt.all(...params, limit) as any[];
+
+    return rows.map(r => ({
+      id: r.id,
+      libraryId: r.libraryId,
+      type: r.type,
+      title: r.title,
+      description: r.description,
+      relFile: r.relFile,
+      snippetCount: r.snippetCount,
+      bm25Score: Number(r.bm25Score),
+      highlight: r.highlight || r.title
+    }));
+  } catch (error) {
+    console.warn("Exact doc lookup failed:", error);
+    return [];
+  }
+}
+
+/**
  * Get database stats for monitoring
  */
 export function getFTSStats(): { rowCount: number; dbSize: number; mtime: string } | null {

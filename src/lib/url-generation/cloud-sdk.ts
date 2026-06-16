@@ -6,6 +6,7 @@
 import { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
 import { FrontmatterData } from './utils.js';
 import { DocUrlConfig } from '../metadata.js';
+import { buildDocusaurusPath } from './docusaurus.js';
 
 export interface CloudSdkUrlOptions {
   relFile: string;
@@ -25,44 +26,8 @@ export class CloudSdkUrlGenerator extends BaseUrlGenerator {
     section: string;
     anchor: string | null;
   }): string | null {
-    const identifier = this.getIdentifierFromFrontmatter(context.frontmatter);
-    
-    // Use frontmatter ID if available (preferred method)
-    if (identifier) {
-      // Special handling for AI SDK variants
-      if (this.isAiSdk()) {
-        return this.buildAiSdkUrl(context.relFile, identifier);
-      } else {
-        return this.buildUrl(this.config.baseUrl, context.section, identifier);
-      }
-    }
-    
-    return null;
-  }
-  
-  /**
-   * Check if this is an AI SDK variant
-   */
-  private isAiSdk(): boolean {
-    return this.libraryId.includes('-ai-');
-  }
-  
-  /**
-   * Build AI SDK specific URL with proper section handling
-   */
-  private buildAiSdkUrl(relFile: string, identifier: string): string {
-    // Extract section from the file path for AI SDK
-    if (this.isInDirectory(relFile, 'langchain')) {
-      return this.buildUrl(this.config.baseUrl, 'langchain', identifier);
-    } else if (this.isInDirectory(relFile, 'getting-started')) {
-      return this.buildUrl(this.config.baseUrl, 'getting-started', identifier);
-    } else if (this.isInDirectory(relFile, 'examples')) {
-      return this.buildUrl(this.config.baseUrl, 'examples', identifier);
-    }
-    
-    // Default behavior for other sections
-    const section = this.extractSection(relFile);
-    return this.buildUrl(this.config.baseUrl, section, identifier);
+    const route = buildDocusaurusPath(context.relFile, context.frontmatter);
+    return this.buildUrl(this.config.baseUrl, route);
   }
   
   /**
@@ -104,4 +69,3 @@ export function generateCloudSdkAiUrl(options: CloudSdkUrlOptions): string | nul
 export function generateCloudSdkUrlForLibrary(options: CloudSdkUrlOptions): string | null {
   return generateCloudSdkUrl(options);
 }
-

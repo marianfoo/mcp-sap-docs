@@ -19,6 +19,7 @@ import {
 } from "./metadata.js";
 import { generateDocumentationUrl as generateUrl } from "./url-generation/index.js";
 import { getSapHelpContent } from "./sapHelp.js";
+import { readSourceContentSync } from "./sourceContent.js";
 
 // Use the new URL generation system
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
@@ -28,6 +29,23 @@ function generateDocumentationUrl(libraryId: string, relFile: string, content: s
   }
 
   return generateUrl(libraryId, relFile, content, config);
+}
+
+function getSearchResultUrl(result: any): string | null {
+  if (result.url) {
+    return result.url;
+  }
+
+  const { libraryId } = parseDocumentId(result.docId);
+  const relFile = result.relFile || '';
+
+  if (!relFile) {
+    const config = getDocUrlConfig(libraryId);
+    return config?.baseUrl || null;
+  }
+
+  const sourceContent = readSourceContentSync(libraryId, relFile);
+  return generateDocumentationUrl(libraryId, relFile, sourceContent || result.docDescription || result.docTitle || '');
 }
 
 // Get the directory of this script and find the project root
@@ -138,10 +156,14 @@ function formatSearchResultEntry(result: any, queryContext: string): string {
   const score = result.score.toFixed(0);
   const description = result.docDescription.substring(0, 100);
   const contextEmoji = getContextEmoji(queryContext);
+  const resultUrl = getSearchResultUrl(result);
   
   let formatted = `${contextEmoji} **${result.docTitle}** (Score: ${score})\n`;
   formatted += `   📄 ${description}${description.length >= 100 ? '...' : ''}\n`;
   formatted += `   📂 Library: \`${libraryId}\`\n`;
+  if (resultUrl) {
+    formatted += `   🔗 ${resultUrl}\n`;
+  }
   
   if (topic) {
     formatted += `   🎯 Topic: \`${topic}\`\n`;
@@ -154,11 +176,16 @@ function formatSearchResultEntry(result: any, queryContext: string): string {
 }
 
 // Format JavaScript content for better readability in documentation context
-function formatJSDocContent(content: string, controlName: string): string {
+function formatJSDocContent(content: string, filePath: string, controlName: string): string {
   const lines = content.split('\n');
   const result: string[] = [];
+  const documentationUrl = generateDocumentationUrl('/openui5-api', filePath, content);
   
   result.push(`# ${controlName} - OpenUI5 Control API`);
+  result.push('');
+  result.push(`**Source:** OpenUI5 API Documentation`);
+  result.push(`**URL:** ${documentationUrl || 'Documentation URL not available'}`);
+  result.push(`**File:** ${filePath}`);
   result.push('');
   
   // Extract main JSDoc comment
@@ -249,10 +276,15 @@ function formatSampleContent(content: string, filePath: string, title: string): 
   const fileExt = path.extname(filePath);
   const controlName = title.split(' ')[0]; // Extract control name from title
   const fileName = path.basename(filePath);
+  const documentationUrl = generateDocumentationUrl('/openui5-samples', filePath, content);
   
   const result: string[] = [];
   
   result.push(`# ${title}`);
+  result.push('');
+  result.push(`**Source:** OpenUI5 Samples Documentation`);
+  result.push(`**URL:** ${documentationUrl || 'Documentation URL not available'}`);
+  result.push(`**File:** ${filePath}`);
   result.push('');
   
   // Add file information
@@ -1168,6 +1200,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
             docId: doc.id,
             docTitle: doc.title,
             docDescription: doc.description,
+            relFile: doc.relFile,
             matchType,
             snippetCount: doc.snippetCount,
             source: 'docs',
@@ -1227,6 +1260,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
             docId: doc.id,
             docTitle: doc.title,
             docDescription: doc.description,
+            relFile: doc.relFile,
             matchType: bestMatchType,
             snippetCount: doc.snippetCount,
             source: 'docs'
@@ -1367,12 +1401,13 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
   return {
     results: topResults.map((r, index) => {
       const { libraryId, topic } = parseDocumentId(r.docId);
+      const resultUrl = getSearchResultUrl(r);
       return {
         library_id: libraryId,
         topic: topic,
         id: r.docId,
         title: r.docTitle,
-        url: r.url || `#${r.docId}`,
+        url: resultUrl || `#${r.docId}`,
         snippet: r.docDescription,
         score: r.score,
         metadata: {
@@ -1421,7 +1456,7 @@ export async function fetchLibraryDocumentation(
         
         // For JavaScript API files, format the content for better readability
         if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return formatJSDocContent(content, doc.title || '');
+          return formatJSDocContent(content, doc.relFile, doc.title || '');
         }
         // For sample files, format them appropriately
         else if (lib.id === '/openui5-samples') {
@@ -1469,7 +1504,7 @@ ${content}
           
           // For JavaScript API files, format the content for better readability
           if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-            return formatJSDocContent(content, doc.title || '');
+            return formatJSDocContent(content, doc.relFile, doc.title || '');
           }
           // For sample files, format them appropriately
           else if (lib.id === '/openui5-samples') {
@@ -1524,7 +1559,7 @@ ${content}
         
         // For JavaScript API files, format the content for better readability
         if (doc.relFile && doc.relFile.endsWith('.js') && baseLib.id === '/openui5-api') {
-          const formattedContent = formatJSDocContent(content, doc.title || '');
+          const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
           parts.push(formattedContent);
         }
         // For sample files, format them appropriately
@@ -1578,7 +1613,7 @@ ${content}
         
         // Format the content appropriately based on library type
         if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return formatJSDocContent(content, doc.title || '');
+          return formatJSDocContent(content, doc.relFile, doc.title || '');
         } else if (lib.id === '/openui5-samples') {
           return formatSampleContent(content, doc.relFile, doc.title || '');
         } else if (getDocUrlConfig(lib.id)) {
@@ -1623,7 +1658,7 @@ ${content}
         const content = await fs.readFile(abs, "utf8");
         
         if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          const formattedContent = formatJSDocContent(content, doc.title || '');
+          const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
           parts.push(formattedContent);
         } else if (lib.id === '/openui5-samples') {
           const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
@@ -1670,7 +1705,7 @@ ${content}
     
     // For JavaScript API files, format the content for better readability
     if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-      const formattedContent = formatJSDocContent(content, doc.title || '');
+      const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
       parts.push(formattedContent);
     }
     // For sample files, format them appropriately
@@ -1842,7 +1877,7 @@ export async function readDocumentationResource(uri: string) {
     // Format files for better readability
     let formattedContent = content;
     if (doc.relFile && doc.relFile.endsWith('.js') && libraryId === '/openui5-api') {
-      formattedContent = formatJSDocContent(content, doc.title || '');
+      formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
     } else if (libraryId === '/openui5-samples') {
       formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
     } else if (getDocUrlConfig(libraryId)) {
@@ -1918,4 +1953,4 @@ export async function searchCommunity(query: string, minKudos = 1, k = 30): Prom
       error: `Error searching SAP Community: ${error?.message || 'Unknown error'}. Please try again later.` 
     };
   }
-} 
+}

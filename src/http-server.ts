@@ -8,10 +8,11 @@ import { search } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
 import { getDocUrlConfig } from "./lib/metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
-import { getAllowedSubmodulePaths, getVariantConfig } from "./lib/variant.js";
+import { getAllowedSubmodulePaths, getVariantConfig, isToolEnabled } from "./lib/variant.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
+import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -309,6 +310,12 @@ const server = createServer(async (req, res) => {
   prefetchFeatureMatrix();
   // Pre-load SAP Released Objects data (fire-and-forget, never blocks startup)
   prefetchReleasedObjects();
+  // Pre-warm the UI5 Lib Diff data when the tool is enabled (fire-and-forget)
+  if (isToolEnabled("ui5LibDiff")) {
+    prefetchUi5LibDiff().catch((err: Error) =>
+      console.warn("ui5 lib diff prefetch failed:", err.message)
+    );
+  }
   // Pre-load the embedding model so the first search is fast (fire-and-forget)
   loadEmbeddingModel().catch((err: Error) =>
     console.warn("embedding model pre-load failed:", err.message)

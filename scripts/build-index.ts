@@ -211,7 +211,7 @@ const SOURCES: SourceConfig[] = [
     id: "/cap-fiori-showcase",
     name: "CAP Fiori Elements Feature Showcase",
     description: "SAP Fiori Elements features and annotations showcase using CAP",
-    filePattern: "*.md",
+    filePattern: "**/*.{md,cds}",
     type: "markdown" as const
   },
   {
@@ -257,6 +257,15 @@ const SOURCES: SourceConfig[] = [
     name: "RAP Reuse Services",
     description: "RAP reuse services examples - Number Ranges, Change Documents, Mail, Adobe Forms",
     filePattern: "**/*.{md,abap,cds}",
+    type: "markdown" as const
+  },
+  {
+    repoName: "architecture-center",
+    absDir: join("sources", "architecture-center", "docs", "ref-arch"),
+    id: "/architecture-center",
+    name: "SAP Architecture Center",
+    description: "SAP Enterprise Architecture Reference Library - Reference architectures for SAP solutions",
+    filePattern: "**/readme.md",
     type: "markdown" as const
   },
   {
@@ -914,4 +923,4 @@ async function main() {
   console.log("✅  Index built with", Object.keys(all).length, "libraries.");
 }
 
-main(); 
+main();

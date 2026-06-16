@@ -5,6 +5,7 @@ export interface VariantToolFlags {
   abapLint: boolean;
   abapFeatureMatrix: boolean;
   discoveryCenter: boolean;
+  ui5LibDiff: boolean;
 }
 
 export interface VariantServerIdentity {

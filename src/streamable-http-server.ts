@@ -8,12 +8,12 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { logger } from "./lib/logger.js";
 import { BaseServerHandler } from "./lib/BaseServerHandler.js";
-import { getVariantConfig } from "./lib/variant.js";
+import { getVariantConfig, isToolEnabled } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
+import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 
-// x-release-please-version
-const VERSION = "0.3.32";
+const VERSION = "0.3.45"; // x-release-please-version
 const variant = getVariantConfig();
 
 
@@ -89,6 +89,13 @@ async function main() {
   // Pre-warm the ABAP Feature Matrix (fire-and-forget, never blocks startup)
   prefetchFeatureMatrix();
 
+  // Pre-warm the UI5 Lib Diff data when the tool is enabled (fire-and-forget)
+  if (isToolEnabled("ui5LibDiff")) {
+    prefetchUi5LibDiff().catch((err: Error) =>
+      logger.warn("ui5 lib diff prefetch failed", { error: err.message })
+    );
+  }
+
   // Pre-load the embedding model so the first search is fast (fire-and-forget)
   loadEmbeddingModel().catch((err: Error) =>
     logger.warn("embedding model pre-load failed", { error: err.message })
@@ -157,8 +164,14 @@ async function main() {
           method: req.method,
           transportCount: Object.keys(transports).length
         });
-      } else if (!sessionId && req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
-        // New initialization request - create new transport
+      } else if (req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
+        // Initialization request — create a fresh transport.
+        //
+        // We also enter this branch if `sessionId` is present but doesn't match
+        // any live transport (server restarted, session cleaned up via
+        // `onsessionclosed`, in-memory map wiped). Per MCP spec the client is
+        // permitted to re-send `initialize` to recover; the server generates a
+        // new Mcp-Session-Id and the client should adopt it.
         const cleanupTransport = (
           sessionId: string | undefined,
           trigger: "onsessionclosed" | "onclose",
@@ -211,22 +224,49 @@ async function main() {
           requestId,
           method: req.method
         });
+      } else if (req.method === 'POST' && req.is('application/json')) {
+        // Stateless one-shot transport. Reached in two cases:
+        //   1. No session ID (clients like Joule Studio that don't maintain sessions).
+        //   2. Session ID present but unknown to the server (stale session — server
+        //      restarted, container redeployed, or session was cleaned up). Without
+        //      this fallback the client gets a hard HTTP 400 and many MCP clients
+        //      (notably Cursor) won't auto-recover by re-initializing, so the user
+        //      sees "No valid session ID" errors until they manually reconnect the
+        //      MCP. Treating stale sessions as one-shot trades a tiny amount of
+        //      per-session state for restart resilience — appropriate for a public,
+        //      read-only docs/search server.
+        logger.debug('Stateless / stale-session MCP request — creating one-shot transport', {
+          requestId,
+          bodyMethod: req.body?.method,
+          hasStaleSessionId: Boolean(sessionId),
+          userAgent: req.headers['user-agent']
+        });
+
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, // Stateless — no session
+        });
+
+        const server = createServer();
+        await server.connect(transport);
       } else {
-        // Invalid request - no session ID or not initialization request
+        // Invalid request — only non-POST or non-JSON requests reach this branch
+        // after the stateless-fallback above. Typical case: GET/DELETE /mcp
+        // without a live session (the MCP spec uses POST for the actual JSON-RPC
+        // traffic; GET/DELETE are only valid on an already-initialized stream).
         logger.warn('Invalid MCP request', {
           requestId,
           method: req.method,
           hasSessionId: !!sessionId,
-          isInitRequest: req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize',
+          contentType: req.headers['content-type'] || 'none',
           sessionId: sessionId || 'none',
           userAgent: req.headers['user-agent']
         });
-        
+
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: 'Bad Request: No valid session ID provided or not an initialization request',
+            message: 'Bad Request: MCP requests must be POST with application/json (or GET/DELETE on a live session).',
           },
           id: null,
         });
