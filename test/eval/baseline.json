@@ -1,0 +1,356 @@
+{
+  "gitCommit": "bd5d738",
+  "agg": {
+    "queries": 19,
+    "mrr": 0.9122807017543861,
+    "hitAtK": {
+      "1": 0.8421052631578947,
+      "3": 1,
+      "5": 1,
+      "10": 1
+    },
+    "misses": 0
+  },
+  "rows": [
+    {
+      "id": "abap-regex-pcre",
+      "category": "abap-regex",
+      "query": "FIND PCRE regex with unicode character property class",
+      "expected": [
+        "ABENREGEX_PCRE_SYNTAX"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-gzip",
+      "category": "abap-api",
+      "query": "compress binary data with CL_ABAP_GZIP",
+      "expected": [
+        "ABENCL_ABAP_GZIP"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-string-templates",
+      "category": "abap-strings",
+      "query": "string template formatting options in ABAP",
+      "expected": [
+        "ABENSTRING_TEMPLATES_PREDEF_FORMAT",
+        "ABENSTRING_TEMPLATES"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-authority-check",
+      "category": "abap-security",
+      "query": "perform an authority check in ABAP",
+      "expected": [
+        "ABAPAUTHORITY-CHECK",
+        "ABENBC_AUTHORITY_CHECK"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-for-all-entries",
+      "category": "abap-sql",
+      "query": "SELECT FOR ALL ENTRIES performance",
+      "expected": [
+        "ABENWHERE_ALL_ENTRIES",
+        "FOR_ALL_ENTRIES"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-loop-group-by",
+      "category": "abap-itab",
+      "query": "loop at internal table group by",
+      "expected": [
+        "ABAPLOOP_AT_GROUP",
+        "LOOP_AT_ITAB_GROUP_BY"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-secondary-key",
+      "category": "abap-itab",
+      "query": "secondary internal table key sorted hashed",
+      "expected": [
+        "SECONDARY_KEY",
+        "01_Internal_Tables"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "abap-unit-test",
+      "category": "abap-test",
+      "query": "ABAP unit test class for testing methods",
+      "expected": [
+        "ABAPCLASS_FOR_TESTING",
+        "ABAPMETHODS_TESTING"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "cds-define-view",
+      "category": "cds",
+      "query": "define CDS view entity with select from",
+      "expected": [
+        "ABENCDS_DEFINE_VIEW_ENTITY"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "cds-value-help-annotation",
+      "category": "cds-annotation",
+      "query": "value help annotation for a CDS field",
+      "expected": [
+        "ABENCDS_F1_DEFINE_ANNOTATION_TYPE",
+        "field-help",
+        "valueHelp"
+      ],
+      "firstRelevantRank": 2,
+      "rr": 0.5,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "rap-determination",
+      "category": "rap",
+      "query": "RAP determination on save in behavior definition",
+      "expected": [
+        "ABENBDL_DETERMINATIONS"
+      ],
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "rap-eml-modify",
+      "category": "rap-eml",
+      "query": "modify entity with EML in RAP",
+      "expected": [
+        "ABAPMODIFY_ENTITY_ENTITIES_OP",
+        "08_EML"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "ui5-two-way-binding",
+      "category": "ui5",
+      "query": "JSONModel two way data binding in UI5",
+      "expected": [
+        "two-way-data-binding",
+        "data-binding-68b9644",
+        "odata-v2-model"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "ui5-growing-table",
+      "category": "ui5",
+      "query": "growing table scroll in sap.m.Table",
+      "expected": [
+        "growing-feature-for-table-and-list",
+        "GrowingList"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "ui5-fiori-elements-lineitem",
+      "category": "fiori-elements",
+      "query": "fiori elements list report line item annotation",
+      "expected": [
+        "06_SAP_Fiori_Elements",
+        "LineItem"
+      ],
+      "firstRelevantRank": 2,
+      "rr": 0.5,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "wdi5-locator",
+      "category": "wdi5",
+      "query": "wdi5 locator to click a button",
+      "expected": [
+        "/wdi5/locators",
+        "/wdi5/usage"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "cap-associations",
+      "category": "cap",
+      "query": "define entity associations in CAP",
+      "expected": [
+        "/cap/guides/domain-modeling#associations",
+        "/cap/cds/cdl"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "cap-expose-projection",
+      "category": "cap",
+      "query": "expose entities as a projection in a CAP service",
+      "expected": [
+        "/cap/cds/cdl#exposed-entities",
+        "/cap/guides/using-services"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    },
+    {
+      "id": "btp-destination",
+      "category": "btp",
+      "query": "BTP destination service for connectivity",
+      "expected": [
+        "btp-destination-service",
+        "destination"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 50
+    }
+  ]
+}

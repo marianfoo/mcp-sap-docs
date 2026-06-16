@@ -32,6 +32,12 @@ export interface UnifiedSearchOptions {
   includeSamples?: boolean;
   abapFlavor?: 'standard' | 'cloud' | 'auto';
   sources?: string[];
+  /**
+   * Optional SAP Help docs-portal version filter (e.g. "2022.002" or bare "2022").
+   * Applies ONLY to the online SAP Help source; offline docs are version-pinned by
+   * submodule and unaffected. Omitted → SAP Help returns Latest (prior behaviour).
+   */
+  version?: string;
 }
 
 // Timeout constant for online sources (10 seconds)
@@ -67,7 +73,11 @@ function rrf(rank: number, k = RRF_K): number {
 function canonicalUrl(u: string): string {
   try {
     const url = new URL(u);
-    // Remove params that create duplicate entries
+    // Remove params that create duplicate entries.
+    // Stripping `version` is safe even when the caller pins a version: SAP Help filters
+    // server-side, so every hit in one search shares that version — there are no
+    // cross-version duplicates of the same doc to preserve. (If we ever return multiple
+    // versions of one loio in a single response, revisit this.)
     url.searchParams.delete("locale");
     url.searchParams.delete("state");
     url.searchParams.delete("version");
@@ -341,7 +351,8 @@ export async function search(
     includeOnline = true,  // Online search enabled by default for comprehensive results
     includeSamples = true,
     abapFlavor = 'auto',
-    sources
+    sources,
+    version
   } = options;
 
   // Load metadata for boosts and query expansion
@@ -610,8 +621,8 @@ export async function search(
     console.log(`🌐 [ONLINE] Starting online searches for "${query}" (${ONLINE_TIMEOUT_MS}ms timeout)...`);
     
     const onlineSearches = await Promise.allSettled([
-      // SAP Help search with timeout
-      withTimeout(searchSapHelp(query), ONLINE_TIMEOUT_MS, 'SAP Help search'),
+      // SAP Help search with timeout (version filter applies to this source only)
+      withTimeout(searchSapHelp(query, version), ONLINE_TIMEOUT_MS, 'SAP Help search'),
       // SAP Community search with timeout  
       withTimeout(searchCommunity(query), ONLINE_TIMEOUT_MS, 'SAP Community search'),
       // Software-Heroes search with timeout - search both EN and DE languages
