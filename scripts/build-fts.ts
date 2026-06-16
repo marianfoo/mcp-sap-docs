@@ -144,9 +144,12 @@ function main() {
   console.log(`   📍 Location: ${DST}`);
 }
 
-// ES module equivalent of require.main === module
-import { fileURLToPath } from 'url';
-if (import.meta.url === `file://${process.argv[1]}`) {
+// ES module equivalent of require.main === module.
+// pathToFileURL makes this work on Windows too (backslashes, spaces, drive letters).
+// The naive `file://${process.argv[1]}` never matches import.meta.url on Windows,
+// silently skipping main() — which left dist/data/docs.sqlite ungenerated.
+import { pathToFileURL } from 'url';
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main();
   } catch (error) {
