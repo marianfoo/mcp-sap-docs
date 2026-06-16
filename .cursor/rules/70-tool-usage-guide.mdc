@@ -21,7 +21,7 @@ The SAP docs MCP provides 5 specialized tools for different types of SAP documen
 **Use for:**
 - **UI5 controls and components** (Button, Table, Wizard)
 - **CAP framework concepts** (entities, services, annotations)
-- **ABAP documentation** (all versions 7.52-7.58 + latest)
+- **ABAP documentation** (Standard + Cloud variants)
 - **Development frameworks** (wdi5 testing, UI5 Tooling)
 - **Best practices and examples** (ABAP cheat sheets, Clean ABAP)
 - **Fiori Elements showcases and patterns**
@@ -34,27 +34,26 @@ search: "button properties"                # UI5 Button documentation
 search: "fiori elements annotations"       # Fiori Elements patterns  
 search: "wdi5 testing"                     # Testing framework
 search: "clean abap practices"             # Style guidelines
-search: "SELECT statements 7.58"           # ABAP syntax (specific version)
-search: "inline declarations"              # ABAP latest (default)
-search: "LOOP 7.57"                        # Auto-detects ABAP 7.57
+search: "inline declarations"              # ABAP Standard (default)
+search: "inline declarations cloud"        # ABAP Cloud variant
 ```
 
 **ABAP Integration:**
 - ABAP docs are fully integrated (no separate tools needed)
-- Latest ABAP shown by default for general queries
-- Version auto-detection from query (e.g., "LOOP 7.57" searches ABAP 7.57)
-- 40,761+ ABAP files across 8 versions (7.52-7.58 + latest)
+- Standard ABAP shown by default for general queries
+- Variant selection from query (e.g., "LOOP cloud" searches ABAP Cloud)
+- ABAP Standard + Cloud keyword documentation (on-premise + BTP)
 
 ### **Tool Selection Matrix**
 
 | Query Type | Use This Tool | Reasoning |
 |------------|---------------|-----------|
 | "How do I create a Button?" | `search` | UI5 control examples and guides |
-| "SELECT statement syntax" | `search` | ABAP integrated - add version if needed |
+| "SELECT statement syntax" | `search` | ABAP integrated - add "cloud" if needed |
 | "Fiori Elements annotations" | `search` | Cross-platform examples and showcases |
-| "TRY CATCH in ABAP 7.57" | `search` | ABAP with version auto-detection |
+| "TRY CATCH in ABAP Cloud" | `search` | ABAP with variant selection |
 | "Clean ABAP practices" | `search` | Style guides and best practices |
-| "LOOP AT internal table" | `search` | ABAP latest (or add version) |
+| "LOOP AT internal table" | `search` | ABAP Standard (or add "cloud") |
 | "wdi5 testing setup" | `search` | Testing framework documentation |
 | "CDS view annotations" | `search` | CAP and examples unified |
 | "Community discussions on errors" | `sap_community_search` | Real-world solutions and discussions |
@@ -62,8 +61,8 @@ search: "LOOP 7.57"                        # Auto-detects ABAP 7.57
 
 ## Content Sources by Tool
 
-### **`search` Sources (27 total, including 8 ABAP versions)**
-- **ABAP**: 40,761+ files across 8 versions (7.52-7.58 + latest), cheat sheets, style guides, Fiori showcase
+### **`search` Sources (27 total, including ABAP Standard + Cloud)**
+- **ABAP**: Standard + Cloud keyword docs, cheat sheets, style guides, Fiori showcase
 - **UI5**: SAPUI5, OpenUI5 API/Samples, TypeScript, Custom Controls, Tooling, Web Components
 - **CAP**: Framework docs, Fiori Elements showcase  
 - **Testing**: wdi5 framework and examples
@@ -71,25 +70,23 @@ search: "LOOP 7.57"                        # Auto-detects ABAP 7.57
 - **Guidelines**: SAP style guides, community best practices
 
 ### **Version Management (ABAP)**
-- **Latest by default**: General ABAP queries show latest version only
-- **Version auto-detection**: "LOOP 7.57" automatically filters to ABAP 7.57
-- **Smart filtering**: Prevents duplicate results across versions
-- **Context boosting**: Requested versions get 2.0x score boost
+- **Standard by default**: General ABAP queries show the Standard variant
+- **Variant selection**: "LOOP cloud" filters to ABAP Cloud
+- **Smart filtering**: Prevents duplicate results across variants
+- **Context boosting**: Requested variant gets a score boost
 
 ## Advanced Usage Patterns
 
 ### **Progressive Discovery**
 1. **Start broad**: Use `search` for general concepts (all sources)
-2. **Get specific**: Add version numbers for ABAP-specific versions
+2. **Get specific**: Add "cloud" for the ABAP Cloud variant
 3. **Cross-reference**: Use `sap_community_search` for real-world examples
 4. **Deep dive**: Use `sap_help_search` for product documentation
 
-### **ABAP Version-Specific Queries**
+### **ABAP Variant-Specific Queries**
 ```
-search: "NEW operator"              # Shows latest ABAP version
-search: "NEW operator 7.58"         # Targets ABAP 7.58 specifically
-search: "NEW operator 7.54"         # Targets ABAP 7.54 for compatibility check
-search: "LOOP 7.57"                 # Auto-detects and filters to ABAP 7.57
+search: "NEW operator"              # ABAP Standard (default)
+search: "NEW operator cloud"        # ABAP Cloud variant
 ```
 
 ### **Comprehensive Multi-Source Coverage**
@@ -100,8 +97,8 @@ sap_community_search: "fiori elements tips"   # Community insights
 sap_help_search: "Fiori Elements setup"       # Product guides
 
 # For ABAP development:
-search: "SELECT statements"                   # Latest ABAP + best practices
-search: "SELECT statements 7.53"              # Version-specific syntax
+search: "SELECT statements"                   # ABAP Standard + best practices
+search: "SELECT statements cloud"             # ABAP Cloud syntax
 sap_community_search: "ABAP SELECT performance" # Real-world tips
 ```
 
@@ -178,7 +175,7 @@ Found X results for 'query':
 
 ### **Response Enhancement**
 - **Cross-reference**: Suggest related tools when appropriate
-- **Version awareness**: Mention ABAP version relevance for syntax queries
+- **Variant awareness**: Mention Standard vs Cloud relevance for syntax queries
 - **Context building**: Use multiple tools to build complete picture
 
 @file src/lib/BaseServerHandler.ts
