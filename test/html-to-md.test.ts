@@ -59,6 +59,50 @@ describe("htmlToMarkdown — conversion behaviour", () => {
     for (const row of rows) expect(row.trim().endsWith("|")).toBe(true);
   });
 
+  it("converts a headerless <td>-only table (SAP DITA pattern) to a pipe table", () => {
+    // Mirrors the real "ABAP System Fields" markup: a <colgroup>, no <thead>/<th>, and the
+    // first row is plain <td> cells inside <tbody>. The gfm plugin keeps such tables as raw
+    // HTML; our rule promotes row 0 to the header and injects the separator.
+    const html = `<table summary="" class="table" frame="border" border="1" rules="all">
+      <colgroup><col width="50%"><col width="50%"></colgroup>
+      <tbody class="tbody">
+        <tr class="row"><td class="entry"><p class="p">Name</p></td><td class="entry"><p class="p">Type</p></td></tr>
+        <tr class="row"><td class="entry"><p class="p">sy-subrc</p></td><td class="entry"><p class="p">i</p></td></tr>
+        <tr class="row"><td class="entry"><p class="p">sy-tabix</p></td><td class="entry"><p class="p">i</p></td></tr>
+      </tbody></table>`;
+    const md = htmlToMarkdown(html);
+    expect(md).toContain("| Name | Type |");
+    expect(md).toContain("| --- | --- |");
+    expect(md).toContain("| sy-subrc | i |");
+    expect(md).toContain("| sy-tabix | i |");
+    // The whole point: no raw HTML table markup leaks through.
+    expect(md).not.toMatch(/<t(able|r|d|body)[\s>]/i);
+  });
+
+  it("leaves header-bearing tables on the plugin's path (no double separator)", () => {
+    const html = `<table><thead><tr><th>Code</th><th>Name</th></tr></thead>
+      <tbody><tr><td>VA01</td><td>Create</td></tr></tbody></table>`;
+    const md = htmlToMarkdown(html);
+    expect(md).toContain("| Code | Name |");
+    expect(md).toContain("| VA01 | Create |");
+    // Exactly one separator row — our headerless rule must NOT also fire here.
+    expect((md.match(/^\s*\|(?:\s*---\s*\|)+\s*$/gm) || []).length).toBe(1);
+  });
+
+  it("handles a headerless table with an empty leading corner cell", () => {
+    // SAP reference tables often have an empty top-left corner cell; column count must still
+    // be correct so the separator matches.
+    const html = `<table><tbody>
+      <tr><td></td><td>Name</td><td>Type</td></tr>
+      <tr><td>1</td><td>sy-subrc</td><td>i</td></tr>
+    </tbody></table>`;
+    const md = htmlToMarkdown(html);
+    const sep = (md.match(/^\s*\|(?:\s*---\s*\|)+\s*$/gm) || [])[0] || "";
+    // Three columns -> three "---" groups.
+    expect((sep.match(/---/g) || []).length).toBe(3);
+    expect(md).toContain("| 1 | sy-subrc | i |");
+  });
+
   it("converts headings and inline code", () => {
     const md = htmlToMarkdown(`<h2>Overview</h2><p>Use <code>NEW</code>.</p>`);
     expect(md).toContain("## Overview");
