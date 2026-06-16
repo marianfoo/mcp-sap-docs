@@ -9,6 +9,12 @@ printf '🚀 Setting up SAP Documentation MCP Server...\n'
 printf '📦 Installing dependencies...\n'
 npm install
 
+# Rebuild the native addon against the *current* Node ABI. `npm install` keeps a
+# cached better-sqlite3 build, so a server Node upgrade (e.g. 22→24) leaves a
+# NODE_MODULE_VERSION mismatch that only surfaces at runtime in build-fts.
+# ponytail: rebuild only the one native dep; drop this if Node ever gets pinned on the server.
+npm rebuild better-sqlite3
+
 # Initialize and update git submodules
 printf '📚 Initializing documentation submodules...\n'
 
