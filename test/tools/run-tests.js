@@ -1,7 +1,7 @@
 // Unified test runner for MCP SAP Docs - supports both all tests and specific files
 import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startServerHttp, waitForStatus, stopServer, docsSearch } from '../_utils/httpClient.js';
 
 // ANSI color codes
@@ -136,7 +136,7 @@ async function runTestFile(filePath, fileName) {
   console.log(colorize('─'.repeat(50), 'dim'));
   
   // Load and run the test file
-  const mod = await import(fileURLToPath(new URL(filePath, import.meta.url)));
+  const mod = await import(pathToFileURL(filePath).href);
   const cases = (mod.default || []).flat();
   
   if (cases.length === 0) {
