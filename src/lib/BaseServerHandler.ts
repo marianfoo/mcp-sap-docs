@@ -288,7 +288,12 @@ OPTIONAL ONLINE SOURCES (when includeOnline=true):
 • software-heroes (online): Software Heroes ABAP/RAP articles & tutorials (searched in EN+DE, deduplicated by URL; feed search is disabled).
 
 NOTE ABOUT \`abapFlavor\`:
-• This primarily affects the OFFICIAL ABAP Keyword Documentation sources (abap-docs-standard vs abap-docs-cloud). Other sources are kept.
+• OFFLINE: filters the official ABAP Keyword Documentation libraries (abap-docs-standard vs abap-docs-cloud); other offline sources are kept.
+• ONLINE: when set EXPLICITLY to "standard"/"cloud", it ALSO scopes the SAP Help leg to the matching ABAP product (standard → ABAP Platform docs; cloud → ABAP environment docs), removing cross-product noise on conceptual ABAP queries. "auto" leaves SAP Help unscoped.
+• IMPORTANT — "standard"/"cloud" is a QUERY-DOMAIN signal ("this is an ABAP-LANGUAGE question"), NOT a system flag. Forcing it on a non-ABAP-language query scopes SAP Help to ABAP-language docs and buries the relevant content. Route by DOMAIN:
+  - ABAP language/RAP/CDS → "standard" or "cloud".
+  - FUNCTIONAL / configuration (Asset Accounting, Controlling, EWM ) → leave abapFlavor "auto" and pass the \`product\` param (e.g. "SAP_S4HANA_ON-PREMISE").
+  - CAP / UI5 / Fiori → leave "auto". The OFFLINE corpus is the authoritative source for these; note the online SAP Help leg is NOT scoped for them (no abapFlavor/product fit yet), so it may still contribute some off-topic or low-value SAP Help hits.
 
 PARAMETERS:
 • query (required): Search terms. Be specific and use technical ABAP/RAP terminology.
@@ -352,7 +357,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
                 abapFlavor: {
                   type: "string",
                   enum: ["standard", "cloud", "auto"],
-                  description: "Filter by ABAP flavor: 'standard' (on-premise), 'cloud' (BTP), or 'auto' (detect from query). Default: auto.",
+                  description: "Filter by ABAP flavor: 'standard' (on-premise), 'cloud' (BTP), or 'auto' (detect from query). Default: auto. Offline: picks the abap-docs library. Online: an EXPLICIT 'standard'/'cloud' also scopes the SAP Help leg to the matching ABAP product, removing cross-product noise. QUERY-DOMAIN signal ('this is an ABAP-language question'), NOT a system flag. Route by domain: ABAP language → 'standard'/'cloud'; FUNCTIONAL/config → 'auto' + the `product` param (e.g. SAP_S4HANA_ON-PREMISE); CAP/UI5/Fiori → 'auto' (offline corpus is authoritative; the online leg stays unscoped for these). Forcing 'standard' on a non-ABAP query buries the relevant docs.",
                   default: "auto"
                 },
                 sources: {
@@ -363,6 +368,10 @@ ESCALATION: If search returns no useful results (especially for specific error m
                 version: {
                   type: "string",
                   description: "Optional SAP release filter, applied ONLY to online SAP Help (help.sap.com) — offline docs are unaffected. Omit it for the latest content (the right default for most queries). To pin an older release, copy a result's `versionId` value EXACTLY and pass it back here — it is case-sensitive and its format varies by product (e.g. '2025.001', '2.0.08', '10.0', '2211', 'Cloud', '2026_06'). Discover valid values in one step: run the same search WITHOUT version first; every result shows its `versionId`. Never invent, reformat, or guess the token (a bare year like '2025' is usually a different release). If a version matches nothing, the latest results are returned instead, so no results are lost."
+                },
+                product: {
+                  type: "string",
+                  description: "Optional SAP Help product-id scope, applied ONLY to the online SAP Help leg (offline unaffected). Routes the online query to ONE product's docs — use it for FUNCTIONAL/configuration questions that `abapFlavor` cannot express (e.g. 'SAP_S4HANA_ON-PREMISE' for Asset Accounting, Grants, sales customizing). Takes precedence over the abapFlavor auto-mapping. DISCOVER valid values exactly like `version`: run the search once WITHOUT product and copy a result's `metadata.product` EXACTLY — never invent a slug (e.g. 'ABAP_PLATFORM' is wrong; the real facet is 'ABAP_PLATFORM_NEW'). An unknown product safely falls back to unscoped, so nothing is lost."
                 }
               },
               required: ["query"]
@@ -1171,6 +1180,7 @@ RETURNS (JSON):
           includeOnline = true,  // Online search enabled by default
           includeSamples = true,
           abapFlavor = 'auto',
+          product,
           sources,
           version
         } = args as {
@@ -1179,6 +1189,7 @@ RETURNS (JSON):
           includeOnline?: boolean;
           includeSamples?: boolean;
           abapFlavor?: 'standard' | 'cloud' | 'auto';
+          product?: string;
           sources?: string[];
           version?: string;
         };
@@ -1206,6 +1217,7 @@ RETURNS (JSON):
             includeOnline,
             includeSamples,
             abapFlavor,
+            product,
             sources,
             version
           });

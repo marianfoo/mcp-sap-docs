@@ -37,6 +37,7 @@
     "eval": "npm run build:tsc && node test/eval/run-eval.js",
     "eval:update": "npm run build:tsc && node test/eval/run-eval.js --update",
     "test:version-filter": "npm run build:tsc && npx vitest run test/version-filter-sap-help.test.ts",
+    "test:product-filter": "npm run build:tsc && npx vitest run test/product-filter-sap-help.test.ts",
     "test:citations": "npm run build:tsc && npx vitest run test/citations-sap-help.test.ts",
     "test:html-to-md": "npm run build:tsc && npx vitest run test/html-to-md.test.ts"
   },

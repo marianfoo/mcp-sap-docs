@@ -1,0 +1,147 @@
+{
+  "agg": {
+    "queries": 7,
+    "topN": 10,
+    "offTopicOnline": {
+      "unscoped": 63,
+      "scoped": 0,
+      "of": 70
+    },
+    "goldHitAtTopN": {
+      "unscoped": 2,
+      "scoped": 6
+    },
+    "goldMrr": {
+      "unscoped": 0.1773,
+      "scoped": 0.3643
+    }
+  },
+  "rows": [
+    {
+      "id": "scope-gzip",
+      "query": "reduce the size of a byte string in memory before storing it",
+      "scope": "ABAP_PLATFORM_NEW",
+      "via": "abapFlavor",
+      "offTopicUnscoped": 10,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "SAP SQL Anywhere",
+        "SAP Event Stream Processor",
+        "SAP Product Lifecycle Management for Insurance",
+        "Support Content",
+        "SAP Replication Server",
+        "SAP HANA Cloud, Data Lake in CN Regions",
+        "SAP IQ"
+      ],
+      "goldRankUnscoped": null,
+      "goldRankScoped": 6
+    },
+    {
+      "id": "scope-authority-check",
+      "query": "check whether the logged-in user is allowed to perform this action",
+      "scope": "ABAP_PLATFORM_NEW",
+      "via": "abapFlavor",
+      "offTopicUnscoped": 10,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "SAP Commerce",
+        "SAP NetWeaver 7.0 EHP2",
+        "SAP IQ",
+        "SAP HANA Platform",
+        "SAP Profitability and Performance Management Cloud",
+        "SAP SQL Anywhere",
+        "Support Content",
+        "SAP Sourcing and SAP Contract Lifecycle Management",
+        "SAP Ariba"
+      ],
+      "goldRankUnscoped": 10,
+      "goldRankScoped": 6
+    },
+    {
+      "id": "scope-for-all-entries",
+      "query": "read database rows for every key stored in an internal table",
+      "scope": "ABAP_PLATFORM_NEW",
+      "via": "abapFlavor",
+      "offTopicUnscoped": 10,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "SAP BW/4HANA",
+        "Support Content",
+        "SAP ERP",
+        "SAP Customer Activity Repository applications bundle",
+        "SAP SQL Anywhere",
+        "SAP NetWeaver 7.3 EHP1",
+        "SAP Adaptive Server Enterprise",
+        "SAP_NETWEAVER_DBOS"
+      ],
+      "goldRankUnscoped": null,
+      "goldRankScoped": 1
+    },
+    {
+      "id": "scope-dynamic-where",
+      "query": "build a database query condition at runtime in ABAP",
+      "scope": "ABAP_PLATFORM_NEW",
+      "via": "abapFlavor",
+      "offTopicUnscoped": 10,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "ABAP Cloud",
+        "Concur Expense",
+        "Concur Request",
+        "Concur Invoice",
+        "SAP S/4HANA"
+      ],
+      "goldRankUnscoped": 20,
+      "goldRankScoped": 20
+    },
+    {
+      "id": "scope-enqueue-lock",
+      "query": "stop two users from editing the same business object at the same time",
+      "scope": "ABAP_PLATFORM_NEW",
+      "via": "abapFlavor",
+      "offTopicUnscoped": 9,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "SAP S/4HANA",
+        "SAP IQ",
+        "SAP SQL Anywhere",
+        "SAP BusinessObjects Business Intelligence Platform",
+        "SAP Solution Manager",
+        "SAP ERP",
+        "SAP Adaptive Server Enterprise"
+      ],
+      "goldRankUnscoped": 11,
+      "goldRankScoped": 2
+    },
+    {
+      "id": "scope-fixed-asset-grant",
+      "query": "grant valuation areas active in OAYZ for the asset class are not showing in the Fixed Asset Valuation tab",
+      "scope": "SAP_S4HANA_ON-PREMISE",
+      "via": "product",
+      "offTopicUnscoped": 8,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "Support Content",
+        "SAP ERP",
+        "BI Content 7.57"
+      ],
+      "goldRankUnscoped": null,
+      "goldRankScoped": 3
+    },
+    {
+      "id": "scope-billing-number-range",
+      "query": "where do I configure the number range for billing documents",
+      "scope": "SAP_S4HANA_ON-PREMISE",
+      "via": "product",
+      "offTopicUnscoped": 6,
+      "offTopicScoped": 0,
+      "offTopicProducts": [
+        "SAP ERP",
+        "ABAP_PLATFORM_NEW",
+        "SAP Customer Relationship Management"
+      ],
+      "goldRankUnscoped": 1,
+      "goldRankScoped": 3
+    }
+  ]
+}
