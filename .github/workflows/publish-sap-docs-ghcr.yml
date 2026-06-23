@@ -3,6 +3,9 @@ name: Publish SAP Docs GHCR Image
 on:
   release:
     types: [published]
+  schedule:
+    # Rebuild the offline corpus daily so the stable GHCR tag can be redeployed.
+    - cron: "17 2 * * *"
   workflow_dispatch:
     inputs:
       build_embeddings:
@@ -54,6 +57,7 @@ jobs:
             type=raw,value=sap-docs
             type=sha,prefix=sap-docs-
             type=ref,event=tag,prefix=sap-docs-
+            type=schedule,pattern=sap-docs-{{date 'YYYYMMDD'}}
 
       - name: Build and push image
         uses: docker/build-push-action@v6

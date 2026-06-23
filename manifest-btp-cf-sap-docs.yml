@@ -8,6 +8,7 @@ applications:
     disk_quota: 4096M
     health-check-type: http
     health-check-http-endpoint: /health
+    timeout: 180
     env:
       NODE_ENV: production
       MCP_VARIANT: sap-docs
