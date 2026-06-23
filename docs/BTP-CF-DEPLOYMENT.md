@@ -434,9 +434,13 @@ Prerequisites:
   space.
 - A Job Scheduling Service service plan. The `free` plan is enough for one daily
   refresh; it supports up to 15 schedules with a minimum frequency of one hour.
-- A CF technical/platform user with the minimum permissions needed to push the
-  MCP app in the target org/space. Do not store a personal password in the
-  deployer app.
+- A technical platform user that can authenticate to the CF API. The real user
+  must exist in SAP ID service or in the trusted SAP Cloud Identity Services
+  tenant first; BTP/CF only assigns roles to that identity. On SAP BTP, creating
+  an internal CF user with `cf create-user` may be blocked.
+- The technical platform user should have the `SpaceDeveloper` role in the
+  target CF space. Do not grant broader org roles unless your deployment process
+  really needs them.
 - A small deployer app that contains the CF CLI. The easiest option is the
   public `cloudfoundry/cli` image. Do not push the full repository as the
   deployer app.
@@ -490,6 +494,17 @@ not a personal login:
 ```bash
 cf set-env mcp-sap-docs-deployer CF_USERNAME "<technical-user>"
 cf set-env mcp-sap-docs-deployer CF_PASSWORD "<technical-user-password>"
+cf set-env mcp-sap-docs-deployer CF_ORIGIN "<origin>"
+```
+
+For SAP ID service users, the origin is usually `sap.ids`. For a custom SAP
+Cloud Identity Services trust, use the origin shown in **Cloud Foundry -> Org
+Members** or **Space Members** in the BTP cockpit.
+
+Assign the technical user to the target space:
+
+```bash
+cf set-space-role "<technical-user>" "<org>" "<space>" SpaceDeveloper --origin "<origin>"
 ```
 
 No GHCR credential is needed because the maintained image is public.
@@ -505,7 +520,7 @@ cf stop mcp-sap-docs-deployer
 Use this one-line task action in the Job Scheduling Service dashboard:
 
 ```bash
-sh -lc 'set -euo pipefail; cf api "$CF_API"; cf auth "$CF_USERNAME" "$CF_PASSWORD"; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'
+sh -lc 'set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'
 ```
 
 The task action should not run `npm run setup`, `npm run build`, or
@@ -583,7 +598,7 @@ task before it starts failing unattended at `05:00 UTC`.
 Use the same action command as the dashboard task:
 
 ```bash
-REFRESH_COMMAND='sh -lc '\''set -euo pipefail; cf api "$CF_API"; cf auth "$CF_USERNAME" "$CF_PASSWORD"; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'\'''
+REFRESH_COMMAND='sh -lc '\''set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'\'''
 
 cf run-task mcp-sap-docs-deployer \
   --name refresh-mcp-sap-docs \
