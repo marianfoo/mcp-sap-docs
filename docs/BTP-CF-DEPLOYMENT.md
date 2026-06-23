@@ -434,13 +434,15 @@ Prerequisites:
   space.
 - A Job Scheduling Service service plan. The `free` plan is enough for one daily
   refresh; it supports up to 15 schedules with a minimum frequency of one hour.
-- A platform user that can authenticate to the CF API. For production, use a
-  dedicated technical user. For a trial/dev setup, you can use your own platform
-  user and replace it with a technical user later.
-- The platform user must exist in SAP ID service or in the trusted SAP Cloud
-  Identity Services tenant first; BTP/CF only assigns roles to that identity. On
-  SAP BTP, creating an internal CF user with `cf create-user` may be blocked.
-- The platform user should have the `SpaceDeveloper` role in the target CF
+- A deploy identity that can authenticate to the CF API without opening a
+  browser. For production, use a dedicated technical user or a CF UAA client that
+  works with `cf auth --client-credentials`. For a trial/dev setup, you can use
+  your own platform user only if it also works with non-interactive `cf auth`.
+- If you use a platform user, that user must exist in SAP ID service or in the
+  trusted SAP Cloud Identity Services tenant first; BTP/CF only assigns roles to
+  that identity. On SAP BTP, creating an internal CF user with `cf create-user`
+  may be blocked.
+- The deploy identity should have the `SpaceDeveloper` role in the target CF
   space. Do not grant broader org roles unless your deployment process really
   needs them.
 - A small deployer app that contains the CF CLI. The easiest option is the
@@ -490,8 +492,12 @@ cf set-env mcp-sap-docs-deployer MCP_MEMORY "1024M"
 cf set-env mcp-sap-docs-deployer MCP_DISK "6144M"
 ```
 
-Set CF deploy credentials as environment variables too. A technical user is
-recommended, but a personal platform user is acceptable for a trial/dev setup:
+Set CF deploy credentials as environment variables too. Use one of these two
+models.
+
+Model 1: technical or personal platform user with password grant. A technical
+user is recommended, but a personal platform user is acceptable for a trial/dev
+setup if it works with `cf auth`:
 
 ```bash
 cf set-env mcp-sap-docs-deployer CF_USERNAME "<platform-user>"
@@ -523,6 +529,29 @@ Assign the platform user to the target space:
 cf set-space-role "<platform-user>" "<org>" "<space>" SpaceDeveloper --origin "<origin>"
 ```
 
+Model 2: CF UAA client credentials. Use this only when your platform team gives
+you a client ID and secret that can authenticate to the CF API with
+`cf auth --client-credentials`:
+
+```bash
+cf set-env mcp-sap-docs-deployer CF_CLIENT_ID "<cf-uaa-client-id>"
+
+printf "CF client secret: "
+stty -echo
+IFS= read -r CF_CLIENT_SECRET
+stty echo
+printf "\n"
+cf set-env mcp-sap-docs-deployer CF_CLIENT_SECRET "$CF_CLIENT_SECRET"
+unset CF_CLIENT_SECRET
+
+cf set-space-role "<cf-uaa-client-id>" "<org>" "<space>" SpaceDeveloper --client
+```
+
+Do not reuse the credentials from a Job Scheduling Service binding or service
+key as CF deploy credentials. Those credentials are for the Job Scheduling
+Service APIs. They are not a substitute for a CF platform user or CF UAA client
+that can run `cf auth`.
+
 If you use a personal platform user for the first setup, rotate the password or
 replace the deployer credentials with a dedicated technical user before using
 the schedule in a shared or production space.
@@ -541,10 +570,11 @@ cf restart mcp-sap-docs-deployer
 cf stop mcp-sap-docs-deployer
 ```
 
-Use this one-line task action in the Job Scheduling Service dashboard:
+Use this one-line task action in the Job Scheduling Service dashboard. It
+supports either credential model above and prefers `CF_CLIENT_ID` when set:
 
 ```bash
-sh -lc 'set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'
+sh -lc 'set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_CLIENT_ID:-}" ]; then cf auth "$CF_CLIENT_ID" "$CF_CLIENT_SECRET" --client-credentials; elif [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'
 ```
 
 The task action should not run `npm run setup`, `npm run build`, or
@@ -622,7 +652,7 @@ task before it starts failing unattended at `05:00 UTC`.
 Use the same action command as the dashboard task:
 
 ```bash
-REFRESH_COMMAND='sh -lc '\''set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'\'''
+REFRESH_COMMAND='sh -lc '\''set -euo pipefail; cf api "$CF_API"; if [ -n "${CF_CLIENT_ID:-}" ]; then cf auth "$CF_CLIENT_ID" "$CF_CLIENT_SECRET" --client-credentials; elif [ -n "${CF_ORIGIN:-}" ]; then cf auth "$CF_USERNAME" "$CF_PASSWORD" --origin "$CF_ORIGIN"; else cf auth "$CF_USERNAME" "$CF_PASSWORD"; fi; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'\'''
 
 cf run-task mcp-sap-docs-deployer \
   --name refresh-mcp-sap-docs \
@@ -658,6 +688,12 @@ requires MFA, SSO, or another browser-based login flow, use a dedicated
 technical user or client-credential based platform identity instead of a
 personal user. A personal user that works with `cf login --sso` may still fail
 with `cf auth`, because `cf auth` needs a non-interactive password grant.
+
+A local `cf login --sso` session is not enough for the scheduled redeploy. The
+Job Scheduling Service can trigger the CF task, but the command inside that task
+still runs in a fresh container and must authenticate to CF without browser SSO.
+Do not store a local `cf oauth-token` in the deployer app; it expires and is not
+a stable scheduler credential.
 
 Be careful when testing this locally: a failed `cf auth` can leave the local CF
 CLI logged out. Log in again with `cf login --sso` before continuing other CF
