@@ -654,8 +654,14 @@ Common causes are:
 - the configured `CF_ORIGIN` does not match the user's platform identity origin
 
 Do not activate the daily schedule until this manual task succeeds. If the user
-requires MFA, use a dedicated technical user or client-credential based platform
-identity instead of a personal user.
+requires MFA, SSO, or another browser-based login flow, use a dedicated
+technical user or client-credential based platform identity instead of a
+personal user. A personal user that works with `cf login --sso` may still fail
+with `cf auth`, because `cf auth` needs a non-interactive password grant.
+
+Be careful when testing this locally: a failed `cf auth` can leave the local CF
+CLI logged out. Log in again with `cf login --sso` before continuing other CF
+commands.
 
 Use MTA deployment instead of direct `cf push` when route ownership, service
 bindings, and later XSUAA protection should be managed declaratively:
