@@ -434,13 +434,15 @@ Prerequisites:
   space.
 - A Job Scheduling Service service plan. The `free` plan is enough for one daily
   refresh; it supports up to 15 schedules with a minimum frequency of one hour.
-- A technical platform user that can authenticate to the CF API. The real user
-  must exist in SAP ID service or in the trusted SAP Cloud Identity Services
-  tenant first; BTP/CF only assigns roles to that identity. On SAP BTP, creating
-  an internal CF user with `cf create-user` may be blocked.
-- The technical platform user should have the `SpaceDeveloper` role in the
-  target CF space. Do not grant broader org roles unless your deployment process
-  really needs them.
+- A platform user that can authenticate to the CF API. For production, use a
+  dedicated technical user. For a trial/dev setup, you can use your own platform
+  user and replace it with a technical user later.
+- The platform user must exist in SAP ID service or in the trusted SAP Cloud
+  Identity Services tenant first; BTP/CF only assigns roles to that identity. On
+  SAP BTP, creating an internal CF user with `cf create-user` may be blocked.
+- The platform user should have the `SpaceDeveloper` role in the target CF
+  space. Do not grant broader org roles unless your deployment process really
+  needs them.
 - A small deployer app that contains the CF CLI. The easiest option is the
   public `cloudfoundry/cli` image. Do not push the full repository as the
   deployer app.
@@ -488,12 +490,12 @@ cf set-env mcp-sap-docs-deployer MCP_MEMORY "1024M"
 cf set-env mcp-sap-docs-deployer MCP_DISK "6144M"
 ```
 
-Set CF deploy credentials as environment variables too. Use a technical user,
-not a personal login:
+Set CF deploy credentials as environment variables too. A technical user is
+recommended, but a personal platform user is acceptable for a trial/dev setup:
 
 ```bash
-cf set-env mcp-sap-docs-deployer CF_USERNAME "<technical-user>"
-cf set-env mcp-sap-docs-deployer CF_PASSWORD "<technical-user-password>"
+cf set-env mcp-sap-docs-deployer CF_USERNAME "<platform-user>"
+cf set-env mcp-sap-docs-deployer CF_PASSWORD "<platform-user-password>"
 cf set-env mcp-sap-docs-deployer CF_ORIGIN "<origin>"
 ```
 
@@ -501,11 +503,15 @@ For SAP ID service users, the origin is usually `sap.ids`. For a custom SAP
 Cloud Identity Services trust, use the origin shown in **Cloud Foundry -> Org
 Members** or **Space Members** in the BTP cockpit.
 
-Assign the technical user to the target space:
+Assign the platform user to the target space:
 
 ```bash
-cf set-space-role "<technical-user>" "<org>" "<space>" SpaceDeveloper --origin "<origin>"
+cf set-space-role "<platform-user>" "<org>" "<space>" SpaceDeveloper --origin "<origin>"
 ```
+
+If you use a personal platform user for the first setup, rotate the password or
+replace the deployer credentials with a dedicated technical user before using
+the schedule in a shared or production space.
 
 No GHCR credential is needed because the maintained image is public.
 
@@ -586,8 +592,8 @@ a preflight check before handing the refresh to an unattended daily schedule.
 
 Run it once to catch these mistakes immediately:
 
-- the technical user cannot authenticate to CF
-- the technical user cannot push the target app
+- the platform user cannot authenticate to CF
+- the platform user cannot push the target app
 - the target app name, org, space, or image tag is wrong
 - the app quota is too small for the image pull/startup
 - the task command has a quoting or dashboard copy/paste issue
