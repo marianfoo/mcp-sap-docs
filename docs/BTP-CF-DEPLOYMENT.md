@@ -40,6 +40,8 @@ Reference docs:
 - [Cloud Foundry: deploying an app based on a Docker image](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)
 - [SAP BTP: deploy Docker images in the Cloud Foundry environment](https://help.sap.com/docs/btp/sap-business-technology-platform/deploy-docker-images-in-cloud-foundry-environment)
 - [Cloud Foundry: deploying large apps](https://docs.cloudfoundry.org/devguide/deploy-apps/large-app-deploy.html)
+- [SAP Job Scheduling Service](https://help.sap.com/doc/234ab5b017b14bfa9d96152c5d9335e7/Cloud/en-US/jobscheduler.pdf)
+- [Cloud Foundry: running tasks in your apps](https://docs.cloudfoundry.org/devguide/using-tasks.html)
 
 ## Semantic Embeddings
 
@@ -412,21 +414,179 @@ should be SAP Job Scheduling Service:
 This gives the user a BTP-side refresh button/schedule without requiring them to
 publish their own Docker image.
 
-Recommended implementation:
+### Recommended Job Scheduler Setup
 
-- Create a SAP Job Scheduling Service instance, for example:
+Use a separate deployer target instead of adding a refresh endpoint to the MCP
+server. The deployer target can be a tiny no-route CF app whose staged droplet is
+used only for a scheduled CF task.
 
-  ```bash
-  cf create-service jobscheduler free mcp-sap-docs-scheduler
-  ```
+The shape is:
 
-- Bind it to a small deployer app in the same space.
-- The deployer app contains only the CF CLI, `manifest-btp-cf-sap-docs.yml`, and
-  a script that targets the org/space and runs `cf push`.
-- Configure a recurring Job Scheduling Service schedule with cron `0 5 * * *`.
-- Keep the deployer app stopped if possible and let the scheduler run it as a CF
-  task. This avoids keeping a second web process running just to redeploy the
-  MCP server.
+```text
+SAP Job Scheduling Service
+  -> scheduled Cloud Foundry task at 05:00 UTC
+  -> mcp-sap-docs-deployer task container
+  -> cf push -f manifest-btp-cf-sap-docs.yml
+  -> mcp-sap-docs app pulls ghcr.io/marianfoo/mcp-sap-docs:sap-docs
+```
+
+Why this is preferred:
+
+- The public MCP server stays immutable and only serves MCP requests.
+- The refresh action is a short-lived CF task, so no second web process has to
+  stay running.
+- The task runs in the user's BTP CF space and can be monitored in the Job
+  Scheduling Service dashboard.
+- CF replaces the app from the maintained GHCR image instead of mutating
+  `sources/` or `docs.sqlite` inside one running container.
+
+Prerequisites:
+
+- `jobscheduler` entitlement in the subaccount and quota assigned to the CF
+  space.
+- A Job Scheduling Service service plan. The `free` plan is enough for one daily
+  refresh; it supports up to 15 schedules with a minimum frequency of one hour.
+- A CF technical/platform user with the minimum permissions needed to push the
+  MCP app in the target org/space. Do not store a personal password in the
+  deployer app.
+- A deployer app package that contains the CF CLI, the
+  `manifest-btp-cf-sap-docs.yml` file, and a refresh script. Keep this package
+  small; do not push the full repository as the deployer app.
+
+Create the scheduler service instance:
+
+```bash
+cf create-service jobscheduler free mcp-sap-docs-scheduler
+```
+
+Create and stage the deployer app in the same org/space as the MCP app. The
+deployer should have no route, low memory, and a harmless start command that lets
+Cloud Foundry stage a droplet once. After staging succeeds, stop the app and run
+only scheduled tasks from it.
+
+Recommended deployer app limits:
+
+- memory: `256M`
+- disk quota: `1024M`
+- routes: none
+- running instances: `0` after initial staging
+
+Set deployer credentials as CF environment variables, not in Git:
+
+```bash
+cf set-env mcp-sap-docs-deployer CF_API "https://api.cf.<region>.hana.ondemand.com"
+cf set-env mcp-sap-docs-deployer CF_ORG "<org>"
+cf set-env mcp-sap-docs-deployer CF_SPACE "<space>"
+cf set-env mcp-sap-docs-deployer CF_USERNAME "<technical-user>"
+cf set-env mcp-sap-docs-deployer CF_PASSWORD "<technical-user-password>"
+cf set-env mcp-sap-docs-deployer MCP_APP_NAME "mcp-sap-docs"
+```
+
+If the GHCR image is public, no GHCR credential is needed. For a private image,
+also set registry credentials and make the refresh script pass them to `cf push`
+using `CF_DOCKER_PASSWORD` and `--docker-username`.
+
+Bind the scheduler service to the deployer app:
+
+```bash
+cf bind-service mcp-sap-docs-deployer mcp-sap-docs-scheduler
+cf restage mcp-sap-docs-deployer
+cf stop mcp-sap-docs-deployer
+```
+
+The deployer refresh script should do only the deployment work:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${CF_API:?}"
+: "${CF_ORG:?}"
+: "${CF_SPACE:?}"
+: "${CF_USERNAME:?}"
+: "${CF_PASSWORD:?}"
+
+cf api "$CF_API"
+cf auth "$CF_USERNAME" "$CF_PASSWORD"
+cf target -o "$CF_ORG" -s "$CF_SPACE"
+cf push -f manifest-btp-cf-sap-docs.yml
+```
+
+The script should not run `npm run setup`, `npm run build`, or
+`npm run build:embeddings`. The refreshed corpus is delivered through the GHCR
+image that was built upstream.
+
+### Dashboard Steps
+
+Open the dashboard from the service instance:
+
+```bash
+cf service mcp-sap-docs-scheduler
+```
+
+Copy the `dashboard url` into a browser. In the dashboard:
+
+1. Choose **Tasks**, not **Jobs**.
+2. Create a task for the deployer application, for example
+   `mcp-sap-docs-deployer`.
+3. Use a task command that runs the deployer script, for example
+   `bash refresh-btp-cf-app.sh`.
+4. Create a recurring schedule for the task.
+5. Set the schedule time to `05:00 UTC`.
+6. Activate the schedule.
+
+If the dashboard exposes an **Options (JSON)** field for the task schedule, set
+the task memory explicitly:
+
+```json
+{"memory_in_mb": 256}
+```
+
+SAP Job Scheduling Service uses its own SAP cron format and runs schedules in
+UTC. It is not Linux cron. For daily `05:00 UTC`, use this SAP cron expression
+when the dashboard asks for a cron value:
+
+```text
+* * * * 5 0 0
+```
+
+The field order is:
+
+```text
+Year Month Day DayOfWeek Hour Minute Second
+```
+
+If the dashboard offers `repeatAt`, using `05:00` is easier and avoids cron
+format mistakes.
+
+Do not use **Jobs -> Create Job** for this setup. That form is for HTTP action
+endpoints. It is only correct if you intentionally build a protected deployer
+HTTP endpoint such as `POST /refresh`. Calling the MCP server `/health` endpoint
+from a job only proves the app is alive; it does not pull a new image or refresh
+the corpus.
+
+### Manual Task Test
+
+Before activating the daily schedule, run the same task once manually:
+
+```bash
+cf run-task mcp-sap-docs-deployer \
+  --name refresh-mcp-sap-docs \
+  --memory 256M \
+  --disk 1024M \
+  --command "bash refresh-btp-cf-app.sh"
+```
+
+Monitor the task through CF logs and the Job Scheduling Service dashboard:
+
+```bash
+cf tasks mcp-sap-docs-deployer
+cf logs mcp-sap-docs-deployer --recent
+cf app mcp-sap-docs
+```
+
+The task is successful only when `cf push` completes and the MCP app is healthy
+after the image pull/startup cycle.
 
 Use MTA deployment instead of direct `cf push` when route ownership, service
 bindings, and later XSUAA protection should be managed declaratively:
