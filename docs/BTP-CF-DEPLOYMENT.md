@@ -386,7 +386,7 @@ Downsides of the Node.js buildpack path for this project:
 
 ## Daily Resource Refresh
 
-The right refresh model is immutable image refresh:
+The right refresh model for this project is immutable image refresh:
 
 1. Rebuild the docs corpus once per day in CI.
 2. Publish a new GHCR image tag.
@@ -443,3 +443,50 @@ admin endpoint or run a finite CF task. For this static corpus image, it should
 trigger CI/redeploy rather than mutate the running app filesystem. SAP describes
 the service as supporting recurring jobs and Cloud Foundry tasks; Cloud Foundry
 tasks run in their own short-lived containers and are destroyed after completion.
+
+### BTP-Native Refresh Trigger
+
+For a user who only operates BTP CF, the refresh trigger should live in BTP:
+
+1. The project-maintained GHCR workflow publishes a refreshed
+   `ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image.
+2. A SAP Job Scheduling Service schedule in the user's CF space runs at
+   `05:00 UTC`.
+3. That schedule triggers a small deployer app or Cloud Foundry task.
+4. The deployer runs `cf push -f manifest-btp-cf-sap-docs.yml`, or the
+   equivalent Cloud Controller API calls.
+5. CF pulls the current GHCR image and replaces the app instances.
+
+This gives the user a BTP-side refresh button/schedule without requiring them to
+publish their own Docker image.
+
+Recommended BTP implementation:
+
+- Create a SAP Job Scheduling Service instance, for example:
+
+  ```bash
+  cf create-service jobscheduler free mcp-sap-docs-scheduler
+  ```
+
+- Bind it to a small deployer app in the same space.
+- The deployer app contains only the CF CLI, `manifest-btp-cf-sap-docs.yml`, and
+  a script that targets the org/space and runs `cf push`.
+- Configure a recurring Job Scheduling Service schedule with cron `0 5 * * *`.
+- Keep the deployer app stopped if possible and let the scheduler run it as a CF
+  task. This avoids keeping a second web process running just to redeploy the
+  MCP server.
+
+Do not schedule the MCP server itself to run `git pull`, `npm run build`, or
+`npm run build:embeddings` inside the running web container. That would update
+only the current instance filesystem, is lost on restart/restage, does not update
+all instances consistently, and competes with serving MCP requests.
+
+Alternative BTP-only architecture:
+
+- A scheduled CF task rebuilds the corpus and writes `sources/` plus
+  `docs.sqlite` to persistent storage, such as object storage.
+- The MCP server reads the active corpus from that external storage.
+
+That model would make refresh fully BTP-owned, but it requires new application
+support for external corpus storage and atomic index switching. It is not the
+current implementation.
