@@ -15,16 +15,16 @@ modules:
       # routes:
       #   - route: mcp-sap-docs-dev.cfapps.us10-001.hana.ondemand.com
 
-      # Increase if the full semantic image exceeds the app disk quota.
-      # If your foundation rejects 4096M, rebuild with BUILD_EMBEDDINGS=false.
+      # The default FTS-only image was validated with 512M memory and 4096M disk.
+      # Increase these only for full semantic image experiments.
       # disk-quota: 4096M
-      # memory: 2048M
+      # memory: 512M
 
     properties:
       # Keep public/read-only deployment unauthenticated for the first rollout.
       # Later XSUAA protection should be added as a new resource binding.
       MCP_VARIANT: sap-docs
       MCP_HOST: 0.0.0.0
-      MCP_PRELOAD_EMBEDDINGS: "true"
+      MCP_PRELOAD_EMBEDDINGS: "false"
       LOG_FORMAT: json
       LOG_LEVEL: INFO

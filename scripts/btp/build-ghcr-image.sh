@@ -11,6 +11,9 @@ while [ "$#" -gt 0 ]; do
     --no-embeddings)
       BUILD_EMBEDDINGS=false
       ;;
+    --embeddings)
+      BUILD_EMBEDDINGS=true
+      ;;
     -h|--help)
       cat <<'HELP'
 Build the sap-docs Cloud Foundry Docker image for GHCR.
@@ -19,11 +22,12 @@ Environment:
   GHCR_IMAGE          Image repository (default: ghcr.io/marianfoo/mcp-sap-docs)
   TAG                 Primary tag (default: sap-docs)
   DOCKER_PLATFORM     Docker platform (default: linux/amd64)
-  BUILD_EMBEDDINGS    true|false (default: true)
+  BUILD_EMBEDDINGS    true|false (default: false)
 
 Flags:
   --push              Push all generated tags after a successful build
   --no-embeddings     Build FTS-only image without semantic embeddings/model cache
+  --embeddings        Build semantic embeddings and cache the model in the image
 HELP
       exit 0
       ;;
@@ -38,7 +42,7 @@ done
 GHCR_IMAGE="${GHCR_IMAGE:-ghcr.io/marianfoo/mcp-sap-docs}"
 TAG="${TAG:-sap-docs}"
 DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
-BUILD_EMBEDDINGS="${BUILD_EMBEDDINGS:-true}"
+BUILD_EMBEDDINGS="${BUILD_EMBEDDINGS:-false}"
 
 GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)"
 SHA_TAG="sap-docs-${GIT_SHA}"

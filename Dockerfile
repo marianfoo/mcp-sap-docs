@@ -27,7 +27,7 @@ COPY . .
 # We avoid `git submodule update <path>` because this container build runs in a fresh
 # git repo that does not have gitlinks/index entries for those paths.
 RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
-    SUBMODULE_PATHS="$(node --input-type=module -e 'import fs from "node:fs"; const v=(process.env.MCP_VARIANT||"sap-docs").trim(); const cfg=JSON.parse(fs.readFileSync("config/variants/" + v + ".json", "utf8")); for (const p of (cfg.submodulePaths||[])) console.log(p);')" && \
+    SUBMODULE_PATHS="$(node --input-type=module -e 'import fs from "node:fs"; const v=(process.env.MCP_VARIANT||"sap-docs").trim(); const cfg=JSON.parse(fs.readFileSync("config/variants/" + v + ".json", "utf8")); process.stdout.write((cfg.submodulePaths||[]).join(" "));')" && \
     git config -f .gitmodules --get-regexp 'submodule\..*\.path' | while read -r key path; do \
       name="${key#submodule.}"; \
       name="${name%.path}"; \
@@ -104,6 +104,14 @@ RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
       npm run build:fts-only; \
     else \
       npm run build; \
+    fi && \
+    node -e "const Database=require('better-sqlite3'); const db=new Database('dist/data/docs.sqlite',{readonly:true}); const row=db.prepare('SELECT count(*) AS n FROM docs').get(); db.close(); if (!row || row.n <= 0) { throw new Error('Docker build produced an empty FTS index'); } console.log('Docker FTS index rows:', row.n);"
+
+# Runtime fetches need source files, not git history. The UI5 TypeScript source
+# indexes only root markdown files, so remove the generated site payload.
+RUN find sources -name .git -type d -prune -exec rm -rf {} + && \
+    if [ -d sources/ui5-typescript ]; then \
+      find sources/ui5-typescript -mindepth 1 -maxdepth 1 ! -name '*.md' -exec rm -rf {} +; \
     fi
 
 # ============ Production Stage ============
@@ -124,6 +132,15 @@ COPY package*.json ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
+RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
+      rm -rf \
+        node_modules/@huggingface \
+        node_modules/@img \
+        node_modules/onnxruntime-common \
+        node_modules/onnxruntime-node \
+        node_modules/onnxruntime-web \
+        node_modules/sharp; \
+    fi
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist

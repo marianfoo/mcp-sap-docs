@@ -3,9 +3,10 @@
 This guide publishes the `sap-docs` variant as a public Streamable HTTP MCP
 server on SAP BTP Cloud Foundry.
 
-Current recommendation: build the search corpus into a Docker image, publish it
-to GHCR, then deploy that image to Cloud Foundry with MTA. This keeps expensive
-work (submodule clone, FTS build, optional embeddings build) out of CF staging.
+Current recommendation: build the search corpus into an FTS-only Docker image,
+publish it to GHCR, then deploy that image to Cloud Foundry with MTA. This keeps
+expensive work (submodule clone, FTS build, optional embeddings build) out of CF
+staging and fits the current public trial profile.
 
 ## Why Docker First
 
@@ -23,7 +24,10 @@ Docker gives a cleaner operating model:
 - The same image can be smoke-tested locally before deployment.
 
 Use the Node.js buildpack only if the platform cannot pull container images or
-your compliance rules require CF staging from source.
+your compliance rules require CF staging from source. With the current full
+`sap-docs` corpus, Node.js buildpack package deploys are not recommended unless
+the source payload is pruned further; staging needs extra disk while copying and
+compressing the droplet.
 
 ## Semantic Embeddings
 
@@ -42,9 +46,10 @@ Without embeddings:
 - Smaller and faster image builds.
 - No semantic reranking.
 
-Default builds include embeddings. For the first CF trial, keep them enabled if
-the image builds and starts comfortably. If image size, disk quota, or startup
-memory becomes the blocker, rebuild with `--no-embeddings`.
+Default BTP image builds are FTS-only. This is the right first deployment mode
+for the public CF trial. Build a semantic image only after the FTS-only route is
+stable and you have deliberately budgeted the larger image, model dependencies,
+and startup/runtime memory.
 
 ## Prerequisites
 
@@ -99,6 +104,13 @@ FTS-only build:
 bash scripts/btp/build-ghcr-image.sh --no-embeddings --push
 ```
 
+`npm run btp:build-image` and `npm run btp:build-image:push` are FTS-only by
+default. To build the larger semantic image, use:
+
+```bash
+bash scripts/btp/build-ghcr-image.sh --embeddings --push
+```
+
 For the FTS-only image, keep `MCP_PRELOAD_EMBEDDINGS=false` in the deployed app.
 
 ## Publish from GitHub Actions
@@ -110,8 +122,8 @@ Manual run:
 
 1. Open GitHub Actions.
 2. Run "Publish SAP Docs GHCR Image".
-3. Keep `build_embeddings=true` for the full semantic image.
-4. Set `build_embeddings=false` for an FTS-only image.
+3. Keep `build_embeddings=false` for the default FTS-only image.
+4. Set `build_embeddings=true` only for a full semantic image experiment.
 
 The workflow can take a while because the Dockerfile clones documentation
 sources and builds the local search database inside the image.
@@ -152,6 +164,21 @@ cf push -f manifest-btp-cf-sap-docs.yml
 This uses the same GHCR image and public route model. It does not manage the
 deployment as an MTA, so prefer MTA once the image and quotas are confirmed.
 
+For a one-off Docker image test with a temporary app name:
+
+```bash
+CF_DOCKER_PASSWORD="$GHCR_TOKEN" cf push mcp-sap-docs-docker-test \
+  --docker-image ghcr.io/marianfoo/mcp-sap-docs:sap-docs \
+  --docker-username marianfoo \
+  --no-manifest \
+  -m 512M \
+  -k 4G \
+  -i 1 \
+  -u http \
+  --endpoint /health \
+  -t 240
+```
+
 ## Verify
 
 Get the route:
@@ -173,6 +200,7 @@ MCP initialize:
 ```bash
 curl -sS https://<route>/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-07-09","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' | jq .
 ```
 
@@ -201,18 +229,37 @@ Later protection should add XSUAA and MCP OAuth metadata as a separate change.
 
 Default deployment values:
 
-- memory: `2048M`
+- memory: `512M`
 - disk quota: `4096M`
 - instances: `1`
+- embeddings preload: `false`
 
 If staging or startup fails:
 
-- If CF rejects `disk-quota: 4096M`, lower the quota and rebuild with
-  `--no-embeddings`.
-- If startup runs out of memory, keep embeddings but increase memory, or rebuild
-  FTS-only.
+- If Docker deploy fails with an uncompressed image layer quota at `3G`, keep the
+  FTS-only image and use `disk-quota: 4096M`.
+- If startup runs out of memory, first confirm `MCP_PRELOAD_EMBEDDINGS=false`.
+  Increase memory only for a deliberate semantic image test.
 - If the Docker image is too slow to build locally, use the GitHub Actions
   workflow so the large build runs off-machine.
 
 Do not run `MCP_VARIANT=sap-docs npm run setup && npm run build` on a small CF
 staging container unless you deliberately choose the Node.js buildpack path.
+
+## Node.js Buildpack Package Result
+
+The full `sap-docs` corpus was also tested as a prebuilt Node.js package with
+vendored production dependencies and `MCP_PRELOAD_EMBEDDINGS=false`.
+
+Observed outcome:
+
+- `512M` memory was enough for runtime, but staging did not complete.
+- `3G` and `4G` disk failed while copying the compiled droplet.
+- `5G` disk failed while compressing the droplet.
+- The buildpack accepted vendored `node_modules`, but the app package plus
+  buildpack dependencies plus droplet copy/compression exceeded staging disk.
+
+Use Docker/GHCR for the current corpus. Revisit Node.js buildpack only after
+pruning large fetch sources such as OpenUI5 test payloads or splitting the
+runtime so source fetches are backed by object storage instead of the CF app
+filesystem.

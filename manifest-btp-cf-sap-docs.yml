@@ -4,7 +4,7 @@ applications:
     docker:
       image: ghcr.io/marianfoo/mcp-sap-docs:sap-docs
     instances: 1
-    memory: 2048M
+    memory: 512M
     disk_quota: 4096M
     health-check-type: http
     health-check-http-endpoint: /health
@@ -12,6 +12,6 @@ applications:
       NODE_ENV: production
       MCP_VARIANT: sap-docs
       MCP_HOST: 0.0.0.0
-      MCP_PRELOAD_EMBEDDINGS: "true"
+      MCP_PRELOAD_EMBEDDINGS: "false"
       LOG_FORMAT: json
       LOG_LEVEL: INFO
