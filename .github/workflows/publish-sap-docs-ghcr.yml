@@ -4,14 +4,14 @@ on:
   release:
     types: [published]
   schedule:
-    # Rebuild the offline corpus daily so the stable GHCR tag can be redeployed.
-    - cron: "17 2 * * *"
+    # Rebuild the offline corpus daily before the 05:00 UTC BTP CF update window.
+    - cron: "0 1 * * *"
   workflow_dispatch:
     inputs:
       build_embeddings:
         description: "Build semantic embeddings and cache the model in the image"
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 180
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
-      BUILD_EMBEDDINGS: "false"
+      BUILD_EMBEDDINGS: "true"
 
     steps:
       - name: Resolve build inputs

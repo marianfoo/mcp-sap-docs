@@ -22,7 +22,7 @@ Environment:
   GHCR_IMAGE          Image repository (default: ghcr.io/marianfoo/mcp-sap-docs)
   TAG                 Primary tag (default: sap-docs)
   DOCKER_PLATFORM     Docker platform (default: linux/amd64)
-  BUILD_EMBEDDINGS    true|false (default: false)
+  BUILD_EMBEDDINGS    true|false (default: true)
 
 Flags:
   --push              Push all generated tags after a successful build
@@ -42,7 +42,7 @@ done
 GHCR_IMAGE="${GHCR_IMAGE:-ghcr.io/marianfoo/mcp-sap-docs}"
 TAG="${TAG:-sap-docs}"
 DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
-BUILD_EMBEDDINGS="${BUILD_EMBEDDINGS:-false}"
+BUILD_EMBEDDINGS="${BUILD_EMBEDDINGS:-true}"
 
 GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)"
 SHA_TAG="sap-docs-${GIT_SHA}"

@@ -260,10 +260,10 @@ docker run --rm -p 3124:3124 \
 
 ## SAP BTP Cloud Foundry
 
-For BTP CF, the recommended `sap-docs` path is to build the documentation
-corpus into an FTS-only Docker image, publish it to GHCR, and deploy the image
-with MTA. This avoids cloning large documentation submodules and building
-embeddings during Cloud Foundry staging.
+For BTP CF, the recommended `sap-docs` path is to deploy the maintained
+`ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image with MTA. The release/scheduled
+workflow builds the documentation corpus and semantic embeddings into the image,
+so Cloud Foundry only pulls and runs it.
 
 See [docs/BTP-CF-DEPLOYMENT.md](docs/BTP-CF-DEPLOYMENT.md) for the public-first
 deployment guide, GHCR workflow, MTA descriptor, direct `cf push` manifest, and

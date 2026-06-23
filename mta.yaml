@@ -11,8 +11,8 @@ modules:
     type: application
     parameters:
       instances: 1
-      memory: 512M
-      disk-quota: 4096M
+      memory: 1024M
+      disk-quota: 6144M
       health-check-type: http
       health-check-http-endpoint: /health
       docker:
@@ -21,7 +21,7 @@ modules:
       NODE_ENV: production
       MCP_VARIANT: sap-docs
       MCP_HOST: 0.0.0.0
-      MCP_PRELOAD_EMBEDDINGS: "false"
+      MCP_PRELOAD_EMBEDDINGS: "true"
       LOG_FORMAT: json
       LOG_LEVEL: INFO
     build-parameters:
