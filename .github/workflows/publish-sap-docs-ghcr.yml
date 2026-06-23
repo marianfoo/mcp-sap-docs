@@ -4,7 +4,7 @@ on:
   release:
     types: [published]
   schedule:
-    # Rebuild the offline corpus daily before the 05:00 UTC BTP CF update window.
+    # Rebuild the offline corpus daily before the recommended 05:00 UTC BTP refresh window.
     - cron: "0 1 * * *"
   workflow_dispatch:
     inputs:

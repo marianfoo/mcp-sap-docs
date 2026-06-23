@@ -179,8 +179,8 @@ Manual run:
 The workflow can take a while because the Dockerfile clones documentation
 sources and builds the local search database inside the image.
 
-Scheduled runs refresh the GHCR image. The separate BTP CF deploy workflow runs
-later and updates the CF app to pull the refreshed image.
+Scheduled runs refresh the GHCR image. User-side BTP refresh should be triggered
+later by SAP Job Scheduling Service; see "Daily Resource Refresh".
 
 ## Deploy with MTA
 
@@ -388,67 +388,19 @@ Downsides of the Node.js buildpack path for this project:
 
 The right refresh model for this project is immutable image refresh:
 
-1. Rebuild the docs corpus once per day in CI.
-2. Publish a new GHCR image tag.
-3. Redeploy the CF app so it pulls the refreshed image.
+1. The maintained `ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image is refreshed
+   upstream.
+2. SAP Job Scheduling Service in the user's BTP CF space triggers a redeploy.
+3. CF pulls the current image and replaces the app instances.
 
 Do not refresh `dist/data/docs.sqlite` or `sources/` inside the running CF app.
 Those changes are not reproducible, may disappear on restart/restage, and will
 not update all instances consistently.
 
-This PR configures `.github/workflows/publish-sap-docs-ghcr.yml` with a daily
-scheduled run at `01:00 UTC`. It publishes:
+For a user who only operates BTP CF, the refresh trigger should live in BTP and
+should be SAP Job Scheduling Service:
 
-- stable tag: `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`
-- commit tag: `ghcr.io/marianfoo/mcp-sap-docs:sap-docs-<git-sha>`
-- dated scheduled tag: `ghcr.io/marianfoo/mcp-sap-docs:sap-docs-YYYYMMDD`
-
-This PR also adds `.github/workflows/deploy-btp-cf-sap-docs.yml` with a daily
-scheduled run at `05:00 UTC`. The four-hour gap gives the corpus/image refresh
-time to finish before CF is updated.
-
-The BTP CF deploy workflow requires these GitHub environment secrets in the
-`btp-cf` environment:
-
-- `CF_API`
-- `CF_USERNAME`
-- `CF_PASSWORD`
-- `CF_ORG`
-- `CF_SPACE`
-
-It installs the official CF CLI, logs in, targets the configured org/space, runs:
-
-```bash
-cf push -f manifest-btp-cf-sap-docs.yml
-```
-
-and then smoke-tests `/health`.
-
-This schedule is reasonable: `01:00 UTC` refreshes the source corpus when GitHub
-Actions is typically quieter, and `05:00 UTC` updates BTP CF after the image has
-had time to build and publish. If the image build takes longer than four hours,
-the 05:00 deployment will pull the previous stable tag; check the GHCR workflow
-duration and adjust the gap if needed.
-
-Use MTA deployment instead of direct `cf push` when route ownership, service
-bindings, and later XSUAA protection should be managed declaratively:
-
-```bash
-mbt build
-cf deploy mta_archives/mcp-sap-docs-btp-cf_*.mtar -e mta-overrides.mtaext
-```
-
-SAP Job Scheduling Service is useful when a BTP-native scheduler should call an
-admin endpoint or run a finite CF task. For this static corpus image, it should
-trigger CI/redeploy rather than mutate the running app filesystem. SAP describes
-the service as supporting recurring jobs and Cloud Foundry tasks; Cloud Foundry
-tasks run in their own short-lived containers and are destroyed after completion.
-
-### BTP-Native Refresh Trigger
-
-For a user who only operates BTP CF, the refresh trigger should live in BTP:
-
-1. The project-maintained GHCR workflow publishes a refreshed
+1. The maintained image publishing process publishes a refreshed
    `ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image.
 2. A SAP Job Scheduling Service schedule in the user's CF space runs at
    `05:00 UTC`.
@@ -460,7 +412,7 @@ For a user who only operates BTP CF, the refresh trigger should live in BTP:
 This gives the user a BTP-side refresh button/schedule without requiring them to
 publish their own Docker image.
 
-Recommended BTP implementation:
+Recommended implementation:
 
 - Create a SAP Job Scheduling Service instance, for example:
 
@@ -475,6 +427,18 @@ Recommended BTP implementation:
 - Keep the deployer app stopped if possible and let the scheduler run it as a CF
   task. This avoids keeping a second web process running just to redeploy the
   MCP server.
+
+Use MTA deployment instead of direct `cf push` when route ownership, service
+bindings, and later XSUAA protection should be managed declaratively:
+
+```bash
+mbt build
+cf deploy mta_archives/mcp-sap-docs-btp-cf_*.mtar -e mta-overrides.mtaext
+```
+
+SAP Job Scheduling Service supports recurring jobs and Cloud Foundry tasks. CF
+tasks run in short-lived containers and are destroyed after completion, which is
+the right shape for a redeploy trigger.
 
 Do not schedule the MCP server itself to run `git pull`, `npm run build`, or
 `npm run build:embeddings` inside the running web container. That would update
