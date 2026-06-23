@@ -495,9 +495,23 @@ recommended, but a personal platform user is acceptable for a trial/dev setup:
 
 ```bash
 cf set-env mcp-sap-docs-deployer CF_USERNAME "<platform-user>"
-cf set-env mcp-sap-docs-deployer CF_PASSWORD "<platform-user-password>"
 cf set-env mcp-sap-docs-deployer CF_ORIGIN "<origin>"
 ```
+
+Set the password without echoing it to the terminal. This works in zsh and bash:
+
+```bash
+printf "CF password: "
+stty -echo
+IFS= read -r CF_PASSWORD
+stty echo
+printf "\n"
+cf set-env mcp-sap-docs-deployer CF_PASSWORD "$CF_PASSWORD"
+unset CF_PASSWORD
+```
+
+Do not use `read -rsp` in zsh. In zsh, `-p` means "read from coprocess", so the
+command fails before setting the password variable.
 
 For SAP ID service users, the origin is usually `sap.ids`. For a custom SAP
 Cloud Identity Services trust, use the origin shown in **Cloud Foundry -> Org
