@@ -527,6 +527,10 @@ If you use a personal platform user for the first setup, rotate the password or
 replace the deployer credentials with a dedicated technical user before using
 the schedule in a shared or production space.
 
+Cloud Foundry user-provided environment variables can be visible to users who
+can inspect the app environment. Do not leave a personal platform password in
+the deployer app in a shared space.
+
 No GHCR credential is needed because the maintained image is public.
 
 Bind the scheduler service to the deployer app:
@@ -638,6 +642,20 @@ cf app mcp-sap-docs
 
 The task is successful only when `cf push` completes and the MCP app is healthy
 after the image pull/startup cycle.
+
+If the manual task fails during `cf auth` with `invalid_grant`, the scheduler
+and deployer runtime are working, but CF rejected the non-interactive login.
+Common causes are:
+
+- the password is not the password accepted by the platform identity provider
+- SAP ID service requires the S-user/P-user ID instead of the email address
+- MFA/TOTP is required for the user
+- the custom identity provider does not allow the password grant flow
+- the configured `CF_ORIGIN` does not match the user's platform identity origin
+
+Do not activate the daily schedule until this manual task succeeds. If the user
+requires MFA, use a dedicated technical user or client-credential based platform
+identity instead of a personal user.
 
 Use MTA deployment instead of direct `cf push` when route ownership, service
 bindings, and later XSUAA protection should be managed declaratively:
