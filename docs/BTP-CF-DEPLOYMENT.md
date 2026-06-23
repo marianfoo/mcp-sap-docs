@@ -101,8 +101,8 @@ Docker path was live-tested with `512M` memory and `4096M` disk.
 
 - `cf` CLI logged in and targeted to the destination org/space.
 - `mbt` installed for MTA deployment.
-- Access to the maintained GHCR image `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`.
-- If the GHCR package is public, CF can pull it without credentials.
+- Access to the maintained public GHCR image
+  `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`.
 - Docker installed only if you build or smoke-test the image locally. If GitHub
   Actions publishes the image, your deploy machine only needs `cf` and `mbt`.
 
@@ -129,14 +129,10 @@ release/scheduled workflow:
 ghcr.io/marianfoo/mcp-sap-docs:sap-docs
 ```
 
-Build and push your own image only when you intentionally want control over the
-image contents, want to test a branch before release, or run a fork.
-
-Log in to GHCR:
-
-```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u marianfoo --password-stdin
-```
+Build your own image only when you intentionally want control over the image
+contents, want to test a branch before release, or run a fork. This is not part
+of the normal user deployment path, and users of the maintained image should
+skip local image publishing entirely.
 
 Build locally:
 
@@ -144,13 +140,7 @@ Build locally:
 npm run btp:build-image
 ```
 
-Build and push:
-
-```bash
-npm run btp:build-image:push
-```
-
-The script tags the image as:
+The build script tags the image as:
 
 - `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`
 - `ghcr.io/marianfoo/mcp-sap-docs:sap-docs-<git-sha>`
@@ -158,12 +148,12 @@ The script tags the image as:
 FTS-only fallback build:
 
 ```bash
-bash scripts/btp/build-ghcr-image.sh --no-embeddings --push
+bash scripts/btp/build-ghcr-image.sh --no-embeddings
 ```
 
-`npm run btp:build-image` and `npm run btp:build-image:push` build the semantic
-image by default. For an FTS-only image, pass `--no-embeddings` and keep
-`MCP_PRELOAD_EMBEDDINGS=false` in the deployed app.
+`npm run btp:build-image` builds the semantic image by default. For an FTS-only
+image, pass `--no-embeddings` and keep `MCP_PRELOAD_EMBEDDINGS=false` in the
+deployed app.
 
 ## Publish from GitHub Actions
 
@@ -225,12 +215,11 @@ cf push -f manifest-btp-cf-sap-docs.yml
 This uses the same GHCR image and public route model. It does not manage the
 deployment as an MTA, so prefer MTA once the image and quotas are confirmed.
 
-For a one-off test with a temporary app name and a private GHCR image:
+For a one-off test with a temporary app name:
 
 ```bash
-CF_DOCKER_PASSWORD="$GHCR_TOKEN" cf push mcp-sap-docs-docker-test \
+cf push mcp-sap-docs-docker-test \
   --docker-image ghcr.io/marianfoo/mcp-sap-docs:sap-docs \
-  --docker-username marianfoo \
   --no-manifest \
   -m 1024M \
   -k 6G \
@@ -243,7 +232,6 @@ CF_DOCKER_PASSWORD="$GHCR_TOKEN" cf push mcp-sap-docs-docker-test \
 What the important flags do:
 
 - `--docker-image`: tells CF to pull an existing image instead of staging source.
-- `--docker-username` plus `CF_DOCKER_PASSWORD`: used only for private registries.
 - `--no-manifest`: ignores any local manifest so the command is self-contained.
 - `-m 1024M`: caps runtime memory for the single semantic-search web instance.
 - `-k 6G`: gives the app enough disk for the uncompressed semantic image
@@ -426,8 +414,8 @@ The shape is:
 SAP Job Scheduling Service
   -> scheduled Cloud Foundry task at 05:00 UTC
   -> mcp-sap-docs-deployer task container
-  -> cf push -f manifest-btp-cf-sap-docs.yml
-  -> mcp-sap-docs app pulls ghcr.io/marianfoo/mcp-sap-docs:sap-docs
+  -> cf push mcp-sap-docs with the public GHCR image
+  -> mcp-sap-docs pulls ghcr.io/marianfoo/mcp-sap-docs:sap-docs
 ```
 
 Why this is preferred:
@@ -449,9 +437,9 @@ Prerequisites:
 - A CF technical/platform user with the minimum permissions needed to push the
   MCP app in the target org/space. Do not store a personal password in the
   deployer app.
-- A deployer app package that contains the CF CLI, the
-  `manifest-btp-cf-sap-docs.yml` file, and a refresh script. Keep this package
-  small; do not push the full repository as the deployer app.
+- A small deployer app that contains the CF CLI. The easiest option is the
+  public `cloudfoundry/cli` image. Do not push the full repository as the
+  deployer app.
 
 Create the scheduler service instance:
 
@@ -460,61 +448,69 @@ cf create-service jobscheduler free mcp-sap-docs-scheduler
 ```
 
 Create and stage the deployer app in the same org/space as the MCP app. The
-deployer should have no route, low memory, and a harmless start command that lets
-Cloud Foundry stage a droplet once. After staging succeeds, stop the app and run
-only scheduled tasks from it.
+deployer has no route and a harmless start command that lets Cloud Foundry stage
+a droplet once. After staging succeeds, stop the app and run only scheduled
+tasks from it.
+
+```bash
+cf push mcp-sap-docs-deployer \
+  --docker-image cloudfoundry/cli:8.18.0 \
+  --no-manifest \
+  --no-route \
+  -m 64M \
+  -k 512M \
+  -i 1 \
+  -u process \
+  -c "sleep 86400" \
+  -t 120
+```
 
 Recommended deployer app limits:
 
-- memory: `256M`
-- disk quota: `1024M`
+- memory: `64M`
+- disk quota: `512M`
 - routes: none
 - running instances: `0` after initial staging
 
-Set deployer credentials as CF environment variables, not in Git:
+Set the target app parameters as deployer environment variables:
 
 ```bash
 cf set-env mcp-sap-docs-deployer CF_API "https://api.cf.<region>.hana.ondemand.com"
 cf set-env mcp-sap-docs-deployer CF_ORG "<org>"
 cf set-env mcp-sap-docs-deployer CF_SPACE "<space>"
-cf set-env mcp-sap-docs-deployer CF_USERNAME "<technical-user>"
-cf set-env mcp-sap-docs-deployer CF_PASSWORD "<technical-user-password>"
 cf set-env mcp-sap-docs-deployer MCP_APP_NAME "mcp-sap-docs"
+cf set-env mcp-sap-docs-deployer MCP_IMAGE "ghcr.io/marianfoo/mcp-sap-docs:sap-docs"
+cf set-env mcp-sap-docs-deployer MCP_MEMORY "1024M"
+cf set-env mcp-sap-docs-deployer MCP_DISK "6144M"
 ```
 
-If the GHCR image is public, no GHCR credential is needed. For a private image,
-also set registry credentials and make the refresh script pass them to `cf push`
-using `CF_DOCKER_PASSWORD` and `--docker-username`.
+Set CF deploy credentials as environment variables too. Use a technical user,
+not a personal login:
+
+```bash
+cf set-env mcp-sap-docs-deployer CF_USERNAME "<technical-user>"
+cf set-env mcp-sap-docs-deployer CF_PASSWORD "<technical-user-password>"
+```
+
+No GHCR credential is needed because the maintained image is public.
 
 Bind the scheduler service to the deployer app:
 
 ```bash
 cf bind-service mcp-sap-docs-deployer mcp-sap-docs-scheduler
-cf restage mcp-sap-docs-deployer
+cf restart mcp-sap-docs-deployer
 cf stop mcp-sap-docs-deployer
 ```
 
-The deployer refresh script should do only the deployment work:
+Use this one-line task action in the Job Scheduling Service dashboard:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-: "${CF_API:?}"
-: "${CF_ORG:?}"
-: "${CF_SPACE:?}"
-: "${CF_USERNAME:?}"
-: "${CF_PASSWORD:?}"
-
-cf api "$CF_API"
-cf auth "$CF_USERNAME" "$CF_PASSWORD"
-cf target -o "$CF_ORG" -s "$CF_SPACE"
-cf push -f manifest-btp-cf-sap-docs.yml
+sh -lc 'set -euo pipefail; cf api "$CF_API"; cf auth "$CF_USERNAME" "$CF_PASSWORD"; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'
 ```
 
-The script should not run `npm run setup`, `npm run build`, or
-`npm run build:embeddings`. The refreshed corpus is delivered through the GHCR
-image that was built upstream.
+The task action should not run `npm run setup`, `npm run build`, or
+`npm run build:embeddings`. The refreshed corpus is delivered through the public
+GHCR image that was built upstream.
 
 ### Dashboard Steps
 
@@ -527,19 +523,22 @@ cf service mcp-sap-docs-scheduler
 Copy the `dashboard url` into a browser. In the dashboard:
 
 1. Choose **Tasks**, not **Jobs**.
-2. Create a task for the deployer application, for example
-   `mcp-sap-docs-deployer`.
-3. Use a task command that runs the deployer script, for example
-   `bash refresh-btp-cf-app.sh`.
-4. Create a recurring schedule for the task.
-5. Set the schedule time to `05:00 UTC`.
-6. Activate the schedule.
+2. Click **Create Task**.
+3. Set **Name** to `mcp-sap-docs-refresh`.
+4. Set **Application** to `mcp-sap-docs-deployer`.
+5. Paste the one-line task action from the previous section into **Action**.
+6. Leave **Start Time** and **End Time** empty for an always-available daily
+   task.
+7. Keep **Activate Job** enabled and save the task.
+8. Open the task row's schedule action.
+9. Create a recurring schedule for `05:00 UTC`.
+10. Activate the schedule.
 
 If the dashboard exposes an **Options (JSON)** field for the task schedule, set
 the task memory explicitly:
 
 ```json
-{"memory_in_mb": 256}
+{"memory_in_mb": 64}
 ```
 
 SAP Job Scheduling Service uses its own SAP cron format and runs schedules in
@@ -565,16 +564,33 @@ HTTP endpoint such as `POST /refresh`. Calling the MCP server `/health` endpoint
 from a job only proves the app is alive; it does not pull a new image or refresh
 the corpus.
 
-### Manual Task Test
+### Why Run A Manual Task First?
 
-Before activating the daily schedule, run the same task once manually:
+The manual task is not a technical requirement of Job Scheduling Service. It is
+a preflight check before handing the refresh to an unattended daily schedule.
+
+Run it once to catch these mistakes immediately:
+
+- the technical user cannot authenticate to CF
+- the technical user cannot push the target app
+- the target app name, org, space, or image tag is wrong
+- the app quota is too small for the image pull/startup
+- the task command has a quoting or dashboard copy/paste issue
+
+If the manual run succeeds, activate the daily schedule. If it fails, fix the
+task before it starts failing unattended at `05:00 UTC`.
+
+Use the same action command as the dashboard task:
 
 ```bash
+REFRESH_COMMAND='sh -lc '\''set -euo pipefail; cf api "$CF_API"; cf auth "$CF_USERNAME" "$CF_PASSWORD"; cf target -o "$CF_ORG" -s "$CF_SPACE"; cf push "$MCP_APP_NAME" --docker-image "$MCP_IMAGE" --no-manifest -m "$MCP_MEMORY" -k "$MCP_DISK" -i 1 -u http --endpoint /health -t 240'\'''
+
 cf run-task mcp-sap-docs-deployer \
   --name refresh-mcp-sap-docs \
-  --memory 256M \
-  --disk 1024M \
-  --command "bash refresh-btp-cf-app.sh"
+  -m 64M \
+  -k 512M \
+  --command "$REFRESH_COMMAND" \
+  --wait
 ```
 
 Monitor the task through CF logs and the Job Scheduling Service dashboard:
