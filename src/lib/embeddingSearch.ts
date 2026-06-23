@@ -115,6 +115,10 @@ export async function buildSemanticResults(
   bm25Results: SearchResult[],
   k: number
 ): Promise<SearchResult[]> {
+  if (CONFIG.EMBEDDING_WEIGHT <= 0) {
+    return [];
+  }
+
   if (!embeddingsTableExists()) {
     return [];
   }

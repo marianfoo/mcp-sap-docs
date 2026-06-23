@@ -316,10 +316,12 @@ const server = createServer(async (req, res) => {
       console.warn("ui5 lib diff prefetch failed:", err.message)
     );
   }
-  // Pre-load the embedding model so the first search is fast (fire-and-forget)
-  loadEmbeddingModel().catch((err: Error) =>
-    console.warn("embedding model pre-load failed:", err.message)
-  );
+  if (CONFIG.PRELOAD_EMBEDDINGS) {
+    // Pre-load the embedding model so the first search is fast (fire-and-forget)
+    loadEmbeddingModel().catch((err: Error) =>
+      console.warn("embedding model pre-load failed:", err.message)
+    );
+  }
 
   // Start server
   const PORT = Number(process.env.PORT || variant.server.httpStatusPort);

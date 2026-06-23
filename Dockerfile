@@ -4,6 +4,7 @@
 # ============ Build Stage ============
 FROM node:22-slim AS builder
 ARG MCP_VARIANT=sap-docs
+ARG BUILD_EMBEDDINGS=true
 ENV MCP_VARIANT=${MCP_VARIANT}
 
 # Install git (required for submodules)
@@ -55,7 +56,9 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
         sources/abap-docs)                   echo 'docs';; \
         sources/btp-cloud-platform)          echo 'docs';; \
         sources/sap-artificial-intelligence) echo 'docs';; \
+        sources/terraform-provider-btp)      echo 'docs';; \
         sources/abap-atc-cr-cv-s4hc)         echo 'src';; \
+        sources/architecture-center)         echo 'docs';; \
         *)                                   echo '';; \
       esac)"; \
       if [ -n "$sparse" ]; then \
@@ -95,12 +98,18 @@ RUN UI5_LIB_DIFF_ENABLED="$(node --input-type=module -e ' \
       npm run download:ui5-lib-diff; \
     fi
 
-# Build TypeScript and FTS5 index
-RUN npm run build
+# Build TypeScript and the local search corpus. Semantic embeddings are useful
+# for query quality, but can be disabled for a smaller/faster CF image.
+RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
+      npm run build:fts-only; \
+    else \
+      npm run build; \
+    fi
 
 # ============ Production Stage ============
 FROM node:22-slim AS production
 ARG MCP_VARIANT=sap-docs
+ARG BUILD_EMBEDDINGS=true
 ENV MCP_VARIANT=${MCP_VARIANT}
 
 # Install only runtime dependencies
@@ -137,10 +146,11 @@ EXPOSE 3122 3124
 ENV NODE_ENV=production
 ENV MCP_PORT=3122
 ENV MCP_HOST=0.0.0.0
+ENV MCP_PRELOAD_EMBEDDINGS=${BUILD_EMBEDDINGS}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD node -e "const p=process.env.MCP_PORT||'3122'; fetch('http://localhost:'+p+'/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+    CMD node -e "const p=process.env.PORT||process.env.MCP_PORT||'3122'; fetch('http://localhost:'+p+'/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 # Start the streamable HTTP server
 CMD ["npm", "run", "start:streamable"]

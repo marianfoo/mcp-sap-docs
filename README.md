@@ -258,6 +258,18 @@ docker run --rm -p 3124:3124 \
   abap-mcp-server
 ```
 
+## SAP BTP Cloud Foundry
+
+For BTP CF, the recommended `sap-docs` path is to build the documentation
+corpus into a Docker image, publish it to GHCR, and deploy the image with MTA.
+This avoids cloning large documentation submodules and building embeddings
+during Cloud Foundry staging.
+
+See [docs/BTP-CF-DEPLOYMENT.md](docs/BTP-CF-DEPLOYMENT.md) for the public-first
+deployment guide, GHCR workflow, MTA descriptor, direct `cf push` manifest, and
+the FTS-only fallback when semantic embeddings are too large for the target
+quota.
+
 ## One-Way Sync to `abap-mcp-server`
 
 This repository contains direct sync automation:

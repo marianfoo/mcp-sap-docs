@@ -101,7 +101,28 @@ Important:
 - `search` defaults to `includeOnline=true`; set `includeOnline=false` to use only local offline index sources.
 - `--network none` hard-enforces offline behavior at container level.
 
-## 5. One-Way Sync to `abap-mcp-server`
+## 5. SAP BTP Cloud Foundry Deployment
+
+For the `sap-docs` variant on SAP BTP Cloud Foundry, use a prebuilt Docker image
+published to GHCR and deploy it with MTA:
+
+```bash
+npm run btp:build-image:push
+cp mta-overrides.mtaext.example mta-overrides.mtaext
+$EDITOR mta-overrides.mtaext
+npm run btp:deploy:mta
+```
+
+For a fast trial without MTA:
+
+```bash
+cf push -f manifest-btp-cf-sap-docs.yml
+```
+
+See `docs/BTP-CF-DEPLOYMENT.md` for full guidance, including the GitHub Actions
+GHCR workflow and the FTS-only build option.
+
+## 6. One-Way Sync to `abap-mcp-server`
 
 Automated in upstream via:
 
@@ -118,7 +139,7 @@ Behavior:
 - Workflow skips if commit message contains `[skip-sync]`
 - ABAP repo deploy-on-push workflow remains the deployment trigger
 
-## 6. Cursor MCP Config Example
+## 7. Cursor MCP Config Example
 
 ```json
 {
