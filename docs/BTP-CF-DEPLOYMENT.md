@@ -624,8 +624,8 @@ Field order:
 Year Month Day DayOfWeek Hour Minute Second
 ```
 
-Before relying on the daily schedule, run the task once manually using the
-commands in "Manual Refresh on BTP CF".
+Before relying on the daily schedule, run the task once manually. This verifies
+the deploy credentials, quota, and image pull before the unattended run.
 
 ## Troubleshooting
 

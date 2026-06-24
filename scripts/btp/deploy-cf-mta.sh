@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  cat <<'HELP'
+Build and deploy the sap-docs MTA archive to the currently targeted CF org/space.
+
+Environment:
+  MTA_EXT   Optional MTA extension descriptor (default: mta-overrides.mtaext)
+
+Examples:
+  npm run btp:deploy:mta
+  MTA_EXT=my-overrides.mtaext npm run btp:deploy:mta
+HELP
+  exit 0
+fi
+
 MTA_EXT="${MTA_EXT:-mta-overrides.mtaext}"
 
 mbt build

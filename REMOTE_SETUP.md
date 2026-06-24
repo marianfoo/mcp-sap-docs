@@ -103,15 +103,18 @@ Important:
 
 ## 5. SAP BTP Cloud Foundry Deployment
 
-For the `sap-docs` variant on SAP BTP Cloud Foundry, use a prebuilt Docker image
-published to GHCR and deploy it with MTA:
+For the `sap-docs` variant on SAP BTP Cloud Foundry, deploy the maintained
+prebuilt image with MTA:
 
 ```bash
-npm run btp:build-image:push
 cp mta-overrides.mtaext.example mta-overrides.mtaext
 $EDITOR mta-overrides.mtaext
 npm run btp:deploy:mta
 ```
+
+If your organization requires its own registry or controlled build pipeline,
+build and publish an equivalent image first, then set that image in
+`mta-overrides.mtaext`.
 
 For a fast trial without MTA:
 
@@ -119,8 +122,9 @@ For a fast trial without MTA:
 cf push -f manifest-btp-cf-sap-docs.yml
 ```
 
-See `docs/BTP-CF-DEPLOYMENT.md` for full guidance, including the GitHub Actions
-GHCR workflow and the FTS-only build option.
+See `docs/BTP-CF-DEPLOYMENT.md` for full guidance, including image options,
+resource defaults, MTA deployment, manual refresh, and daily Job Scheduler
+refresh setup.
 
 ## 6. One-Way Sync to `abap-mcp-server`
 
