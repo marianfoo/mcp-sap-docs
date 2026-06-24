@@ -177,6 +177,19 @@ sources and builds the local search database inside the image.
 Scheduled runs refresh the GHCR image. User-side BTP refresh should be triggered
 later by SAP Job Scheduling Service; see "Daily Resource Refresh".
 
+Manual workflow dispatch is available after the workflow exists on the default
+branch. Before that merge, a maintainer can do a one-time bootstrap push from a
+trusted local Docker environment:
+
+```bash
+BUILD_EMBEDDINGS=true DOCKER_PLATFORM=linux/amd64 TAG=sap-docs \
+  bash scripts/btp/build-ghcr-image.sh --push
+```
+
+That is a maintainer/release bootstrap path, not a normal user deployment step.
+Normal BTP CF users should wait for and consume the maintained public
+`ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image.
+
 ## Deploy with MTA
 
 Copy the extension template and choose a route:
@@ -268,6 +281,9 @@ Health:
 curl -sS https://<route>/health | jq .
 ```
 
+The streamable HTTP server exposes `/health` and `/mcp`. A 404 on `/status` is
+not a BTP deployment failure for this server.
+
 MCP initialize:
 
 ```bash
@@ -275,6 +291,97 @@ curl -sS https://<route>/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-07-09","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}' | jq .
+```
+
+Minimal end-to-end smoke test:
+
+```bash
+export ROUTE="https://<route>"
+
+node <<'NODE'
+const base = process.env.ROUTE;
+const accept = "application/json, text/event-stream";
+
+function parseSse(text) {
+  for (const block of text.split(/\r?\n\r?\n/)) {
+    const data = block
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart())
+      .join("\n")
+      .trim();
+    if (!data) continue;
+    const parsed = JSON.parse(data);
+    if (parsed.result || parsed.error) return parsed;
+  }
+  throw new Error("No JSON-RPC SSE payload found");
+}
+
+async function rpc(method, params, sessionId, id) {
+  const response = await fetch(`${base}/mcp`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept,
+      ...(sessionId ? { "mcp-session-id": sessionId } : {}),
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(`${method} HTTP ${response.status}: ${text}`);
+  const payload = response.headers.get("content-type")?.includes("text/event-stream")
+    ? parseSse(text)
+    : JSON.parse(text);
+  if (payload.error) throw new Error(`${method}: ${JSON.stringify(payload.error)}`);
+  return { payload, sessionId: response.headers.get("mcp-session-id") || sessionId };
+}
+
+function parseToolResult(result) {
+  if (result.structuredContent) return result.structuredContent;
+  const text = result.content?.find((item) => item.type === "text")?.text;
+  return text ? JSON.parse(text) : null;
+}
+
+const init = await rpc("initialize", {
+  protocolVersion: "2025-07-09",
+  capabilities: {},
+  clientInfo: { name: "btp-smoke", version: "1.0" },
+}, undefined, 1);
+
+const sessionId = init.sessionId;
+const tools = await rpc("tools/list", {}, sessionId, 2);
+const toolNames = tools.payload.result.tools.map((tool) => tool.name);
+if (!toolNames.includes("search") || !toolNames.includes("fetch")) {
+  throw new Error(`Missing search/fetch tools: ${toolNames.join(", ")}`);
+}
+
+const search = await rpc("tools/call", {
+  name: "search",
+  arguments: {
+    query: "SAP Job Scheduling Service Cloud Foundry task",
+    k: 5,
+    includeOnline: false,
+  },
+}, sessionId, 3);
+
+const results = parseToolResult(search.payload.result)?.results || [];
+if (!results.length) throw new Error("Search returned zero results");
+
+const fetched = await rpc("tools/call", {
+  name: "fetch",
+  arguments: { id: results[0].id },
+}, sessionId, 4);
+
+const doc = parseToolResult(fetched.payload.result);
+if (!doc?.text || doc.text.length < 50) throw new Error("Fetch returned no text");
+
+await fetch(`${base}/mcp`, {
+  method: "DELETE",
+  headers: { accept, "mcp-session-id": sessionId },
+}).catch(() => {});
+
+console.log(`OK search=${results.length} fetch=${doc.id}`);
+NODE
 ```
 
 Logs:
@@ -307,6 +414,20 @@ Default deployment values for the recommended semantic profile:
 - instances: `1`
 - embeddings preload: `true`
 
+These values were verified on SAP BTP CF with the maintained semantic image:
+
+- image: `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`
+- digest: `sha256:5ce587adda15c654bff82ab4fd7a5f8a9e3ee43715c797629b094d177fe012d9`
+- platform: `linux/amd64`
+- local image size: about `4.76 GB`
+- image contents: `45,914` FTS rows and `19,869` embedded documents
+- semantic `docs.sqlite`: `72.1 MB`
+- manual scheduled-style redeploy: `87` seconds
+- observed app footprint after startup: about `343M` of `1024M` memory and
+  `4.4G` of `6144M` disk
+- checks passed: `/health`, MCP `initialize`, `tools/list`, offline `search`,
+  and `fetch`
+
 Parameter guidance:
 
 | Parameter | Default | Why it matters |
@@ -322,6 +443,11 @@ Do not optimize only for compressed image size. CF Docker startup is constrained
 by the uncompressed image filesystem and app disk quota. CF buildpack staging is
 constrained by upload size, staging disk, dependency install/rebuild, droplet
 copying, and droplet compression.
+
+The disk default is intentionally higher than the observed `4.4G` usage. The
+extra headroom is for image layer expansion, small source/model changes between
+daily builds, and CF startup behavior. Treat `4096M` as FTS-only territory, not
+as the semantic default.
 
 If staging or startup fails:
 
@@ -495,6 +621,11 @@ cf set-env mcp-sap-docs-deployer MCP_MEMORY "1024M"
 cf set-env mcp-sap-docs-deployer MCP_DISK "6144M"
 ```
 
+The Job Scheduler task reads these values from the deployer app environment. To
+change the target image, app name, memory, or disk quota later, update the
+deployer environment and restart/stop the deployer once; no dashboard action
+change is needed when the one-line task action below stays unchanged.
+
 Set CF deploy credentials as environment variables too. Use one of these two
 models.
 
@@ -574,6 +705,14 @@ Bind the scheduler service to the deployer app:
 
 ```bash
 cf bind-service mcp-sap-docs-deployer mcp-sap-docs-scheduler
+cf restart mcp-sap-docs-deployer
+cf stop mcp-sap-docs-deployer
+```
+
+Also run the same restart/stop pair after changing deployer environment values
+later:
+
+```bash
 cf restart mcp-sap-docs-deployer
 cf stop mcp-sap-docs-deployer
 ```
@@ -671,6 +810,16 @@ cf run-task mcp-sap-docs-deployer \
   --command "$REFRESH_COMMAND" \
   --wait
 ```
+
+Use `-m` and `-k` for CF task memory and disk. Some CF CLI versions reject
+longer `--memory` or `--disk` flags for `cf run-task`.
+
+In the tested setup, the manual semantic redeploy task succeeded as task id `5`.
+It started at `2026-06-24T08:24:26Z`, completed at
+`2026-06-24T08:25:53Z`, and left the target app running the maintained
+`sap-docs` image at `1024M` memory and `6144M` disk. The deployer app was then
+stopped again, so the daily schedule is prepared without keeping the deployer
+web process running.
 
 Monitor the task through CF logs and the Job Scheduling Service dashboard:
 
