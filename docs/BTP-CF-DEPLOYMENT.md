@@ -103,6 +103,9 @@ Docker path was live-tested with `512M` memory and `4096M` disk.
 - `mbt` installed for MTA deployment.
 - Access to the maintained public GHCR image
   `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`.
+  The GitHub repository being public is not enough; the GitHub Packages
+  container package must also be public. Verify this once in the package
+  settings or with an anonymous GHCR pull check before scheduling refreshes.
 - Docker installed only if you build or smoke-test the image locally. If GitHub
   Actions publishes the image, your deploy machine only needs `cf` and `mbt`.
 
@@ -562,6 +565,11 @@ the deployer app in a shared space.
 
 No GHCR credential is needed because the maintained image is public.
 
+If CF staging fails with a GHCR error such as `unable to retrieve auth token` or
+`invalid username/password`, check the package visibility in GitHub Packages.
+Set `ghcr.io/marianfoo/mcp-sap-docs` to public; do not add GHCR credentials to
+the BTP deployment for the maintained image.
+
 Bind the scheduler service to the deployer app:
 
 ```bash
@@ -593,15 +601,17 @@ Copy the `dashboard url` into a browser. In the dashboard:
 
 1. Choose **Tasks**, not **Jobs**.
 2. Click **Create Task**.
-3. Set **Name** to `mcp-sap-docs-refresh`.
+3. Set **Name** to `mcp_sap_docs_refresh`. The dashboard rejects hyphens in
+   Cloud Foundry task names.
 4. Set **Application** to `mcp-sap-docs-deployer`.
 5. Paste the one-line task action from the previous section into **Action**.
 6. Leave **Start Time** and **End Time** empty for an always-available daily
    task.
 7. Keep **Activate Job** enabled and save the task.
-8. Open the task row's schedule action.
-9. Create a recurring schedule for `05:00 UTC`.
-10. Activate the schedule.
+8. Open the task row and choose **Create Schedule**.
+9. Select **Recurring - Repeat At** and set **Value** to `05:00`.
+10. Keep the schedule active and save it. The next run should show
+    `05:00:00 UTC`.
 
 If the dashboard exposes an **Options (JSON)** field for the task schedule, set
 the task memory explicitly:
