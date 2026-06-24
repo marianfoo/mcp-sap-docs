@@ -17,6 +17,7 @@ This index marks which documents are authoritative for the current codebase.
 The files below are retained for implementation history and narrower deep dives.
 Some sections may describe earlier milestones and should be read with the current architecture docs above.
 
+- `docs/BTP-CF-INTERNAL-NOTES.md` (maintainer-only publishing and validation notes)
 - `docs/ABAP-INTEGRATION-SUMMARY.md`
 - `docs/ABAP-MULTI-VERSION-INTEGRATION.md`
 - `docs/ABAP-STANDARD-INTEGRATION.md`

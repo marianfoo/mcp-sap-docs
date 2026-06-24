@@ -13,7 +13,7 @@ modules:
       # deploy service assigns a generated host.
       #
       # routes:
-      #   - route: mcp-sap-docs-dev.cfapps.us10-001.hana.ondemand.com
+      #   - route: mcp-sap-docs.<your-cf-domain>
 
       # Semantic image defaults. Lower these only for FTS-only fallback images.
       # disk-quota: 6144M
