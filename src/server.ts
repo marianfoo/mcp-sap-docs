@@ -7,6 +7,7 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
+import { CONFIG } from "./lib/config.js";
 
 const variant = getVariantConfig();
 
@@ -48,10 +49,12 @@ async function main() {
       logger.warn("ui5 lib diff prefetch failed", { error: err.message })
     );
   }
-  // Pre-load the embedding model so the first search is fast (fire-and-forget)
-  loadEmbeddingModel().catch((err: Error) =>
-    logger.warn("embedding model pre-load failed", { error: err.message })
-  );
+  if (CONFIG.PRELOAD_EMBEDDINGS) {
+    // Pre-load the embedding model so the first search is fast (fire-and-forget)
+    loadEmbeddingModel().catch((err: Error) =>
+      logger.warn("embedding model pre-load failed", { error: err.message })
+    );
+  }
   
   const srv = createServer();
   

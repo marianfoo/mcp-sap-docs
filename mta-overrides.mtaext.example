@@ -1,0 +1,29 @@
+_schema-version: "3.3.0"
+ID: mcp-sap-docs-btp-cf-overrides
+extends: mcp-sap-docs-btp-cf
+
+modules:
+  - name: mcp-sap-docs-server
+    parameters:
+      # Override the image tag for a specific deployment.
+      docker:
+        image: ghcr.io/marianfoo/mcp-sap-docs:sap-docs
+
+      # Pick a stable route for MCP clients. Without this block, the MTA
+      # deploy service assigns a generated host.
+      #
+      # routes:
+      #   - route: mcp-sap-docs.<your-cf-domain>
+
+      # Semantic image defaults. Lower these only for FTS-only fallback images.
+      # disk-quota: 6144M
+      # memory: 1024M
+
+    properties:
+      # Keep public/read-only deployment unauthenticated for the first rollout.
+      # Later XSUAA protection should be added as a new resource binding.
+      MCP_VARIANT: sap-docs
+      MCP_HOST: 0.0.0.0
+      MCP_PRELOAD_EMBEDDINGS: "true"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO

@@ -1,0 +1,74 @@
+name: Publish SAP Docs GHCR Image
+
+on:
+  release:
+    types: [published]
+  schedule:
+    # Rebuild the offline corpus daily before the recommended 05:00 UTC BTP refresh window.
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      build_embeddings:
+        description: "Build semantic embeddings and cache the model in the image"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-sap-docs-ghcr
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
+      BUILD_EMBEDDINGS: "true"
+
+    steps:
+      - name: Resolve build inputs
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "BUILD_EMBEDDINGS=${{ inputs.build_embeddings }}" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=sap-docs
+            type=sha,prefix=sap-docs-
+            type=ref,event=tag,prefix=sap-docs-
+            type=schedule,pattern=sap-docs-{{date 'YYYYMMDD'}}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            MCP_VARIANT=sap-docs
+            BUILD_EMBEDDINGS=${{ env.BUILD_EMBEDDINGS }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

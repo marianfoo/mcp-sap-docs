@@ -3,7 +3,6 @@
 // This module provides:
 //   - loadEmbeddingModel()  — pre-warm the model at server startup
 //   - buildSemanticResults() — called from search.ts per-query
-import { pipeline, env } from "@huggingface/transformers";
 import type { SearchResult } from "./search.js";
 import { CONFIG } from "./config.js";
 import { openDb } from "./searchDb.js";
@@ -23,10 +22,11 @@ export async function loadEmbeddingModel(cacheDir?: string): Promise<void> {
   if (modelLoadPromise) return modelLoadPromise; // already loading
 
   const dir = cacheDir ?? CONFIG.MODELS_DIR;
-  env.cacheDir = dir;
 
   modelLoadPromise = (async () => {
     console.log(`🤖 Pre-loading embedding model (cache: ${dir})...`);
+    const { pipeline, env } = await import("@huggingface/transformers");
+    env.cacheDir = dir;
     const pipe = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2", {
       cache_dir: dir,
       dtype: "fp32",
@@ -115,6 +115,10 @@ export async function buildSemanticResults(
   bm25Results: SearchResult[],
   k: number
 ): Promise<SearchResult[]> {
+  if (CONFIG.EMBEDDING_WEIGHT <= 0) {
+    return [];
+  }
+
   if (!embeddingsTableExists()) {
     return [];
   }

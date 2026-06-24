@@ -12,6 +12,7 @@ import { getVariantConfig, isToolEnabled } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
+import { CONFIG } from "./lib/config.js";
 
 const VERSION = "0.3.48"; // x-release-please-version
 const variant = getVariantConfig();
@@ -96,12 +97,15 @@ async function main() {
     );
   }
 
-  // Pre-load the embedding model so the first search is fast (fire-and-forget)
-  loadEmbeddingModel().catch((err: Error) =>
-    logger.warn("embedding model pre-load failed", { error: err.message })
-  );
+  if (CONFIG.PRELOAD_EMBEDDINGS) {
+    // Pre-load the embedding model so the first search is fast (fire-and-forget)
+    loadEmbeddingModel().catch((err: Error) =>
+      logger.warn("embedding model pre-load failed", { error: err.message })
+    );
+  }
 
-  const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : variant.server.streamablePort;
+  const portEnv = process.env.PORT || process.env.MCP_PORT;
+  const MCP_PORT = portEnv ? parseInt(portEnv, 10) : variant.server.streamablePort;
   const MCP_HOST = process.env.MCP_HOST || '127.0.0.1';
   
   // Create Express application

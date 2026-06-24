@@ -67,6 +67,10 @@ export const CONFIG = {
   // Directory where the embedding model is cached (gitignored, in-project)
   MODELS_DIR: process.env.MODELS_DIR || "dist/models",
 
+  // Preload the embedding model at startup. Disable this for FTS-only builds
+  // where dist/data/docs.sqlite intentionally has no embeddings table.
+  PRELOAD_EMBEDDINGS: process.env.MCP_PRELOAD_EMBEDDINGS !== "false",
+
   // ---------------------------------------------------------------------------
   // UI5 Lib Diff Configuration
   // ---------------------------------------------------------------------------

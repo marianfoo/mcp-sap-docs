@@ -7,6 +7,7 @@ This index marks which documents are authoritative for the current codebase.
 - `README.md` (repo root)
 - `REMOTE_SETUP.md` (repo root)
 - `docs/ARCHITECTURE.md`
+- `docs/BTP-CF-DEPLOYMENT.md`
 - `docs/DEV.md`
 - `docs/TESTS.md`
 - `docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md`
@@ -16,6 +17,7 @@ This index marks which documents are authoritative for the current codebase.
 The files below are retained for implementation history and narrower deep dives.
 Some sections may describe earlier milestones and should be read with the current architecture docs above.
 
+- `docs/BTP-CF-INTERNAL-NOTES.md` (maintainer-only publishing and validation notes)
 - `docs/ABAP-INTEGRATION-SUMMARY.md`
 - `docs/ABAP-MULTI-VERSION-INTEGRATION.md`
 - `docs/ABAP-STANDARD-INTEGRATION.md`
@@ -32,6 +34,7 @@ Some sections may describe earlier milestones and should be read with the curren
 
 1. `README.md`
 2. `docs/ARCHITECTURE.md`
-3. `docs/DEV.md`
-4. `docs/TESTS.md`
-5. `docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md`
+3. `docs/BTP-CF-DEPLOYMENT.md` if deploying to SAP BTP Cloud Foundry
+4. `docs/DEV.md`
+5. `docs/TESTS.md`
+6. `docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md`

@@ -1,0 +1,28 @@
+_schema-version: "3.3.0"
+ID: mcp-sap-docs-btp-cf
+version: 0.3.48
+description: MCP SAP Docs streamable HTTP server for SAP BTP Cloud Foundry
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  - name: mcp-sap-docs-server
+    type: application
+    parameters:
+      instances: 1
+      memory: 1024M
+      disk-quota: 6144M
+      health-check-type: http
+      health-check-http-endpoint: /health
+      docker:
+        image: ghcr.io/marianfoo/mcp-sap-docs:sap-docs
+    properties:
+      NODE_ENV: production
+      MCP_VARIANT: sap-docs
+      MCP_HOST: 0.0.0.0
+      MCP_PRELOAD_EMBEDDINGS: "true"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+    build-parameters:
+      no-source: true
