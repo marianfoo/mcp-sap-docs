@@ -371,7 +371,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
                 },
                 product: {
                   type: "string",
-                  description: "Optional SAP Help product-id scope, applied ONLY to the online SAP Help leg (offline unaffected). Routes the online query to ONE product's docs — use it for FUNCTIONAL/configuration questions that `abapFlavor` cannot express (e.g. 'SAP_S4HANA_ON-PREMISE' for Asset Accounting, Grants, sales customizing). Takes precedence over the abapFlavor auto-mapping. DISCOVER valid values exactly like `version`: run the search once WITHOUT product and copy a result's `metadata.product` EXACTLY — never invent a slug (e.g. 'ABAP_PLATFORM' is wrong; the real facet is 'ABAP_PLATFORM_NEW'). An unknown product safely falls back to unscoped, so nothing is lost."
+                  description: "Optional SAP Help product-id scope, applied ONLY to the online SAP Help leg (offline unaffected). Routes the online query to ONE product's docs — use it for FUNCTIONAL/configuration questions that `abapFlavor` cannot express (e.g. 'SAP_S4HANA_ON-PREMISE' for Asset Accounting, Grants, sales customizing). Takes precedence over the abapFlavor auto-mapping. DISCOVER valid values exactly like `version`: run the search once WITHOUT product and copy a result's `metadata.productId` EXACTLY — that is the scope facet, NOT `metadata.product`, which is the human display label (e.g. 'SAP S/4HANA') and will NOT filter. Never invent a slug (e.g. 'ABAP_PLATFORM' is wrong; the real facet is 'ABAP_PLATFORM_NEW'). An unknown product safely falls back to unscoped, so nothing is lost."
                 }
               },
               required: ["query"]

@@ -155,26 +155,50 @@ async function fetchHelpResults(query: string, version: string, product = ""): P
   return data?.data?.results || [];
 }
 
+/**
+ * Relaxation ladder for the two independent, OPTIONAL SAP Help filters — a `version` pin and a
+ * `product` scope. Tries the most specific combo first, then relaxes the PRODUCT scope (an optional
+ * noise filter, and the value most likely to be a wrong/guessed slug) BEFORE the VERSION pin (the
+ * caller's explicit release constraint) — so a bad product never silently swaps the requested
+ * release. The final attempt is unscoped-latest = the original pre-filter behaviour, so the leg is
+ * never lost. Returns the hits plus the version that actually produced them (drives id encoding).
+ *
+ * `fetcher` is injected so the ladder is unit-testable without the network (see
+ * test/help-fallback-ladder.test.ts). Combos that collapse to a duplicate when version/product is
+ * empty are de-duplicated, so no combination is ever fetched twice.
+ */
+export async function resolveHelpResults(
+  fetcher: (query: string, version: string, product: string) => Promise<SapHelpSearchResult[]>,
+  query: string,
+  requested: string,
+  scope: string,
+): Promise<{ results: SapHelpSearchResult[]; usedVersion: string }> {
+  const attempts: Array<[string, string]> = [];
+  const add = (v: string, p: string) => {
+    if (!attempts.some(([av, ap]) => av === v && ap === p)) attempts.push([v, p]);
+  };
+  add(requested, scope); // most specific
+  add(requested, "");    // drop product (noise filter), KEEP the version pin
+  add("", scope);        // drop version, keep the product scope
+  add("", "");           // drop both = prior unscoped-latest behaviour
+
+  let results: SapHelpSearchResult[] = [];
+  for (const [v, p] of attempts) {
+    results = await fetcher(query, v, p);
+    if (results.length) return { results, usedVersion: v };
+  }
+  return { results, usedVersion: requested }; // all empty — usedVersion is unused downstream
+}
+
 export async function searchSapHelp(query: string, version?: string, product?: string): Promise<SearchResponse> {
   try {
     const requested = (version ?? "").trim();
     const scope = (product ?? "").trim();
-    // Never drop SAP Help on a too-narrow/invalid version: if the pinned query returns nothing,
-    // fall back ONCE to latest (unfiltered, the prior behaviour) so results are never lost by
-    // default. `usedVersion` then drives id encoding, so fetch follows whichever release we got.
-    // The product scope is preserved across the fallback — only the version is relaxed.
-    let usedVersion = requested;
-    let results = await fetchHelpResults(query, requested, scope);
-    if (!results.length && requested) {
-      // Too-narrow/invalid version: drop the version, KEEP the product scope.
-      results = await fetchHelpResults(query, "", scope);
-      usedVersion = "";
-    }
-    if (!results.length && scope) {
-      // Unknown/empty product: drop the scope too (fully unscoped = prior behaviour). A wrong
-      // product value can never silently empty the SAP Help leg — we are never worse than no scoping.
-      results = await fetchHelpResults(query, usedVersion, "");
-    }
+    // Resolve the two optional filters via the relaxation ladder: it relaxes a wrong/empty PRODUCT
+    // before the caller's VERSION pin and never goes below unscoped-latest, so the leg is never lost
+    // and a bad product never silently swaps the requested release. `usedVersion` then drives id
+    // encoding, so a later fetch follows whichever release actually answered. See resolveHelpResults.
+    const { results, usedVersion } = await resolveHelpResults(fetchHelpResults, query, requested, scope);
 
     if (!results.length) {
       return {
@@ -190,12 +214,20 @@ export async function searchSapHelp(query: string, version?: string, product?: s
       // parameter (see encodeSapHelpId). No version → plain id (prior behaviour).
       const sapHelpId = encodeSapHelpId(helpId, usedVersion);
 
-      // Surface the exact filter token (versionId) verbatim: it is opaque, case-sensitive and
-      // unguessable, so the caller pins a later search by copying it from a result, not deriving it.
+      // Surface the exact filter tokens (versionId, productId) verbatim: both are opaque,
+      // case-sensitive and unguessable, so the caller pins a later search by copying them from a
+      // result, not deriving them. `product` is the human display label (e.g. "SAP S/4HANA");
+      // `productId` is the actual scope facet (e.g. "SAP_S4HANA_ON-PREMISE") — they differ for most
+      // functional products, so the label is NOT a usable `product` filter. Show the id when it adds info.
       const versionToken = hit.versionId || "";
       const versionLabel = hit.version || hit.versionId || "Latest";
       const versionText = versionToken ? `${versionLabel}, versionId ${versionToken}` : versionLabel;
-      const desc = `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${versionText})`;
+      const productLabel = hit.product || hit.productId || "Unknown";
+      const productId = hit.productId || hit.product || "";
+      const productText = productId && productId !== productLabel
+        ? `${productLabel}, productId ${productId}`
+        : productLabel;
+      const desc = `${hit.snippet || hit.title} — Product: ${productText} (${versionText})`;
 
       return {
         library_id: sapHelpId,
@@ -208,7 +240,8 @@ export async function searchSapHelp(query: string, version?: string, product?: s
         metadata: {
           source: "help",
           loio: validLoio(hit.loio),
-          product: hit.product || hit.productId,
+          product: productLabel,
+          productId: productId || undefined,
           version: versionLabel,
           versionId: versionToken || undefined,
           rank: index + 1

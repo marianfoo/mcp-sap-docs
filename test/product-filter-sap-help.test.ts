@@ -94,4 +94,18 @@ describe("SAP Help `product` scope (online-merge pollution fix)", () => {
     },
     NET_TIMEOUT
   );
+
+  it(
+    "scoped functional hits expose the real filter token in metadata.productId (discovery contract)",
+    async (ctx) => {
+      // The whole point of the discovery loop: a caller runs WITHOUT product, copies a hit's
+      // `metadata.productId`, and passes it back. So every scoped functional hit must carry the EXACT
+      // facet token "SAP_S4HANA_ON-PREMISE" — NOT the display label "SAP S/4HANA" (which filters to 0).
+      const res = await liveSearch(ctx, "where do I configure the number range for billing documents", "SAP_S4HANA_ON-PREMISE");
+      const ids = (res.results ?? []).map((r) => r.metadata?.productId);
+      expect(ids.length).toBeGreaterThan(0);
+      expect(ids.every((id) => id === "SAP_S4HANA_ON-PREMISE")).toBe(true);
+    },
+    NET_TIMEOUT
+  );
 });

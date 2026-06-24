@@ -45,7 +45,8 @@ export interface UnifiedSearchOptions {
    * Optional SAP Help product-id scope (e.g. "SAP_S4HANA_ON-PREMISE", "ABAP_PLATFORM_NEW"), applied
    * ONLY to the online SAP Help leg. Takes precedence over the abapFlavor-derived product. Use it to
    * route FUNCTIONAL/config queries that abapFlavor cannot express. Copy a real value from a prior
-   * result's `metadata.product`; never guess. An unknown product safely falls back to unscoped.
+   * result's `metadata.productId` (the scope facet, NOT the `metadata.product` display label); never
+   * guess. An unknown product safely falls back to unscoped.
    */
   product?: string;
   sources?: string[];
