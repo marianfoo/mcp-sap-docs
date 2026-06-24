@@ -119,6 +119,7 @@ FROM node:22-slim AS production
 ARG MCP_VARIANT=sap-docs
 ARG BUILD_EMBEDDINGS=true
 ENV MCP_VARIANT=${MCP_VARIANT}
+LABEL org.opencontainers.image.source="https://github.com/marianfoo/mcp-sap-docs"
 
 # Install only runtime dependencies
 RUN apt-get update && \

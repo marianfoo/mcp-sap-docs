@@ -48,6 +48,29 @@ docker push ghcr.io/marianfoo/mcp-sap-docs:sap-docs
 GitHub repository visibility and GitHub Packages visibility are separate. After
 the package is first created, confirm the package is public in GitHub Packages.
 
+If the publish workflow fails after a successful Docker build with
+`permission_denied: write_package`, check whether the package is linked to this
+repository:
+
+```bash
+gh api /user/packages/container/mcp-sap-docs \
+  --jq '{repository: .repository.full_name, visibility}'
+```
+
+If `repository` is `null`, the package was likely created by a local bootstrap
+push before GitHub associated it with the repository. Fix the package settings:
+
+1. Open `https://github.com/users/marianfoo/packages/container/package/mcp-sap-docs`.
+2. Click **Connect Repository** and choose `mcp-sap-docs`.
+3. Open **Package settings**.
+4. Enable **Inherit access from source repository (recommended)**.
+5. Under **Manage Actions access**, add repository `mcp-sap-docs`.
+6. Change its role from **Read** to **Write**.
+7. Re-run **Publish SAP Docs GHCR Image** on `main`.
+
+The workflow already requests `packages: write`; the missing piece is package
+write access for this repository's `GITHUB_TOKEN`.
+
 Anonymous manifest check:
 
 ```bash
