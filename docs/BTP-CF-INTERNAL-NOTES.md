@@ -95,6 +95,28 @@ Validation performed on 2026-06-24:
 The digest above is historical validation evidence, not a stable deployment
 target.
 
+## MTA Deployment Validation
+
+MTA deployment path validated on 2026-06-24:
+
+- Build command: `mbt build`
+- Deploy command:
+  `cf deploy mta_archives/mcp-sap-docs-btp-cf_0.3.48.mtar -e .tmp-mta-test.mtaext -f`
+- MTA ID: `mcp-sap-docs-btp-cf`
+- Module/app created: `mcp-sap-docs-server`
+- Test route: `mcp-sap-docs-mta-test.cfapps.us10-001.hana.ondemand.com`
+- Docker image: `ghcr.io/marianfoo/mcp-sap-docs:sap-docs`
+- App resources: `1024M` memory, `6144M` disk
+- Observed footprint: about `328M` memory and `4.4G` disk
+- Checks passed: `/health`, MCP `initialize`, `tools/list`, offline `search`,
+  and `fetch`
+- Cleanup command: `cf undeploy mcp-sap-docs-btp-cf -f`
+
+The test confirms that `mta.yaml` works with the no-source Docker image module
+and that route override through an extension descriptor works. The test MTA app
+was undeployed after validation so the direct-push scheduled app remains the only
+running MCP app in the trial space.
+
 ## BTP CF Smoke Test
 
 The public deployment guide documents `/health`. Use this deeper smoke test
@@ -203,6 +225,22 @@ OK search=5 fetch=/btp-cloud-platform/50-administration-and-ops/operations-for-e
 Operational findings from the BTP CF setup:
 
 - Use Job Scheduling Service **Tasks**, not **Jobs**, for the redeploy trigger.
+- The scheduler REST API can list the dashboard-created CF task as a job at
+  `/scheduler/jobs`; the tested job ID was `7472481`.
+- A one-time test schedule was created through
+  `POST /scheduler/jobs/{jobId}/schedules` with `time:
+  "2026-06-24T09:45:00Z"` to run at `11:45` Europe/Berlin.
+- The one-time test schedule fired successfully:
+  - CF task id: `6`
+  - task name: `jobscheduler-task-4fdf7734-2da5-4539-9885-c6349e22aa2a`
+  - start time: `2026-06-24 09:45:00 UTC`
+  - result: `SUCCEEDED`
+  - target app upload time: `2026-06-24 11:45:08 CEST`
+  - target app healthy at `2026-06-24 09:46:32 UTC`
+  - post-run checks passed: `/health`, MCP `initialize`, `tools/list`, offline
+    `search`, and `fetch`
+- The one-time test schedule was deleted after validation; only the daily
+  `05:00 UTC` schedule remains active.
 - Dashboard CF task names reject hyphens; use `mcp_sap_docs_refresh`.
 - `Recurring - Repeat At` with `05:00` creates a daily UTC schedule in the
   tested dashboard.
