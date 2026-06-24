@@ -12,6 +12,26 @@ import { htmlToMarkdown } from "./htmlToMarkdown.js";
 
 const BASE = "https://help.sap.com";
 
+// SAP Help search requests only the transtypes that `fetch` can actually render: fetch resolves the
+// `pagecontent` HTML fragment → htmlToMarkdown (resolveSapHelpContent), so PDF/"others" hits are
+// dead-ends on fetch (and pure noise in search). Single source of truth so search capability follows
+// fetch capability — extend only when a new renderer lands (e.g. a PDF→MD converter). Used by both
+// elasticsearch request sites below. Verified 2026-06-19: "standard,html" returns the identical
+// html5.uacp topic set as "standard,html,pdf,others", minus the unfetchable PDFs.
+const FETCHABLE_TRANSTYPES = "standard,html";
+
+// abapFlavor → SAP Help content-index `product` facet, to scope the online leg so conceptual ABAP
+// queries draw semantic matches from ABAP docs only, not the whole cross-product corpus (which
+// outranked correct local hits — the online-merge pollution bug; see test/eval/candidate-probes.md).
+// PROVENANCE: `ABAP_PLATFORM_NEW` is NOT a catalogued product (absent from topproducts; no version
+// axis) — it is an internal content-index facet, validated empirically 2026-06-19 to return ABAP
+// Platform docs (latest only, versionId 202510.001). If it ever stops returning hits, fall back to
+// the catalog-named `SAP_NETWEAVER_AS_ABAP_752`. `ABAP_ENVIRONMENT` IS a real product (version "Cloud").
+export const ABAP_HELP_PRODUCTS: Record<'standard' | 'cloud', string> = {
+  standard: "ABAP_PLATFORM_NEW",
+  cloud: "ABAP_ENVIRONMENT",
+};
+
 // Result-id encoding for the search↔fetch round-trip. A help id is either a loio (hex) or a
 // sanitised "url-<slug>-<hash>" — both live in [A-Za-z0-9_-] and can never contain "~", so we use
 // it as the version delimiter and let the opaque versionId ride through verbatim (see encodeSapHelpId).
@@ -112,11 +132,11 @@ function parseDocsPathParts(urlOrPath: string): { productUrlSeg: string; deliver
 }
 
 /** One raw SAP Help search request. Returns the hit array (empty if none); throws on HTTP error. */
-async function fetchHelpResults(query: string, version: string): Promise<SapHelpSearchResult[]> {
+async function fetchHelpResults(query: string, version: string, product = ""): Promise<SapHelpSearchResult[]> {
   const searchParams = {
-    transtype: "standard,html,pdf,others",
+    transtype: FETCHABLE_TRANSTYPES,
     state: "PRODUCTION,TEST,DRAFT",
-    product: "",
+    product,
     version,
     q: query,
     to: "19", // Limit to 20 results (0-19)
@@ -135,18 +155,50 @@ async function fetchHelpResults(query: string, version: string): Promise<SapHelp
   return data?.data?.results || [];
 }
 
-export async function searchSapHelp(query: string, version?: string): Promise<SearchResponse> {
+/**
+ * Relaxation ladder for the two independent, OPTIONAL SAP Help filters — a `version` pin and a
+ * `product` scope. Tries the most specific combo first, then relaxes the PRODUCT scope (an optional
+ * noise filter, and the value most likely to be a wrong/guessed slug) BEFORE the VERSION pin (the
+ * caller's explicit release constraint) — so a bad product never silently swaps the requested
+ * release. The final attempt is unscoped-latest = the original pre-filter behaviour, so the leg is
+ * never lost. Returns the hits plus the version that actually produced them (drives id encoding).
+ *
+ * `fetcher` is injected so the ladder is unit-testable without the network (see
+ * test/help-fallback-ladder.test.ts). Combos that collapse to a duplicate when version/product is
+ * empty are de-duplicated, so no combination is ever fetched twice.
+ */
+export async function resolveHelpResults(
+  fetcher: (query: string, version: string, product: string) => Promise<SapHelpSearchResult[]>,
+  query: string,
+  requested: string,
+  scope: string,
+): Promise<{ results: SapHelpSearchResult[]; usedVersion: string }> {
+  const attempts: Array<[string, string]> = [];
+  const add = (v: string, p: string) => {
+    if (!attempts.some(([av, ap]) => av === v && ap === p)) attempts.push([v, p]);
+  };
+  add(requested, scope); // most specific
+  add(requested, "");    // drop product (noise filter), KEEP the version pin
+  add("", scope);        // drop version, keep the product scope
+  add("", "");           // drop both = prior unscoped-latest behaviour
+
+  let results: SapHelpSearchResult[] = [];
+  for (const [v, p] of attempts) {
+    results = await fetcher(query, v, p);
+    if (results.length) return { results, usedVersion: v };
+  }
+  return { results, usedVersion: requested }; // all empty — usedVersion is unused downstream
+}
+
+export async function searchSapHelp(query: string, version?: string, product?: string): Promise<SearchResponse> {
   try {
     const requested = (version ?? "").trim();
-    // Never drop SAP Help on a too-narrow/invalid version: if the pinned query returns nothing,
-    // fall back ONCE to latest (unfiltered, the prior behaviour) so results are never lost by
-    // default. `usedVersion` then drives id encoding, so fetch follows whichever release we got.
-    let usedVersion = requested;
-    let results = await fetchHelpResults(query, requested);
-    if (!results.length && requested) {
-      results = await fetchHelpResults(query, "");
-      usedVersion = "";
-    }
+    const scope = (product ?? "").trim();
+    // Resolve the two optional filters via the relaxation ladder: it relaxes a wrong/empty PRODUCT
+    // before the caller's VERSION pin and never goes below unscoped-latest, so the leg is never lost
+    // and a bad product never silently swaps the requested release. `usedVersion` then drives id
+    // encoding, so a later fetch follows whichever release actually answered. See resolveHelpResults.
+    const { results, usedVersion } = await resolveHelpResults(fetchHelpResults, query, requested, scope);
 
     if (!results.length) {
       return {
@@ -162,12 +214,20 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
       // parameter (see encodeSapHelpId). No version → plain id (prior behaviour).
       const sapHelpId = encodeSapHelpId(helpId, usedVersion);
 
-      // Surface the exact filter token (versionId) verbatim: it is opaque, case-sensitive and
-      // unguessable, so the caller pins a later search by copying it from a result, not deriving it.
+      // Surface the exact filter tokens (versionId, productId) verbatim: both are opaque,
+      // case-sensitive and unguessable, so the caller pins a later search by copying them from a
+      // result, not deriving them. `product` is the human display label (e.g. "SAP S/4HANA");
+      // `productId` is the actual scope facet (e.g. "SAP_S4HANA_ON-PREMISE") — they differ for most
+      // functional products, so the label is NOT a usable `product` filter. Show the id when it adds info.
       const versionToken = hit.versionId || "";
       const versionLabel = hit.version || hit.versionId || "Latest";
       const versionText = versionToken ? `${versionLabel}, versionId ${versionToken}` : versionLabel;
-      const desc = `${hit.snippet || hit.title} — Product: ${hit.product || hit.productId || "Unknown"} (${versionText})`;
+      const productLabel = hit.product || hit.productId || "Unknown";
+      const productId = hit.productId || hit.product || "";
+      const productText = productId && productId !== productLabel
+        ? `${productLabel}, productId ${productId}`
+        : productLabel;
+      const desc = `${hit.snippet || hit.title} — Product: ${productText} (${versionText})`;
 
       return {
         library_id: sapHelpId,
@@ -180,7 +240,8 @@ export async function searchSapHelp(query: string, version?: string): Promise<Se
         metadata: {
           source: "help",
           loio: validLoio(hit.loio),
-          product: hit.product || hit.productId,
+          product: productLabel,
+          productId: productId || undefined,
           version: versionLabel,
           versionId: versionToken || undefined,
           rank: index + 1
@@ -323,8 +384,10 @@ async function resolveSapHelpContent(
 
     if (!hit) {
       const searchParams = {
-        transtype: "standard,html,pdf,others",
+        transtype: FETCHABLE_TRANSTYPES,
         state: "PRODUCTION,TEST,DRAFT",
+        // No product scope on the fetch-by-id re-search: the query is the loio/derived id (already
+        // document-specific), and fetch carries no abapFlavor context. Only relax noise via transtype.
         product: "",
         version: reSearchVersion,
         q: helpId, // Search by LOIO or stable derived id to find the specific document

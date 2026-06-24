@@ -2,7 +2,7 @@
 import { lookupExactDocs, searchFTS } from "./searchDb.js";
 import { CONFIG } from "./config.js";
 import { loadMetadata, getSourceBoosts, expandQueryTerms, getContextBoosts, getAllContextBoosts } from "./metadata.js";
-import { searchSapHelp } from "./sapHelp.js";
+import { searchSapHelp, ABAP_HELP_PRODUCTS } from "./sapHelp.js";
 import { searchCommunity } from "./localDocs.js";
 import { searchSoftwareHeroesContent } from "./softwareHeroes/index.js";
 import { SearchResponse, SearchResult as ApiSearchResult } from "./types.js";
@@ -41,6 +41,14 @@ export interface UnifiedSearchOptions {
   includeOnline?: boolean;
   includeSamples?: boolean;
   abapFlavor?: 'standard' | 'cloud' | 'auto';
+  /**
+   * Optional SAP Help product-id scope (e.g. "SAP_S4HANA_ON-PREMISE", "ABAP_PLATFORM_NEW"), applied
+   * ONLY to the online SAP Help leg. Takes precedence over the abapFlavor-derived product. Use it to
+   * route FUNCTIONAL/config queries that abapFlavor cannot express. Copy a real value from a prior
+   * result's `metadata.productId` (the scope facet, NOT the `metadata.product` display label); never
+   * guess. An unknown product safely falls back to unscoped.
+   */
+  product?: string;
   sources?: string[];
   /**
    * Optional SAP Help docs-portal version filter (e.g. "2022.002" or bare "2022").
@@ -374,6 +382,7 @@ export async function search(
     includeOnline = true,  // Online search enabled by default for comprehensive results
     includeSamples = true,
     abapFlavor = 'auto',
+    product,
     sources,
     version
   } = options;
@@ -389,6 +398,15 @@ export async function search(
   
   // Determine ABAP flavor
   const requestedAbapFlavor = determineAbapFlavor(query, abapFlavor);
+
+  // Online SAP Help product scope. Precedence: an explicit `product` (e.g. a functional product the
+  // caller resolved, like SAP_S4HANA_ON-PREMISE) wins; else the abapFlavor-derived product, but ONLY
+  // when the flavor is explicit ('auto' stays unscoped so non-ABAP / functional online queries are
+  // never mis-scoped to an ABAP product). An unknown product falls back to unscoped inside
+  // searchSapHelp, so a wrong value never silently empties the leg. See test/eval/candidate-probes.md.
+  const sapHelpProduct = (product && product.trim())
+    ? product.trim()
+    : (abapFlavor === 'standard' || abapFlavor === 'cloud' ? ABAP_HELP_PRODUCTS[abapFlavor] : undefined);
   
   // Check if query explicitly mentions ABAP (for extra boosting of official docs)
   const isExplicitAbapQuery = query.match(/\babap\b/i) !== null;
@@ -645,7 +663,7 @@ export async function search(
     
     const onlineSearches = await Promise.allSettled([
       // SAP Help search with timeout (version filter applies to this source only)
-      withTimeout(searchSapHelp(query, version), ONLINE_TIMEOUT_MS, 'SAP Help search'),
+      withTimeout(searchSapHelp(query, version, sapHelpProduct), ONLINE_TIMEOUT_MS, 'SAP Help search'),
       // SAP Community search with timeout  
       withTimeout(searchCommunity(query), ONLINE_TIMEOUT_MS, 'SAP Community search'),
       // Software-Heroes search with timeout - search both EN and DE languages
