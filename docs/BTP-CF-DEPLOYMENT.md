@@ -216,23 +216,14 @@ routes:
   - route: mcp-sap-docs.<your-cf-domain>
 ```
 
-Build and deploy on macOS/Linux:
+Build and deploy on macOS/Linux or Windows PowerShell:
 
 ```bash
-mbt build
-MTAR="$(ls -t mta_archives/mcp-sap-docs-btp-cf_*.mtar | head -n 1)"
-cf deploy "$MTAR" -e mta-overrides.mtaext
+npm run btp:deploy:mta
 ```
 
-Build and deploy on Windows PowerShell:
-
-```powershell
-mbt build
-$Mtar = Get-ChildItem -Path "mta_archives" -Filter "mcp-sap-docs-btp-cf_*.mtar" |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1
-cf deploy $Mtar.FullName -e mta-overrides.mtaext
-```
+This helper runs `mbt build`, selects the newest MTAR from `mta_archives`, and
+deploys it with `mta-overrides.mtaext` when that file exists.
 
 If you do not create `mta-overrides.mtaext`, CF/MTA can still deploy the app,
 but it may assign a generated route.
@@ -427,22 +418,10 @@ cf push mcp-sap-docs `
 If you use MTA for route and service binding ownership, prefer redeploying the
 MTA instead of direct `cf push`:
 
-macOS/Linux:
+macOS/Linux or Windows PowerShell:
 
 ```bash
-mbt build
-MTAR="$(ls -t mta_archives/mcp-sap-docs-btp-cf_*.mtar | head -n 1)"
-cf deploy "$MTAR" -e mta-overrides.mtaext
-```
-
-Windows PowerShell:
-
-```powershell
-mbt build
-$Mtar = Get-ChildItem -Path "mta_archives" -Filter "mcp-sap-docs-btp-cf_*.mtar" |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1
-cf deploy $Mtar.FullName -e mta-overrides.mtaext
+npm run btp:deploy:mta
 ```
 
 If you already set up the deployer app from the next section, you can also run
