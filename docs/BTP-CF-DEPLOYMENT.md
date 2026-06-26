@@ -35,6 +35,28 @@ compliance rules require staging from source. For the current full `sap-docs`
 corpus, the Node.js buildpack path is not recommended because staging has to
 handle a large app package, dependencies, droplet copy, and compression.
 
+## Deployment Options and Tradeoffs
+
+There are two separate decisions:
+
+- How the app is deployed to CF: MTA or direct `cf push`.
+- Where the image comes from: maintained public image or your own registry.
+
+Recommended default: deploy the maintained semantic image with MTA. Use direct
+`cf push` first when you want a quick trial in a dev space.
+
+| Option | Best for | Upsides | Downsides |
+| --- | --- | --- | --- |
+| Maintained image with MTA | Standard setup and customer handover | Repeatable descriptor, stable app/module name, route and resource settings in versioned files, ready for later service bindings such as XSUAA or Job Scheduling Service. | Requires `mbt` and the CF deploy plugin, creates an MTA deployment record, and is slightly more ceremony than a one-line trial deploy. |
+| Maintained image with direct `cf push` | Fast technical validation | Quickest way to test quota, image pull, startup, route, and `/health`; no MTAR build; easy to delete after the trial. | Not an MTA-managed deployment, so route/resource changes live in command history or a manifest; later service bindings and lifecycle operations are less structured. |
+| Own registry image | Organizations that require private registries or controlled image promotion | Full control over image provenance, vulnerability scanning, approval gates, retention, and digest pinning. | You must build, store, publish, secure, and refresh the image yourself; CF must be able to pull from that registry. |
+| Node.js buildpack package | Only when Docker images are not allowed | Uses source/package staging instead of Docker image execution. | Not recommended for the full `sap-docs` corpus: tested packages failed during large-app staging/droplet copy/compression, and staging takes much longer than pulling the prepared image. |
+| Job Scheduling Service refresh | Keeping a moving image tag current in CF | Runs fully inside BTP CF, visible in the customer's space, and avoids adding a refresh endpoint to the public MCP server. | Needs a scheduler service instance, a small deployer app, deploy credentials that work without browser SSO, and extra temporary memory for CF tasks. |
+
+In quota-constrained spaces, do not run the direct `cf push` trial app and the
+MTA app at the same time unless you have enough memory for both. The semantic app
+uses `1024M` memory and `6144M` disk.
+
 Reference docs:
 
 - [Cloud Foundry: deploying an app based on a Docker image](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)
@@ -145,6 +167,24 @@ digest only when you intentionally want a fixed, reproducible deployment.
 
 ## Deploy with MTA
 
+Use this path for the real setup after the fast trial has proven that the image
+starts in the target CF space. MTA keeps the deployable configuration in
+`mta.yaml` and optional `.mtaext` overrides, which makes handover and later
+changes more predictable.
+
+MTA is the better long-term option when you want stable routes, controlled
+resource settings, service bindings, and a clean `cf undeploy` lifecycle. The
+tradeoff is that the deployment has an extra build/deploy step and the resulting
+app name comes from the MTA module (`mcp-sap-docs-server` by default), not from a
+one-off `cf push` command.
+
+If you already created a trial app named `mcp-sap-docs` with direct `cf push`,
+delete it before deploying the MTA in small free-tier spaces:
+
+```bash
+cf delete mcp-sap-docs -f -r
+```
+
 Copy the extension template and adapt it for your landscape.
 
 macOS/Linux:
@@ -201,6 +241,15 @@ but it may assign a generated route.
 
 Use direct `cf push` when you want to quickly validate CF quota, route, and image
 startup before using MTA. This does not create an MTA deployment record.
+
+This is the simplest first test because it exercises the important runtime
+facts: CF can pull the image, the semantic corpus fits into disk quota, the app
+starts with `1024M` memory, and `/health` is reachable.
+
+The downside is operational: a direct push is just one CF app. It is fine for a
+trial or manual refresh, but it does not give you an MTA-managed deployment
+record, module/resource model, or a natural place to add future service bindings.
+For a customer setup, switch to MTA after this test passes.
 
 Using the manifest:
 
