@@ -288,13 +288,43 @@ cf delete mcp-sap-docs -f -r
 
 ## Verify
 
-Get the route and current app state:
+First choose the app name:
+
+- MTA deployment: use the module name from `mta.yaml`, by default
+  `mcp-sap-docs-server`.
+- Direct `cf push` trial: use the app name passed to `cf push`, by default
+  `mcp-sap-docs`.
+
+For MTA, the app name comes from:
+
+```yaml
+modules:
+  - name: mcp-sap-docs-server
+```
+
+The route comes from `mta-overrides.mtaext` if you configured one:
+
+```yaml
+routes:
+  - route: mcp-sap-docs.<your-cf-domain>
+```
+
+If you did not configure a route, use the route shown by `cf app`.
+
+Get the route and current app state for the MTA deployment:
+
+```bash
+cf app mcp-sap-docs-server
+```
+
+For the direct `cf push` trial, use:
 
 ```bash
 cf app mcp-sap-docs
 ```
 
-Health check on macOS/Linux:
+Health check on macOS/Linux, replacing `<route>` with the route shown by
+`cf app` or the route from `mta-overrides.mtaext`:
 
 ```bash
 curl -sS https://<route>/health
