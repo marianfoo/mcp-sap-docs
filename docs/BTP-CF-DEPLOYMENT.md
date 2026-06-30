@@ -110,65 +110,51 @@ profile when the goal is search quality and the target space can fit it.
 
 ## Cost Estimate
 
-SAP BTP, Cloud Foundry Runtime is metered on reserved runtime memory, not on
-actual heap usage or request count. Load changes the cost only when you scale the
-deployment by increasing memory per instance, increasing the number of running
-instances, or running it for more hours. A stopped app does not reserve runtime
-memory.
-
-SAP documents the monthly Cloud Foundry Runtime calculation as:
+SAP BTP, Cloud Foundry Runtime is billed by reserved runtime memory, not actual
+heap usage or request count. Request load changes the bill only when it makes you
+increase memory, instances, or running hours. A stopped app does not reserve
+runtime memory.
 
 ```text
-billable GB/month =
-  ceil(sum(memory GB per instance * running instances * running hours) / 730)
+billable GB/month = ceil(sum(memory GB * instances * running hours) / 730)
 ```
 
-SAP rounds after summing Cloud Foundry Runtime usage at global-account level.
-For an isolated estimate, round this deployment by itself. For a customer global
-account that already runs other CF apps, add this deployment's GB-hours to the
-account total before rounding.
+SAP rounds after summing Cloud Foundry Runtime usage at global-account level. For
+a standalone estimate, round this app by itself; for a customer account, add this
+app's GB-hours to the existing CF runtime usage before rounding.
 
-SAP Discovery Center pricing in EUR at the time this guide was written:
+SAP Discovery Center prices in EUR at the time this guide was written:
 
 | Service | Plan | Metric | Cloud Credits / BTPEA / subscription | Pay-as-you-go |
 | --- | --- | --- | --- | --- |
 | SAP BTP, Cloud Foundry Runtime | Standard | GB Memory per month | `85.00 EUR` | `110.50 EUR` |
-| SAP BTP, Cloud Foundry Runtime | Free | GB Memory per month | `0.00 EUR` | `0.00 EUR` |
 | SAP Job Scheduling Service | Standard | 10,000 job executions per month | `14.00 EUR` | `18.20 EUR` |
-| SAP Job Scheduling Service | Free | Job executions | `0.00 EUR` | `0.00 EUR` |
 
-Use the SAP Discovery Center or the BTP cost estimator for the customer's
-contract, currency, and region before quoting a final price. Free tier plans are
-useful for trials but have limits, community support only, and no SLA.
+Free tier plans may be `0.00 EUR`, but they have limits, community support only,
+and no SLA. Recheck SAP Discovery Center or the BTP cost estimator for the
+customer's contract, currency, and region before quoting a final price.
 
-Typical monthly estimates for this MCP deployment:
+Typical estimates for this deployment:
 
 | Scenario | Calculation | Billable CF runtime | Runtime cost at `85.00 EUR` | Runtime cost at `110.50 EUR` |
 | --- | --- | --- | --- | --- |
 | Recommended semantic app, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
 | FTS-only fallback, one always-on instance | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
-| Recommended semantic app, second instance for one 24 h peak | `(1 GB * 730 h + 1 GB * 24 h) / 730`, rounded up | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
 | Recommended semantic app, two instances always on | `1 GB * 2 instances * 730 h / 730` | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
-| Dev/test usage, one semantic instance, 8 h/day for 20 days | `1 GB * 160 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+| Temporary second semantic instance for one 24 h peak | `(1 GB * 730 h + 1 GB * 24 h) / 730`, rounded up | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
 
-For one always-on instance, FTS-only does not lower the Cloud Foundry Runtime
-bill in this standalone estimate because both `512M` and `1024M` round to
-`1 GB/month`. It can still help when disk quota, image size, startup memory, or
-aggregate account-level rounding are the real constraint.
+FTS-only is therefore not a cost optimization for one always-on instance: both
+`512M` and `1024M` round to `1 GB/month`. It is mainly useful when disk quota,
+image size, startup memory, or aggregate account-level rounding is the real
+constraint.
 
-Daily image refresh adds two small cost components:
-
-- SAP Job Scheduling Service: the `free` plan is enough for one daily refresh
-  when available. On the `standard` plan, one daily refresh is about 30-31 job
-  executions per month, which fits into one 10,000-execution block.
-- Deployer CF task: the deployer app is stopped between runs. The task reserves
-  its configured memory only while the refresh task runs, so estimate it with
-  the same GB-hour formula if the runtime is material in the customer's account.
-
-Disk quota is operational headroom for the Docker image filesystem and is not
-listed by SAP Discovery Center as the Cloud Foundry Runtime billing metric for
-this service. Private container registries, log retention, alerting, and other
-bound BTP services can add separate costs.
+Daily image refresh normally adds little: the Job Scheduling Service `free` plan
+is enough for one daily refresh when available, while the `standard` plan charges
+one 10,000-execution block for roughly 30-31 monthly runs. The deployer app is
+stopped between runs; its CF task reserves memory only while the task runs. Disk
+quota is operational headroom, not the Discovery Center billing metric for Cloud
+Foundry Runtime. Private registries, log retention, alerting, and other bound BTP
+services can add separate costs.
 
 ## Prerequisites
 
