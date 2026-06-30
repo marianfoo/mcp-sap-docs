@@ -38,6 +38,15 @@ export const ABAP_HELP_PRODUCTS: Record<'standard' | 'cloud', string> = {
 const ID_PREFIX = "sap-help-";
 const VERSION_SEP = "~";
 
+export interface SapHelpSearchOptions {
+  /**
+   * By default SAP Help search relaxes product/version filters when a scoped query returns nothing,
+   * so the online leg is never lost. Set to false for auxiliary product legs where falling back to
+   * unscoped SAP Help would duplicate or pollute another source.
+   */
+  relax?: boolean;
+}
+
 /**
  * Structured citation for a SAP Help document: the stable cross-release identity
  * (`loio`), the resolved page title/url, and the exact deliverable build the
@@ -190,15 +199,23 @@ export async function resolveHelpResults(
   return { results, usedVersion: requested }; // all empty — usedVersion is unused downstream
 }
 
-export async function searchSapHelp(query: string, version?: string, product?: string): Promise<SearchResponse> {
+export async function searchSapHelp(
+  query: string,
+  version?: string,
+  product?: string,
+  options: SapHelpSearchOptions = {}
+): Promise<SearchResponse> {
   try {
     const requested = (version ?? "").trim();
     const scope = (product ?? "").trim();
+    const relax = options.relax ?? true;
     // Resolve the two optional filters via the relaxation ladder: it relaxes a wrong/empty PRODUCT
     // before the caller's VERSION pin and never goes below unscoped-latest, so the leg is never lost
     // and a bad product never silently swaps the requested release. `usedVersion` then drives id
     // encoding, so a later fetch follows whichever release actually answered. See resolveHelpResults.
-    const { results, usedVersion } = await resolveHelpResults(fetchHelpResults, query, requested, scope);
+    const { results, usedVersion } = relax
+      ? await resolveHelpResults(fetchHelpResults, query, requested, scope)
+      : { results: await fetchHelpResults(query, requested, scope), usedVersion: requested };
 
     if (!results.length) {
       return {

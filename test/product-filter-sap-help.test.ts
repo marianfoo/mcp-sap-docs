@@ -108,4 +108,28 @@ describe("SAP Help `product` scope (online-merge pollution fix)", () => {
     },
     NET_TIMEOUT
   );
+
+  it(
+    "strict SUPPORT_CONTENT scope returns old Support Content without falling back to broad SAP Help",
+    async (ctx) => {
+      let res: SearchResponse;
+      try {
+        res = await searchSapHelp("SAP Transportation Management", "1.0", "SUPPORT_CONTENT", { relax: false });
+      } catch (e: any) {
+        console.warn(`[product-filter] SAP Help threw, skipping: ${e?.message}`);
+        ctx.skip();
+        return;
+      }
+      if (res.error || (res.results?.length ?? 0) === 0) {
+        console.warn(`[product-filter] SAP Help unreachable/empty, skipping (error: ${res.error ?? "none"})`);
+        ctx.skip();
+        return;
+      }
+
+      expect((res.results ?? []).length).toBeGreaterThan(0);
+      expect((res.results ?? []).every((r) => r.metadata?.productId === "SUPPORT_CONTENT")).toBe(true);
+      expect((res.results ?? []).every((r) => r.url?.includes("/docs/SUPPORT_CONTENT/"))).toBe(true);
+    },
+    NET_TIMEOUT
+  );
 });

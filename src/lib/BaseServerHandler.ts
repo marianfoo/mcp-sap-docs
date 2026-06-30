@@ -283,7 +283,7 @@ Sample-heavy OFFLINE sources (controlled by \`includeSamples\`; great for implem
 • abap-platform-reuse-services (offline, samples): RAP reuse services examples (number ranges, change documents, mail, Adobe Forms, ...).
 
 OPTIONAL ONLINE SOURCES (when includeOnline=true):
-• sap-help (online): SAP Help Portal product documentation (official, broad scope).
+• sap-help (online): SAP Help Portal product documentation (official, broad scope). Also includes a lower-priority, capped Support Content enrichment for old SAPWiki-style material; those hits remain sap-help results and carry metadata.sourceSubkind="support_content".
 • sap-community (online): SAP Community blogs + Q&A + troubleshooting (practical, quality varies).
 • software-heroes (online): Software Heroes ABAP/RAP articles & tutorials (searched in EN+DE, deduplicated by URL; feed search is disabled).
 
@@ -316,6 +316,7 @@ RETURNS (JSON array of results, each containing):
 • library_id: Source library identifier
 • metadata.source: Source ID (abap-docs-standard, sap-help, etc.)
 • metadata.sourceKind: "offline" | "sap_help" | "sap_community" | "software_heroes"
+• metadata.sourceSubkind: Optional refinement; currently "support_content" for legacy SAP Help Support Content hits.
 
 TYPICAL WORKFLOW:
 1. search(query="your ABAP/RAP question")
