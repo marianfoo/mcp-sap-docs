@@ -111,17 +111,15 @@ profile when the goal is search quality and the target space can fit it.
 ## Cost Estimate
 
 SAP BTP, Cloud Foundry Runtime is billed by reserved runtime memory, not actual
-heap usage or request count. Request load changes the bill only when it makes you
-increase memory, instances, or running hours. A stopped app does not reserve
-runtime memory.
+heap usage or request count. For this deployment, the important input is the
+configured CF memory per running app instance.
 
 ```text
 billable GB/month = ceil(sum(memory GB * instances * running hours) / 730)
 ```
 
-SAP rounds after summing Cloud Foundry Runtime usage at global-account level. For
-a standalone estimate, round this app by itself; for a customer account, add this
-app's GB-hours to the existing CF runtime usage before rounding.
+SAP rounds after summing Cloud Foundry Runtime usage at global-account level. A
+stopped app does not reserve runtime memory.
 
 SAP Discovery Center prices in EUR at the time this guide was written:
 
@@ -134,26 +132,23 @@ Free tier plans may be `0.00 EUR`, but they have limits, community support only,
 and no SLA. Recheck SAP Discovery Center or the BTP cost estimator for the
 customer's contract, currency, and region before quoting a final price.
 
-Typical estimates for this deployment:
+Simple standalone estimate:
 
 | Scenario | Calculation | Billable CF runtime | Runtime cost at `85.00 EUR` | Runtime cost at `110.50 EUR` |
 | --- | --- | --- | --- | --- |
 | Recommended semantic app, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
 | FTS-only fallback, one always-on instance | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
-| Recommended semantic app, two instances always on | `1 GB * 2 instances * 730 h / 730` | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
-| Temporary second semantic instance for one 24 h peak | `(1 GB * 730 h + 1 GB * 24 h) / 730`, rounded up | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
 
-FTS-only is therefore not a cost optimization for one always-on instance: both
-`512M` and `1024M` round to `1 GB/month`. It is mainly useful when disk quota,
-image size, startup memory, or aggregate account-level rounding is the real
-constraint.
+FTS-only is not a cost optimization for one always-on instance: both `512M` and
+`1024M` round to `1 GB/month`. Use FTS-only only when disk quota, image size, or
+startup memory is the real constraint. If you add more CF app instances for
+availability or load, multiply the reserved memory by the number of instances.
 
 Daily image refresh normally adds little: the Job Scheduling Service `free` plan
 is enough for one daily refresh when available, while the `standard` plan charges
-one 10,000-execution block for roughly 30-31 monthly runs. The deployer app is
-stopped between runs; its CF task reserves memory only while the task runs. Disk
-quota is operational headroom, not the Discovery Center billing metric for Cloud
-Foundry Runtime. Private registries, log retention, alerting, and other bound BTP
+one 10,000-execution block for roughly 30-31 monthly runs. Disk quota is
+operational headroom, not the Discovery Center billing metric for Cloud Foundry
+Runtime. Private registries, log retention, alerting, and other bound BTP
 services can add separate costs.
 
 ## Prerequisites
