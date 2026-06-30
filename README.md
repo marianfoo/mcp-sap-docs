@@ -265,8 +265,10 @@ For BTP CF, the recommended `sap-docs` path is to deploy the maintained
 pulls and runs the prepared semantic image.
 
 See [docs/BTP-CF-DEPLOYMENT.md](docs/BTP-CF-DEPLOYMENT.md) for the public-first
-deployment guide, MTA descriptor, direct `cf push` manifest, daily refresh setup,
-and the Node.js buildpack package test result.
+deployment guide. Start with
+[Deployment Options and Tradeoffs](docs/BTP-CF-DEPLOYMENT.md#deployment-options-and-tradeoffs)
+to choose between MTA, direct `cf push`, custom registry images, and refresh
+setup.
 
 ## One-Way Sync to `abap-mcp-server`
 

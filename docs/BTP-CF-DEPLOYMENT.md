@@ -35,11 +35,36 @@ compliance rules require staging from source. For the current full `sap-docs`
 corpus, the Node.js buildpack path is not recommended because staging has to
 handle a large app package, dependencies, droplet copy, and compression.
 
+## Deployment Options and Tradeoffs
+
+There are two separate decisions:
+
+- How the app is deployed to CF: MTA or direct `cf push`.
+- Where the image comes from: maintained public image or your own registry.
+
+Recommended default: deploy the maintained semantic image with MTA. Use direct
+`cf push` first when you want a quick trial in a dev space.
+
+| Option | Best for | Upsides | Downsides |
+| --- | --- | --- | --- |
+| Maintained image with MTA | Standard setup and customer handover | Repeatable descriptor, stable app/module name, route and resource settings in versioned files, ready for later service bindings such as XSUAA or Job Scheduling Service. | Requires `mbt` and the CF deploy plugin, creates an MTA deployment record, and is slightly more ceremony than a one-line trial deploy. |
+| Maintained image with direct `cf push` | Fast technical validation | Quickest way to test quota, image pull, startup, route, and `/health`; no MTAR build; easy to delete after the trial. | Not an MTA-managed deployment, so route/resource changes live in command history or a manifest; later service bindings and lifecycle operations are less structured. |
+| Own registry image | Organizations that require private registries or controlled image promotion | Full control over image provenance, vulnerability scanning, approval gates, retention, and digest pinning. | You must build, store, publish, secure, and refresh the image yourself; CF must be able to pull from that registry. |
+| Node.js buildpack package | Only when Docker images are not allowed | Uses source/package staging instead of Docker image execution. | Not recommended for the full `sap-docs` corpus: tested packages failed during large-app staging/droplet copy/compression, and staging takes much longer than pulling the prepared image. |
+| Job Scheduling Service refresh | Keeping a moving image tag current in CF | Runs fully inside BTP CF, visible in the customer's space, and avoids adding a refresh endpoint to the public MCP server. | Needs a scheduler service instance, a small deployer app, deploy credentials that work without browser SSO, and extra temporary memory for CF tasks. |
+
+In quota-constrained spaces, do not run the direct `cf push` trial app and the
+MTA app at the same time unless you have enough memory for both. The semantic app
+uses `1024M` memory and `6144M` disk.
+
 Reference docs:
 
 - [Cloud Foundry: deploying an app based on a Docker image](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)
 - [SAP BTP: deploy Docker images in the Cloud Foundry environment](https://help.sap.com/docs/btp/sap-business-technology-platform/deploy-docker-images-in-cloud-foundry-environment)
+- [SAP BTP: service plans and metering for Cloud Foundry Runtime](https://help.sap.com/docs/cf-runtime/cloud-foundry-runtime/service-plans-and-metering-for-cloud-foundry-runtime)
 - [Cloud Foundry: deploying large apps](https://docs.cloudfoundry.org/devguide/deploy-apps/large-app-deploy.html)
+- [SAP Discovery Center: SAP BTP, Cloud Foundry Runtime](https://discovery-center.cloud.sap/serviceCatalog/257fac1c-88aa-415b-8ea8-c96282c9a19b)
+- [SAP Discovery Center: SAP Job Scheduling Service](https://discovery-center.cloud.sap/serviceCatalog/0b70a063-d6ec-4775-8adb-2b01312b979f)
 - [SAP Job Scheduling Service](https://help.sap.com/doc/234ab5b017b14bfa9d96152c5d9335e7/Cloud/en-US/jobscheduler.pdf)
 - [Cloud Foundry: running tasks in your apps](https://docs.cloudfoundry.org/devguide/using-tasks.html)
 
@@ -61,6 +86,9 @@ Without embeddings:
 - BM25/FTS search, fetch, and online sources still work.
 - The image is smaller and faster to build.
 - Semantic reranking is not available.
+- This is a quota and startup fallback, not the recommended cost-saving mode for
+  a single always-on CF app. With SAP's GB/month rounding, `512M` for a full
+  month still rounds up to `1 GB/month`.
 
 Recommended semantic defaults:
 
@@ -75,6 +103,53 @@ FTS-only fallback defaults:
 - disk quota: `4096M`
 - instances: `1`
 - `MCP_PRELOAD_EMBEDDINGS=false`
+
+Use these fallback values only when the semantic image does not fit the target
+space or embedding preload is too tight for available memory. Keep the semantic
+profile when the goal is search quality and the target space can fit it.
+
+## Cost Estimate
+
+SAP BTP, Cloud Foundry Runtime is billed by reserved runtime memory, not actual
+heap usage or request count. For this deployment, the important input is the
+configured CF memory per running app instance.
+
+```text
+billable GB/month = ceil(sum(memory GB * instances * running hours) / 730)
+```
+
+SAP rounds after summing Cloud Foundry Runtime usage at global-account level. A
+stopped app does not reserve runtime memory.
+
+SAP Discovery Center prices in EUR at the time this guide was written:
+
+| Service | Plan | Metric | Cloud Credits / BTPEA / subscription | Pay-as-you-go |
+| --- | --- | --- | --- | --- |
+| SAP BTP, Cloud Foundry Runtime | Standard | GB Memory per month | `85.00 EUR` | `110.50 EUR` |
+| SAP Job Scheduling Service | Standard | 10,000 job executions per month | `14.00 EUR` | `18.20 EUR` |
+
+Free tier plans may be `0.00 EUR`, but they have limits, community support only,
+and no SLA. Recheck SAP Discovery Center or the BTP cost estimator for the
+customer's contract, currency, and region before quoting a final price.
+
+Simple standalone estimate:
+
+| Scenario | Calculation | Billable CF runtime | Runtime cost at `85.00 EUR` | Runtime cost at `110.50 EUR` |
+| --- | --- | --- | --- | --- |
+| Recommended semantic app, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+| FTS-only fallback, one always-on instance | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+
+FTS-only is not a cost optimization for one always-on instance: both `512M` and
+`1024M` round to `1 GB/month`. Use FTS-only only when disk quota, image size, or
+startup memory is the real constraint. If you add more CF app instances for
+availability or load, multiply the reserved memory by the number of instances.
+
+Daily image refresh normally adds little: the Job Scheduling Service `free` plan
+is enough for one daily refresh when available, while the `standard` plan charges
+one 10,000-execution block for roughly 30-31 monthly runs. Disk quota is
+operational headroom, not the Discovery Center billing metric for Cloud Foundry
+Runtime. Private registries, log retention, alerting, and other bound BTP
+services can add separate costs.
 
 ## Prerequisites
 
@@ -145,6 +220,24 @@ digest only when you intentionally want a fixed, reproducible deployment.
 
 ## Deploy with MTA
 
+Use this path for the real setup after the fast trial has proven that the image
+starts in the target CF space. MTA keeps the deployable configuration in
+`mta.yaml` and optional `.mtaext` overrides, which makes handover and later
+changes more predictable.
+
+MTA is the better long-term option when you want stable routes, controlled
+resource settings, service bindings, and a clean `cf undeploy` lifecycle. The
+tradeoff is that the deployment has an extra build/deploy step and the resulting
+app name comes from the MTA module (`mcp-sap-docs-server` by default), not from a
+one-off `cf push` command.
+
+If you already created a trial app named `mcp-sap-docs` with direct `cf push`,
+delete it before deploying the MTA in small free-tier spaces:
+
+```bash
+cf delete mcp-sap-docs -f -r
+```
+
 Copy the extension template and adapt it for your landscape.
 
 macOS/Linux:
@@ -176,23 +269,14 @@ routes:
   - route: mcp-sap-docs.<your-cf-domain>
 ```
 
-Build and deploy on macOS/Linux:
+Build and deploy on macOS/Linux or Windows PowerShell:
 
 ```bash
-mbt build
-MTAR="$(ls -t mta_archives/mcp-sap-docs-btp-cf_*.mtar | head -n 1)"
-cf deploy "$MTAR" -e mta-overrides.mtaext
+npm run btp:deploy:mta
 ```
 
-Build and deploy on Windows PowerShell:
-
-```powershell
-mbt build
-$Mtar = Get-ChildItem -Path "mta_archives" -Filter "mcp-sap-docs-btp-cf_*.mtar" |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1
-cf deploy $Mtar.FullName -e mta-overrides.mtaext
-```
+This helper runs `mbt build`, selects the newest MTAR from `mta_archives`, and
+deploys it with `mta-overrides.mtaext` when that file exists.
 
 If you do not create `mta-overrides.mtaext`, CF/MTA can still deploy the app,
 but it may assign a generated route.
@@ -201,6 +285,15 @@ but it may assign a generated route.
 
 Use direct `cf push` when you want to quickly validate CF quota, route, and image
 startup before using MTA. This does not create an MTA deployment record.
+
+This is the simplest first test because it exercises the important runtime
+facts: CF can pull the image, the semantic corpus fits into disk quota, the app
+starts with `1024M` memory, and `/health` is reachable.
+
+The downside is operational: a direct push is just one CF app. It is fine for a
+trial or manual refresh, but it does not give you an MTA-managed deployment
+record, module/resource model, or a natural place to add future service bindings.
+For a customer setup, switch to MTA after this test passes.
 
 Using the manifest:
 
@@ -248,13 +341,43 @@ cf delete mcp-sap-docs -f -r
 
 ## Verify
 
-Get the route and current app state:
+First choose the app name:
+
+- MTA deployment: use the module name from `mta.yaml`, by default
+  `mcp-sap-docs-server`.
+- Direct `cf push` trial: use the app name passed to `cf push`, by default
+  `mcp-sap-docs`.
+
+For MTA, the app name comes from:
+
+```yaml
+modules:
+  - name: mcp-sap-docs-server
+```
+
+The route comes from `mta-overrides.mtaext` if you configured one:
+
+```yaml
+routes:
+  - route: mcp-sap-docs.<your-cf-domain>
+```
+
+If you did not configure a route, use the route shown by `cf app`.
+
+Get the route and current app state for the MTA deployment:
+
+```bash
+cf app mcp-sap-docs-server
+```
+
+For the direct `cf push` trial, use:
 
 ```bash
 cf app mcp-sap-docs
 ```
 
-Health check on macOS/Linux:
+Health check on macOS/Linux, replacing `<route>` with the route shown by
+`cf app` or the route from `mta-overrides.mtaext`:
 
 ```bash
 curl -sS https://<route>/health
@@ -308,9 +431,9 @@ Parameter guidance:
 | Parameter | Default | Why it matters |
 | --- | --- | --- |
 | `memory` / `-m` | `1024M` | Runtime RAM per app instance. Embedding preload keeps the model resident so the first semantic query is not slow. |
-| `disk-quota` / `disk_quota` / `-k` | `6144M` | CF Docker apps need enough disk for the uncompressed image filesystem. Use `4096M` only for FTS-only fallback. |
+| `disk-quota` / `disk_quota` / `-k` | `6144M` | CF Docker apps need enough disk for the uncompressed image filesystem. Use `4096M` only for FTS-only fallback when the semantic image is too large. |
 | `instances` / `-i` | `1` | One instance minimizes quota use. Use more only when you need availability during deploys or platform maintenance. |
-| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the embedding model at startup. Set false for FTS-only or if you deliberately prefer lazy first-query loading. |
+| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the embedding model at startup. Set false only when startup memory is too tight or you intentionally use an FTS-only image. |
 | `health-check-type` | `http` | Confirms the app can serve `/health`, not only that a port opened. |
 | `timeout` / `-t` | `180-240` | Large images can take longer to pull/start. The allowed maximum is foundation-specific. |
 
@@ -320,7 +443,9 @@ If startup fails, tune in this order:
    problems.
 2. Increase `memory` if the app exits during embedding preload.
 3. Set `MCP_PRELOAD_EMBEDDINGS=false` only if you need to reduce startup memory.
-4. Use an FTS-only image only when quota is too tight for semantic search.
+4. Use an FTS-only image only when quota is too tight for semantic search. Do
+   not switch to FTS-only expecting lower monthly runtime cost for one always-on
+   instance; SAP's GB/month rounding usually makes it the same `1 GB/month`.
 
 Do not run `MCP_VARIANT=sap-docs npm run setup && npm run build` inside a small
 CF staging container unless you intentionally choose the Node.js buildpack path.
@@ -378,22 +503,10 @@ cf push mcp-sap-docs `
 If you use MTA for route and service binding ownership, prefer redeploying the
 MTA instead of direct `cf push`:
 
-macOS/Linux:
+macOS/Linux or Windows PowerShell:
 
 ```bash
-mbt build
-MTAR="$(ls -t mta_archives/mcp-sap-docs-btp-cf_*.mtar | head -n 1)"
-cf deploy "$MTAR" -e mta-overrides.mtaext
-```
-
-Windows PowerShell:
-
-```powershell
-mbt build
-$Mtar = Get-ChildItem -Path "mta_archives" -Filter "mcp-sap-docs-btp-cf_*.mtar" |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1
-cf deploy $Mtar.FullName -e mta-overrides.mtaext
+npm run btp:deploy:mta
 ```
 
 If you already set up the deployer app from the next section, you can also run
@@ -644,7 +757,8 @@ Increase `disk-quota` first. Semantic images need `6144M` by default.
 
 The app exits during startup with embeddings enabled:
 Increase memory or set `MCP_PRELOAD_EMBEDDINGS=false`. Use FTS-only only if
-quota is too tight for semantic search.
+quota is too tight for semantic search; it is usually not cheaper for one
+always-on instance.
 
 Node.js buildpack staging fails after a long upload:
 Use Docker image deployment. The current full corpus is too large for the tested

@@ -12,7 +12,7 @@
     "build:embeddings": "npm run build:tsc && node dist/scripts/build-embeddings.js",
     "btp:build-image": "bash scripts/btp/build-ghcr-image.sh",
     "btp:build-image:push": "bash scripts/btp/build-ghcr-image.sh --push",
-    "btp:deploy:mta": "bash scripts/btp/deploy-cf-mta.sh",
+    "btp:deploy:mta": "node scripts/btp/deploy-cf-mta.mjs",
     "start": "node dist/src/server.js",
     "start:http": "node dist/src/http-server.js",
     "start:streamable": "node dist/src/streamable-http-server.js",
