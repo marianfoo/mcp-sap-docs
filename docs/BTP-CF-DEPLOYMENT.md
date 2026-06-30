@@ -86,6 +86,9 @@ Without embeddings:
 - BM25/FTS search, fetch, and online sources still work.
 - The image is smaller and faster to build.
 - Semantic reranking is not available.
+- This is a quota and startup fallback, not the recommended cost-saving mode for
+  a single always-on CF app. With SAP's GB/month rounding, `512M` for a full
+  month still rounds up to `1 GB/month`.
 
 Recommended semantic defaults:
 
@@ -100,6 +103,10 @@ FTS-only fallback defaults:
 - disk quota: `4096M`
 - instances: `1`
 - `MCP_PRELOAD_EMBEDDINGS=false`
+
+Use these fallback values only when the semantic image does not fit the target
+space or embedding preload is too tight for available memory. Keep the semantic
+profile when the goal is search quality and the target space can fit it.
 
 ## Cost Estimate
 
@@ -139,10 +146,15 @@ Typical monthly estimates for this MCP deployment:
 | Scenario | Calculation | Billable CF runtime | Runtime cost at `85.00 EUR` | Runtime cost at `110.50 EUR` |
 | --- | --- | --- | --- | --- |
 | Recommended semantic app, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
-| FTS-only fallback, always on | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+| FTS-only fallback, one always-on instance | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
 | Recommended semantic app, second instance for one 24 h peak | `(1 GB * 730 h + 1 GB * 24 h) / 730`, rounded up | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
 | Recommended semantic app, two instances always on | `1 GB * 2 instances * 730 h / 730` | `2 GB/month` | `170.00 EUR/month` | `221.00 EUR/month` |
 | Dev/test usage, one semantic instance, 8 h/day for 20 days | `1 GB * 160 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+
+For one always-on instance, FTS-only does not lower the Cloud Foundry Runtime
+bill in this standalone estimate because both `512M` and `1024M` round to
+`1 GB/month`. It can still help when disk quota, image size, startup memory, or
+aggregate account-level rounding are the real constraint.
 
 Daily image refresh adds two small cost components:
 
@@ -438,9 +450,9 @@ Parameter guidance:
 | Parameter | Default | Why it matters |
 | --- | --- | --- |
 | `memory` / `-m` | `1024M` | Runtime RAM per app instance. Embedding preload keeps the model resident so the first semantic query is not slow. |
-| `disk-quota` / `disk_quota` / `-k` | `6144M` | CF Docker apps need enough disk for the uncompressed image filesystem. Use `4096M` only for FTS-only fallback. |
+| `disk-quota` / `disk_quota` / `-k` | `6144M` | CF Docker apps need enough disk for the uncompressed image filesystem. Use `4096M` only for FTS-only fallback when the semantic image is too large. |
 | `instances` / `-i` | `1` | One instance minimizes quota use. Use more only when you need availability during deploys or platform maintenance. |
-| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the embedding model at startup. Set false for FTS-only or if you deliberately prefer lazy first-query loading. |
+| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the embedding model at startup. Set false only when startup memory is too tight or you intentionally use an FTS-only image. |
 | `health-check-type` | `http` | Confirms the app can serve `/health`, not only that a port opened. |
 | `timeout` / `-t` | `180-240` | Large images can take longer to pull/start. The allowed maximum is foundation-specific. |
 
@@ -450,7 +462,9 @@ If startup fails, tune in this order:
    problems.
 2. Increase `memory` if the app exits during embedding preload.
 3. Set `MCP_PRELOAD_EMBEDDINGS=false` only if you need to reduce startup memory.
-4. Use an FTS-only image only when quota is too tight for semantic search.
+4. Use an FTS-only image only when quota is too tight for semantic search. Do
+   not switch to FTS-only expecting lower monthly runtime cost for one always-on
+   instance; SAP's GB/month rounding usually makes it the same `1 GB/month`.
 
 Do not run `MCP_VARIANT=sap-docs npm run setup && npm run build` inside a small
 CF staging container unless you intentionally choose the Node.js buildpack path.
@@ -762,7 +776,8 @@ Increase `disk-quota` first. Semantic images need `6144M` by default.
 
 The app exits during startup with embeddings enabled:
 Increase memory or set `MCP_PRELOAD_EMBEDDINGS=false`. Use FTS-only only if
-quota is too tight for semantic search.
+quota is too tight for semantic search; it is usually not cheaper for one
+always-on instance.
 
 Node.js buildpack staging fails after a long upload:
 Use Docker image deployment. The current full corpus is too large for the tested
