@@ -22,10 +22,15 @@ export type SearchResult = {
   citation?: {
     loio?: string;
     product?: string;
+    productId?: string;
     /** Pinnable release token (e.g. "2025.001") — pass back as `version` to re-pin the same release. */
     versionId?: string;
     /** Human display label of the release (e.g. "2025 FPS01 (Feb 2026)") — for showing, not filtering. */
     version?: string;
+    /** Optional SAP Help subkind for legacy Support Content hits. Not a separate source. */
+    sourceSubkind?: 'support_content';
+    supportContent?: true;
+    legacyKnowledge?: true;
   };
   // Debug info for ranking analysis
   debug?: {
@@ -75,6 +80,12 @@ const RRF_WEIGHTS = {
   semantic: CONFIG.EMBEDDING_WEIGHT, // Embedding-based semantic results (default 0.7)
 };
 
+const SUPPORT_CONTENT_PRODUCT = "SUPPORT_CONTENT";
+const SUPPORT_CONTENT_VERSION = "1.0";
+// Internal auxiliary leg weight: old SAPWiki-style Support Content is useful, but deliberately
+// secondary and still returned as normal SAP Help (`sourceKind: "sap_help"`).
+const SUPPORT_CONTENT_RRF_WEIGHT = 0.65;
+
 /**
  * Reciprocal Rank Fusion scoring
  * RRF(rank) = 1 / (k + rank) where k=60 is standard
@@ -118,7 +129,8 @@ function dedupeKey(r: SearchResult): string {
     // so RRF fusion accumulates both scores for the same document.
     return `offline:${r.sourceId}:${r.id}`;
   }
-  // For online results, use canonical URL
+  // For online results, use canonical URL. Regular SAP Help and the lower-weight
+  // Support Content enrichment share the SAP Help source identity.
   return `online:${r.sourceKind}:${canonicalUrl(r.path || r.id)}`;
 }
 
@@ -236,6 +248,17 @@ function normalizeSourceFilter(source: string): string {
   return source.replace(/^\/+/, '').trim();
 }
 
+function isSupportContentResult(result: ApiSearchResult): boolean {
+  const productId = String(result.metadata?.productId ?? "").toUpperCase();
+  const product = String(result.metadata?.product ?? "").toUpperCase();
+  const url = result.url || "";
+  return (
+    productId === SUPPORT_CONTENT_PRODUCT ||
+    product === "SUPPORT CONTENT" ||
+    url.includes("/docs/SUPPORT_CONTENT/")
+  );
+}
+
 // Create a promise that rejects after timeout
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -256,7 +279,8 @@ function processOnlineSource(
   sourceKind: SearchResult['sourceKind'],
   rrfWeight: number,
   boost: number,
-  maxResults = 10
+  maxResults = 10,
+  resultFilter?: (result: ApiSearchResult) => boolean
 ): SearchResult[] {
   if (settled.status !== 'fulfilled') {
     const reason = (settled as PromiseRejectedResult).reason;
@@ -270,15 +294,21 @@ function processOnlineSource(
     console.warn(`⚠️ [${sourceName}] ${response.error}`);
   }
 
-  if (!response?.results || response.results.length === 0) {
+  const filteredResults = response?.results
+    ? (resultFilter ? response.results.filter(resultFilter) : response.results)
+    : [];
+
+  if (filteredResults.length === 0) {
     console.log(`⚠️ [${sourceName}] No results`);
     return [];
   }
 
-  const results: SearchResult[] = response.results.slice(0, maxResults).map((r, idx) => {
+  const results: SearchResult[] = filteredResults.slice(0, maxResults).map((r, idx) => {
     const rank = idx + 1;
     const rrfScore = rrf(rank) * rrfWeight;
     const finalScore = rrfScore * (1 + boost);
+    const isSapHelp = sourceKind === 'sap_help';
+    const isSupportContent = isSapHelp && isSupportContentResult(r);
 
     return {
       id: r.id || `${sourceKind}-${idx}`,
@@ -290,15 +320,23 @@ function processOnlineSource(
       finalScore,
       sourceKind,
       // SAP Help hits carry loio/product/versionId/version in their metadata (set by searchSapHelp);
-      // preserve it as a citation so the MCP layer exposes it in the result metadata. versionId is
-      // the pinnable token — without it the agent only sees the display string and can't re-pin.
-      ...(sourceKind === 'sap_help' && r.metadata
+      // preserve it as a citation so the MCP layer exposes it in the result metadata. Support
+      // Content remains SAP Help publicly, with subkind flags for provenance.
+      ...(isSapHelp && r.metadata
         ? {
             citation: {
               loio: r.metadata.loio ?? undefined,
               product: r.metadata.product,
+              productId: r.metadata.productId,
               versionId: r.metadata.versionId,
-              version: r.metadata.version
+              version: r.metadata.version,
+              ...(isSupportContent
+                ? {
+                    sourceSubkind: 'support_content' as const,
+                    supportContent: true as const,
+                    legacyKnowledge: true as const
+                  }
+                : {})
             }
           }
         : {}),
@@ -660,10 +698,21 @@ export async function search(
   
   if (includeOnline) {
     console.log(`🌐 [ONLINE] Starting online searches for "${query}" (${ONLINE_TIMEOUT_MS}ms timeout)...`);
+    const includeSupportContent = !sapHelpProduct;
     
     const onlineSearches = await Promise.allSettled([
       // SAP Help search with timeout (version filter applies to this source only)
       withTimeout(searchSapHelp(query, version, sapHelpProduct), ONLINE_TIMEOUT_MS, 'SAP Help search'),
+      // SAP Support Content contains old SAPWiki-style material. It is queried strictly
+      // against product SUPPORT_CONTENT and kept lower-weight/capped so it complements
+      // regular SAP Help instead of replacing it.
+      includeSupportContent
+        ? withTimeout(
+            searchSapHelp(query, SUPPORT_CONTENT_VERSION, SUPPORT_CONTENT_PRODUCT, { relax: false }),
+            ONLINE_TIMEOUT_MS,
+            'SAP Support Content search'
+          )
+        : Promise.resolve({ results: [] } satisfies SearchResponse),
       // SAP Community search with timeout  
       withTimeout(searchCommunity(query), ONLINE_TIMEOUT_MS, 'SAP Community search'),
       // Software-Heroes search with timeout - search both EN and DE languages
@@ -706,9 +755,27 @@ export async function search(
     
     // Process each online source using shared helper
     onlineResults.push(
-      ...processOnlineSource(onlineSearches[0], 'SAP Help', 'sap_help', RRF_WEIGHTS.sap_help, onlineBoost),
-      ...processOnlineSource(onlineSearches[1], 'SAP Community', 'sap_community', RRF_WEIGHTS.sap_community, onlineBoost * 0.5),
-      ...processOnlineSource(onlineSearches[2], 'Software-Heroes', 'software_heroes', RRF_WEIGHTS.software_heroes, onlineBoost * 0.9)
+      ...processOnlineSource(
+        onlineSearches[0],
+        'SAP Help',
+        'sap_help',
+        RRF_WEIGHTS.sap_help,
+        onlineBoost,
+        10,
+        includeSupportContent ? (result) => !isSupportContentResult(result) : undefined
+      ),
+      ...(includeSupportContent
+        ? processOnlineSource(
+            onlineSearches[1],
+            'SAP Help Support Content',
+            'sap_help',
+            SUPPORT_CONTENT_RRF_WEIGHT,
+            onlineBoost * 0.5,
+            5
+          )
+        : []),
+      ...processOnlineSource(onlineSearches[2], 'SAP Community', 'sap_community', RRF_WEIGHTS.sap_community, onlineBoost * 0.5),
+      ...processOnlineSource(onlineSearches[3], 'Software-Heroes', 'software_heroes', RRF_WEIGHTS.software_heroes, onlineBoost * 0.9)
     );
     
     console.log(`🌐 [ONLINE] Total: ${onlineResults.length} online results`);
