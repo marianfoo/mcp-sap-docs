@@ -5,9 +5,10 @@
 // report. With --update it writes/overwrites baseline.json; otherwise it compares
 // the current run against the existing baseline and flags regressions.
 //
-// Metrics (single known-good target per query, so recall@k == success@k == hit@k):
+// Metrics (multi-gold: one or more gold fragments per query; hit when any gold
+//          fragment appears in a result at position ≤ k):
 //   - firstRelevantRank : 1-indexed position of the first ranked id matching any
-//                         `expected` fragment; null if absent from the returned list.
+//                         gold fragment; null if no gold found in the returned list.
 //   - RR                : reciprocal rank (1/firstRelevantRank, else 0).
 //   - hit@k             : 1 if firstRelevantRank <= k else 0, for k in {1,3,5,10}.
 //   - MRR               : mean RR across queries.
@@ -86,6 +87,52 @@ function fmtDelta(now, was) {
   return paint(s.padStart(7), d > 0 ? "green" : "red");
 }
 
+// ── Significance ──────────────────────────────────────────────────────────────
+// The eval is small, so a raw MRR delta is mostly noise. These two tests say
+// whether a now-vs-baseline change is real, computed over the queries present in
+// BOTH runs (paired by id). New queries can't be paired and are excluded here.
+//
+// 1) Paired bootstrap 95% CI on ΔMRR: resample the paired queries with
+//    replacement B times; the CI is the 2.5/97.5 percentiles of mean(Δrr). If the
+//    interval straddles 0, the MRR move is not distinguishable from noise.
+// 2) Sign test on hit@k flips: among queries that flipped (gained or lost the
+//    hit), is the gain/loss split lopsided enough to be non-random? Two-sided
+//    binomial against p=0.5. Ties (no flip) are ignored, per the sign test.
+function percentile(sorted, p) {
+  if (sorted.length === 0) return NaN;
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.round(p * (sorted.length - 1))));
+  return sorted[idx];
+}
+
+function bootstrapDeltaMRR(deltas, B = 10000) {
+  const n = deltas.length;
+  if (n === 0) return null;
+  const means = new Array(B);
+  for (let b = 0; b < B; b++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += deltas[(Math.random() * n) | 0];
+    means[b] = sum / n;
+  }
+  means.sort((a, b) => a - b);
+  const point = deltas.reduce((s, d) => s + d, 0) / n;
+  return { point, lo: percentile(means, 0.025), hi: percentile(means, 0.975), n };
+}
+
+// Two-sided sign test p-value: P(|flips| as lopsided as observed) under p=0.5.
+function signTestP(gain, loss) {
+  const n = gain + loss;
+  if (n === 0) return 1;
+  const lo = Math.min(gain, loss);
+  // Sum the two symmetric binomial tails: 2 * Σ_{i=0..lo} C(n,i) (0.5)^n, capped at 1.
+  let logC = 0; // log C(n,0) = 0
+  let tail = Math.exp(-n * Math.LN2); // C(n,0) * 0.5^n
+  for (let i = 1; i <= lo; i++) {
+    logC += Math.log((n - i + 1) / i); // C(n,i) from C(n,i-1)
+    tail += Math.exp(logC - n * Math.LN2);
+  }
+  return Math.min(1, 2 * tail);
+}
+
 async function main() {
   const server = startServerHttp();
   let report;
@@ -95,8 +142,8 @@ async function main() {
     for (const q of EVAL_QUERIES) {
       const text = await docsSearch(q.query);
       const rankedIds = parseRankedIds(text);
-      const s = scoreQuery(rankedIds, q.expected);
-      rows.push({ id: q.id, category: q.category, query: q.query, expected: q.expected, ...s });
+      const s = scoreQuery(rankedIds, q.golds);
+      rows.push({ id: q.id, category: q.category, query: q.query, golds: q.golds, ...s });
     }
     report = { gitCommit: gitCommit(), agg: aggregate(rows), rows };
   } finally {
@@ -143,6 +190,35 @@ async function main() {
   }
   console.log(`  misses (top-50)  ${paint(String(a.misses), a.misses ? "yellow" : "green")}`);
   console.log(paint("─".repeat(78), "dim"));
+
+  // ── Significance (paired, only over queries present in both runs) ──
+  if (prev) {
+    const rr = (rank) => (rank ? 1 / rank : 0);
+    const SIG_K = 3; // hit@k flips tested at this k
+    const deltas = [];
+    let gain = 0, loss = 0;
+    for (const r of report.rows) {
+      const was = prevById.get(r.id);
+      if (!was) continue; // unpaired (new query) — excluded from the test
+      deltas.push(rr(r.firstRelevantRank) - rr(was.firstRelevantRank));
+      const nowHit = r.firstRelevantRank !== null && r.firstRelevantRank <= SIG_K;
+      const wasHit = was.firstRelevantRank !== null && was.firstRelevantRank <= SIG_K;
+      if (nowHit && !wasHit) gain++;
+      else if (!nowHit && wasHit) loss++;
+    }
+    const unpaired = report.rows.length - deltas.length;
+    console.log(paint("Significance", "bold") + paint(`  (paired over ${deltas.length} shared queries${unpaired ? `, ${unpaired} new excluded` : ""})`, "dim"));
+    const ci = bootstrapDeltaMRR(deltas);
+    if (ci) {
+      const real = ci.lo > 0 || ci.hi < 0;
+      const ciStr = `[${ci.lo >= 0 ? "+" : ""}${(ci.lo * 100).toFixed(1)}%, ${ci.hi >= 0 ? "+" : ""}${(ci.hi * 100).toFixed(1)}%]`;
+      console.log(`  ΔMRR 95% CI      ${paint(ciStr, real ? (ci.point > 0 ? "green" : "red") : "yellow")}    ${real ? paint("real", "green") : paint("within noise", "yellow")}`);
+    }
+    const p = signTestP(gain, loss);
+    const sig = p < 0.05;
+    console.log(`  hit@${SIG_K} flips      ${paint(`+${gain} / -${loss}`, gain > loss ? "green" : loss > gain ? "red" : "dim")}    sign test p=${paint(p.toFixed(3), sig ? "green" : "yellow")} ${sig ? paint("real", "green") : paint("within noise", "yellow")}`);
+    console.log(paint("─".repeat(78), "dim"));
+  }
 
   if (UPDATE) {
     writeFileSync(BASELINE_PATH, JSON.stringify(report, null, 2) + "\n");
