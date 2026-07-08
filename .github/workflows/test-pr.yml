@@ -60,8 +60,10 @@ jobs:
         
     - name: Run tests with database health check
       run: |
-        # Run the standard tests
-        npm run test
+        # setup.sh already built and verified docs.sqlite above. Run tests
+        # against that database so PR checks do not rebuild embeddings twice.
+        npm run test:url-generation
+        npm run test:integration:run
         
         # Additional database health verification after tests
         echo "==> Post-test database integrity check"

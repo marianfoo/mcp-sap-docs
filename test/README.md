@@ -11,8 +11,14 @@ npm run test:url-generation
 # Full integration harness (build + runtime tests)
 npm run test:integration
 
+# Runtime integration harness only; requires an existing dist/data/docs.sqlite
+npm run test:integration:run
+
 # Integration subset focused on URL verification
 npm run test:integration:urls
+
+# URL verification subset only; requires an existing dist/data/docs.sqlite
+npm run test:integration:urls:run
 
 # Software Heroes focused tests
 npm run test:software-heroes
@@ -33,6 +39,7 @@ npm run test:urls:status
 ## Notes
 
 - `npm run test` runs `test:url-generation` and `test:integration`.
+- `test:integration` and `test:integration:urls` rebuild the corpus, including embeddings. Use the `:run` variants in CI or after `setup.sh` when `dist/data/docs.sqlite` already exists.
 - Variant-dependent behavior should be validated by running build/index flows with both:
   - `MCP_VARIANT=sap-docs`
   - `MCP_VARIANT=abap`
