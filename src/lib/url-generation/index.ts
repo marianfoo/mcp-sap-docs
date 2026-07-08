@@ -19,6 +19,7 @@ import { MkDocsUrlGenerator } from './mkdocs.js';
 import { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
 import { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
 import { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
+import { OpenUxGeneratedUrlGenerator } from './openux-generated.js';
 
 export interface UrlGenerationOptions {
   libraryId: string;
@@ -59,6 +60,16 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/abap-docs-cloud': AbapUrlGenerator,
   
   // Generic sources
+  '/btp-fiori-tools': GithubBlobUrlGenerator,
+  '/fiori-tools-samples': GithubBlobUrlGenerator,
+  '/fiori-tools-opa-guide': GithubBlobUrlGenerator,
+  '/sap-ux-create': GithubBlobUrlGenerator,
+  '/fiori-development-portal': OpenUxGeneratedUrlGenerator,
+  '/sap-fe-test-api': OpenUxGeneratedUrlGenerator,
+  '/fiori-tools-suite': OpenUxGeneratedUrlGenerator,
+  '/fiori-opa5-docu': OpenUxGeneratedUrlGenerator,
+  '/fiori-extension-instructions': OpenUxGeneratedUrlGenerator,
+  '/ux-ui5-tooling': OpenUxGeneratedUrlGenerator,
   '/ui5-tooling': MkDocsUrlGenerator,
   '/cloud-mta-build-tool': MkDocsUrlGenerator,
   '/ui5-webcomponents': Ui5WebComponentsUrlGenerator,
@@ -151,6 +162,7 @@ export { MkDocsUrlGenerator } from './mkdocs.js';
 export { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
 export { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
 export { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
+export { OpenUxGeneratedUrlGenerator } from './openux-generated.js';
 
 // Re-export convenience functions for backward compatibility
 export { generateCloudSdkUrl, generateCloudSdkAiUrl, generateCloudSdkUrlForLibrary } from './cloud-sdk.js';

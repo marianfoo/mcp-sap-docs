@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path, { join } from "path";
 import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
+import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
 
 interface DocEntry {
   id: string;              // "/sapui5/<rel-path>", "/cap/<rel-path>", "/openui5-api/<rel-path>", or "/openui5-samples/<rel-path>"
@@ -36,8 +37,8 @@ interface SourceConfig {
   id: string;
   name: string;
   description: string;
-  filePattern: string;
-  exclude?: string;
+  filePattern: string | string[];
+  exclude?: string | string[];
   type: "markdown" | "jsdoc" | "sample";
 }
 
@@ -95,6 +96,117 @@ const SOURCES: SourceConfig[] = [
     name: "UI5 Tooling ",
     description: "UI5 Tooling documentation",
     filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-fiori-tools",
+    absDir: join("sources", "btp-fiori-tools", "docs"),
+    id: "/btp-fiori-tools",
+    name: "SAP Fiori Tools Documentation",
+    description: "Official SAP Fiori Tools documentation for app generation, development, preview, and deployment",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "fiori-tools-samples",
+    absDir: join("sources", "fiori-tools-samples"),
+    id: "/fiori-tools-samples",
+    name: "SAP Fiori Tools Samples",
+    description: "SAP Fiori Tools sample applications and configuration examples",
+    filePattern: [
+      "**/*.md",
+      "**/ui5*.yaml",
+      "**/ui5*.yml",
+      "**/mta.yaml",
+      "**/mta.yml",
+      "**/manifest.json",
+      "**/package.json"
+    ],
+    exclude: [
+      ".github/**",
+      ".claude/**",
+      "prompts/**",
+      "scripts/**",
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "**/target/**",
+      "**/package-lock.json",
+      "**/pnpm-lock.yaml",
+      "**/yarn.lock"
+    ],
+    type: "markdown" as const
+  },
+  {
+    repoName: "sap-tutorials",
+    absDir: join("sources", "sap-tutorials", "tutorials", "fiori-tools-mockserver-opa-testing"),
+    id: "/fiori-tools-opa-guide",
+    name: "Fiori Tools OPA Guide",
+    description: "SAP tutorial for OPA tests with SAP Fiori elements and mock server tooling",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "open-ux-tools",
+    absDir: join("sources", "open-ux-tools", "packages", "create"),
+    id: "/sap-ux-create",
+    name: "@sap-ux/create CLI Reference",
+    description: "SAP Fiori Tools create CLI documentation",
+    filePattern: "README.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "fiori-development-portal"),
+    id: "/fiori-development-portal",
+    name: "SAP Fiori Development Portal",
+    description: "Generated SAP Fiori elements development portal examples from Open UX",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "sap-fe-test-api"),
+    id: "/sap-fe-test-api",
+    name: "sap.fe.test API",
+    description: "Generated sap.fe.test OPA5 API documentation from Open UX",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "fiori-tools-suite"),
+    id: "/fiori-tools-suite",
+    name: "Fiori Tools Suite Commands",
+    description: "Generated SAP Fiori Tools command matrix from Open UX",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "fiori-opa5-docu"),
+    id: "/fiori-opa5-docu",
+    name: "Fiori OPA5 Documentation",
+    description: "Curated OPA5 guidance for SAP Fiori elements applications from Open UX",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "fiori-extension-instructions"),
+    id: "/fiori-extension-instructions",
+    name: "Fiori Extension Instructions",
+    description: "Curated SAP Fiori elements extension implementation instructions from Open UX",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "openux-generated",
+    absDir: join("sources", "openux-generated", "ux-ui5-tooling"),
+    id: "/ux-ui5-tooling",
+    name: "@sap/ux-ui5-tooling",
+    description: "SAP Fiori Tools UI5 Tooling README materialized from Open UX",
+    filePattern: "*.md",
     type: "markdown" as const
   },
   {
@@ -520,6 +632,107 @@ function extractSampleInfo(content: string, filePath: string) {
   };
 }
 
+function extractSampleConfigInfo(content: string, filePath: string) {
+  const fileName = path.basename(filePath);
+  const ext = path.extname(fileName).toLowerCase();
+  const directory = path.dirname(filePath);
+  const pathTerms = filePath
+    .split(/[\/_.-]+/)
+    .map((term) => term.trim().toLowerCase())
+    .filter((term) => term.length > 1);
+
+  let title = `${filePath} configuration`;
+  let description = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .slice(0, 6)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .slice(0, 400);
+  const keywords = new Set<string>([
+    "fiori-tools",
+    "sample",
+    "configuration",
+    ...pathTerms
+  ]);
+
+  if (/^ui5.*\.ya?ml$/i.test(fileName)) {
+    title = `${directory}/ui5 tooling configuration (${fileName})`;
+    keywords.add("ui5");
+    keywords.add("yaml");
+    keywords.add("middleware");
+    keywords.add("task");
+    keywords.add("preview");
+    if (/deploy/i.test(fileName)) {
+      keywords.add("deploy");
+      keywords.add("deployment");
+    }
+    if (/mock/i.test(fileName)) {
+      keywords.add("mockserver");
+      keywords.add("opa5");
+    }
+  } else if (/^mta\.ya?ml$/i.test(fileName)) {
+    title = `${directory}/MTA deployment configuration`;
+    keywords.add("mta");
+    keywords.add("deployment");
+    keywords.add("cloud-foundry");
+  } else if (fileName === "manifest.json") {
+    title = `${directory}/SAPUI5 application manifest`;
+    keywords.add("manifest");
+    keywords.add("sap.ui5");
+    keywords.add("sap.app");
+    try {
+      const manifest = JSON.parse(content);
+      const appId = manifest?.["sap.app"]?.id;
+      if (appId) {
+        title = `${appId} manifest.json`;
+        keywords.add(String(appId));
+      }
+      const appTitle = manifest?.["sap.app"]?.title;
+      if (appTitle) {
+        description = `${appTitle} ${description}`.trim().slice(0, 400);
+      }
+    } catch {
+      // Keep path-derived metadata for malformed sample JSON.
+    }
+  } else if (fileName === "package.json") {
+    title = `${directory}/package.json`;
+    keywords.add("npm");
+    keywords.add("scripts");
+    keywords.add("dependencies");
+    try {
+      const pkg = JSON.parse(content);
+      if (pkg?.name) {
+        title = `${pkg.name} package.json`;
+        keywords.add(String(pkg.name));
+      }
+      const scripts = pkg?.scripts ? Object.keys(pkg.scripts).slice(0, 12).join(", ") : "";
+      if (scripts) {
+        description = `npm scripts: ${scripts}. ${description}`.slice(0, 400);
+      }
+    } catch {
+      // Keep path-derived metadata for malformed sample JSON.
+    }
+  } else if (ext === ".yaml" || ext === ".yml") {
+    keywords.add("yaml");
+  } else if (ext === ".json") {
+    keywords.add("json");
+  }
+
+  const identifierMatches = content.match(/[@A-Za-z_][A-Za-z0-9_.:-]{3,}/g) || [];
+  for (const term of identifierMatches.slice(0, 80)) {
+    keywords.add(term);
+  }
+
+  return {
+    title,
+    description: description || title,
+    snippetCount: Math.max(1, (content.match(/\n\s{2,}\S/g)?.length || 0)),
+    keywords: Array.from(keywords).slice(0, 120)
+  };
+}
+
 // Extract JSDoc information from JavaScript files with enhanced metadata
 function extractJSDocInfo(content: string, fileName: string) {
   const lines = content.split(/\r?\n/);
@@ -733,15 +946,30 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
 
 async function main() {
   await fs.mkdir("dist/data", { recursive: true });
+  if (ACTIVE_SOURCES.some((source) => source.repoName === "openux-generated")) {
+    await materializeOpenUxGeneratedSources();
+  }
   console.log("Using MCP variant " + getVariantName() + " with " + ACTIVE_SOURCES.length + " active source bundles.");
   const all: Record<string, LibraryBundle> = {};
 
   for (const src of ACTIVE_SOURCES) {
-    const patterns = [src.filePattern];
-    if (src.exclude) {
-      patterns.push(`!${src.exclude}`);
+    try {
+      const stat = await fs.stat(src.absDir);
+      if (!stat.isDirectory()) {
+        console.warn(`⚠️  Skipping ${src.id}: ${src.absDir} is not a directory.`);
+        continue;
+      }
+    } catch {
+      console.warn(`⚠️  Skipping ${src.id}: source directory not found at ${src.absDir}.`);
+      continue;
     }
-    const files = await fg(patterns, { cwd: src.absDir, absolute: true });
+
+    const patterns = Array.isArray(src.filePattern) ? [...src.filePattern] : [src.filePattern];
+    if (src.exclude) {
+      const excludes = Array.isArray(src.exclude) ? src.exclude : [src.exclude];
+      patterns.push(...excludes.map((exclude) => `!${exclude}`));
+    }
+    const files = Array.from(new Set(await fg(patterns, { cwd: src.absDir, absolute: true }))).sort();
 
     const docs: DocEntry[] = [];
 
@@ -756,6 +984,22 @@ async function main() {
       let id: string;
 
       if (src.type === "markdown") {
+        const isMarkdownLike = /\.(md|mdx)$/i.test(rel);
+        if (src.id === "/fiori-tools-samples" && !isMarkdownLike) {
+          const sampleConfigInfo = extractSampleConfigInfo(raw, rel);
+          id = `${src.id}/${rel}`;
+          docs.push({
+            id,
+            title: sampleConfigInfo.title,
+            description: sampleConfigInfo.description,
+            snippetCount: sampleConfigInfo.snippetCount,
+            relFile: rel,
+            type: src.type,
+            keywords: sampleConfigInfo.keywords
+          });
+          continue;
+        }
+
         // Handle markdown files with error handling for malformed frontmatter
         let frontmatter, content;
         try {
@@ -817,7 +1061,7 @@ async function main() {
         
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
         
-        id = `${src.id}/${rel.replace(/\.md$/, "")}`;
+        id = `${src.id}/${rel.replace(/\.mdx?$/, "")}`;
         
         // Extract individual sections as separate entries for all markdown docs
         if (content.includes('##')) {

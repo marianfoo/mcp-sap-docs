@@ -70,6 +70,136 @@
       "anchorStyle": "docsify"
     },
     {
+      "id": "btp-fiori-tools",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.12,
+      "tags": ["fiori-tools", "fiori-elements", "bas", "vscode", "deployment", "preview"],
+      "description": "Official SAP Fiori Tools documentation",
+      "libraryId": "/btp-fiori-tools",
+      "sourcePath": "btp-fiori-tools/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-fiori-tools/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-tools-samples",
+      "type": "samples",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["fiori-tools", "samples", "fiori-elements", "sapui5", "ui5.yaml", "manifest", "mta"],
+      "description": "SAP Fiori Tools sample applications and configuration examples",
+      "libraryId": "/fiori-tools-samples",
+      "sourcePath": "fiori-tools-samples",
+      "baseUrl": "https://github.com/SAP-samples/fiori-tools-samples/blob/main",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-tools-opa-guide",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.12,
+      "tags": ["fiori-tools", "opa5", "mockserver", "testing", "fiori-elements"],
+      "description": "SAP tutorial for OPA tests with SAP Fiori elements and mock server tooling",
+      "libraryId": "/fiori-tools-opa-guide",
+      "sourcePath": "sap-tutorials/tutorials/fiori-tools-mockserver-opa-testing",
+      "baseUrl": "https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/fiori-tools-mockserver-opa-testing",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-ux-create",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["sap-ux", "create", "fiori-tools", "generator", "cli"],
+      "description": "@sap-ux/create CLI reference",
+      "libraryId": "/sap-ux-create",
+      "sourcePath": "open-ux-tools/packages/create",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob/main/packages/create",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-development-portal",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.12,
+      "tags": ["fiori-elements", "development-portal", "sap.fe", "fpm", "building-blocks"],
+      "description": "Generated SAP Fiori elements development portal examples from Open UX",
+      "libraryId": "/fiori-development-portal",
+      "sourcePath": "openux-generated/fiori-development-portal",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "sap-fe-test-api",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.12,
+      "tags": ["sap.fe.test", "opa5", "testing", "api", "fiori-elements"],
+      "description": "Generated sap.fe.test OPA5 API documentation from Open UX",
+      "libraryId": "/sap-fe-test-api",
+      "sourcePath": "openux-generated/sap-fe-test-api",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-tools-suite",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.08,
+      "tags": ["fiori-tools", "commands", "vscode", "bas"],
+      "description": "Generated SAP Fiori Tools command matrix from Open UX",
+      "libraryId": "/fiori-tools-suite",
+      "sourcePath": "openux-generated/fiori-tools-suite",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-opa5-docu",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["opa5", "integration-tests", "fiori-elements", "sap.fe.test"],
+      "description": "Curated OPA5 guidance for SAP Fiori elements applications from Open UX",
+      "libraryId": "/fiori-opa5-docu",
+      "sourcePath": "openux-generated/fiori-opa5-docu",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "fiori-extension-instructions",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["fiori-elements", "extensions", "controller-extension", "fragments"],
+      "description": "Curated SAP Fiori elements extension implementation instructions from Open UX",
+      "libraryId": "/fiori-extension-instructions",
+      "sourcePath": "openux-generated/fiori-extension-instructions",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "ux-ui5-tooling",
+      "type": "generated",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["fiori-tools", "ui5-tooling", "middleware", "tasks", "cli"],
+      "description": "SAP Fiori Tools UI5 Tooling README materialized from Open UX",
+      "libraryId": "/ux-ui5-tooling",
+      "sourcePath": "openux-generated/ux-ui5-tooling",
+      "baseUrl": "https://github.com/SAP/open-ux-tools/blob",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
       "id": "ui5-tooling",
       "type": "documentation",
       "lang": "en",
@@ -446,7 +576,13 @@
       "/ui5-webcomponents": 1.0
     },
     "UI5 Tooling": {
-      "/ui5-tooling": 1.0
+      "/ui5-tooling": 1.0,
+      "/btp-fiori-tools": 0.9,
+      "/fiori-tools-samples": 0.8,
+      "/ux-ui5-tooling": 0.9,
+      "/sap-ux-create": 0.7,
+      "/fiori-tools-opa-guide": 0.6,
+      "/fiori-tools-suite": 0.6
     },
     "Cloud MTA Build Tool": {
       "/cloud-mta-build-tool": 1.0

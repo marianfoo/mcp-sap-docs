@@ -50,10 +50,36 @@ export function extractSourceUrlFromText(text: string): string | null {
     return normalizeExtractedUrl(match[1]);
   }
 
-  const plainMatch = text.match(/\bURL:\s*(https?:\/\/[^\s)]+)/i);
+  const plainMatch = text.match(/^URL:\s*(https?:\/\/[^\s)]+)/m);
   return plainMatch ? normalizeExtractedUrl(plainMatch[1]) : null;
 }
 
 function normalizeExtractedUrl(url: string): string {
   return url.replace(/[>,.;]+$/, "");
+}
+
+function isAbsoluteHttpUrl(url?: string | null): boolean {
+  return !!url && /^https?:\/\//i.test(url);
+}
+
+export function chooseSourceAwareUrl(
+  sourceContent: string | null | undefined,
+  docUrl: string | null | undefined,
+  pathUrl: string | undefined,
+  fallbackId: string
+): string {
+  const extractedSourceUrl = sourceContent ? extractSourceUrlFromText(sourceContent) : null;
+  if (isAbsoluteHttpUrl(extractedSourceUrl)) {
+    return extractedSourceUrl!;
+  }
+
+  if (isAbsoluteHttpUrl(docUrl)) {
+    return docUrl!;
+  }
+
+  if (isAbsoluteHttpUrl(pathUrl)) {
+    return pathUrl!;
+  }
+
+  return `#${fallbackId}`;
 }
