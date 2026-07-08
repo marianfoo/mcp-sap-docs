@@ -41,6 +41,7 @@ import {
 import { AbapUrlGenerator, generateAbapUrl } from '../src/lib/url-generation/abap.js';
 import { DocUrlConfig, getDocUrlConfig } from '../src/lib/metadata.js';
 import { normalizeCommunityUrl } from '../src/lib/communityBestMatch.js';
+import matter from 'gray-matter';
 
 describe('Comprehensive URL Generation System', () => {
   
@@ -130,6 +131,25 @@ describe('Comprehensive URL Generation System', () => {
       // Return null to trigger fallback to test data
       return null;
     }
+  }
+
+  function expectArchitectureCenterRealFileUrl(relFile: string): void {
+    const content = readFileContent('/architecture-center', relFile);
+    if (!content) {
+      console.warn(`Skipping real file test - architecture-center source file not available: ${relFile}`);
+      return;
+    }
+
+    const { data: frontmatter } = matter(content);
+    const slug = frontmatter?.slug;
+    expect(typeof slug).toBe('string');
+    expect(slug).toMatch(/^\/ref-arch\/[a-z0-9]+(?:\/[a-z0-9-]+)*$/i);
+
+    const config = getConfigForLibrary('/architecture-center');
+    const result = generateDocumentationUrl('/architecture-center', relFile, content, config);
+    const expectedUrl = `${config.baseUrl.replace(/\/$/, '')}/${slug.replace(/^\/+/, '')}`;
+
+    expect(result).toBe(expectedUrl);
   }
   
   /**
@@ -1105,31 +1125,12 @@ describe('Comprehensive URL Generation System', () => {
         expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/abc123');
       });
 
-      it('should read real source files and generate correct URLs', () => {
-        // Test against actual RA0001 source file if available
-        const content = readFileContent('/architecture-center', 'RA0001/readme.md');
-        if (!content) {
-          console.warn('Skipping real file test - architecture-center submodule not available');
-          return;
-        }
-
-        const config = getConfigForLibrary('/architecture-center');
-        const result = generateDocumentationUrl('/architecture-center', 'RA0001/readme.md', content, config);
-
-        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/fbdc46aaae');
+      it('should read real RA0001 source file and generate URL from current frontmatter slug', () => {
+        expectArchitectureCenterRealFileUrl('RA0001/readme.md');
       });
 
-      it('should read real RA0005 source file and generate correct URL', () => {
-        const content = readFileContent('/architecture-center', 'RA0005/readme.md');
-        if (!content) {
-          console.warn('Skipping real file test - architecture-center submodule not available');
-          return;
-        }
-
-        const config = getConfigForLibrary('/architecture-center');
-        const result = generateDocumentationUrl('/architecture-center', 'RA0005/readme.md', content, config);
-
-        expect(result).toBe('https://architecture.learning.sap.com/docs/ref-arch/e5eb3b9b1d');
+      it('should read real RA0005 source file and generate URL from current frontmatter slug', () => {
+        expectArchitectureCenterRealFileUrl('RA0005/readme.md');
       });
     });
   });
