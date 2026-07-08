@@ -5,11 +5,13 @@ import path, { join } from "path";
 import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
+import { normalizeMarkdown } from "../src/lib/textNormalize.js";
 
 interface DocEntry {
   id: string;              // "/sapui5/<rel-path>", "/cap/<rel-path>", "/openui5-api/<rel-path>", or "/openui5-samples/<rel-path>"
   title: string;
   description: string;
+  embedText?: string;      // for sections, cleaned title+prose used by the embedding leg (BM25 still uses description)
   snippetCount: number;
   relFile: string;         // path relative to sources/…
   type?: "markdown" | "jsdoc" | "sample" | "markdown-section";  // type of documentation
@@ -865,6 +867,9 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
     } else if (line.startsWith('## ')) {
       headingLevel = 2;
       headingText = line.slice(3).trim();
+    } else if (line.startsWith('# ')) {
+      headingLevel = 1;
+      headingText = line.slice(2).trim();
     }
     
     if (headingLevel > 0) {
@@ -898,8 +903,16 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
       continue;
     }
     
-    // Generate description from section content, including code blocks for better searchability
-    const contentLines = section.content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    // Generate description from section content, excluding breadcrumb nav lines so the
+    // caller doesn't receive raw markdown link syntax. Breadcrumb labels are still present
+    // in embedText (via normalizeMarkdown) for embedding alignment.
+    // Only sap-styleguides uses this breadcrumb convention; other sources (e.g. cap-docs)
+    // have prose blockquotes with 2+ anchor links that must not be filtered out.
+    const isBreadcrumb = (l: string) =>
+      src.id === '/sap-styleguides' &&
+      /^\s*>/.test(l) &&
+      (l.match(/\]\(#/g) ?? []).length >= 2;
+    const contentLines = section.content.split('\n').filter(l => l.trim() && !l.startsWith('#') && !isBreadcrumb(l));
     
     // Extract code blocks content for technical terms
     const codeBlocks = section.content.match(/```[\s\S]*?```/g) || [];
@@ -929,11 +942,19 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
     
     // Create section entry
     const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    
+
+    // Dedicated embedding text: the section TITLE + cleaned section PROSE (code &
+    // breadcrumb stripped via the shared normalizer). This is what the dense leg
+    // embedText: breadcrumb nav labels flow through normalizeMarkdown as plain text
+    // (step 2 removed), giving the embedding leg hierarchy context without polluting
+    // the description returned to callers. ~700 chars ≈ within MiniLM's 256-token budget.
+    const embedText = `${section.title}. ${normalizeMarkdown(section.content, { keepCode: false, maxChars: 700 })}`.trim();
+
     docs.push({
       id: sectionId,
       title: section.title,
       description: description.substring(0, 300) + (description.length > 300 ? '...' : ''),
+      embedText,
       snippetCount,
       relFile,
       type: 'markdown-section' as any,
@@ -1063,13 +1084,14 @@ async function main() {
         
         id = `${src.id}/${rel.replace(/\.mdx?$/, "")}`;
         
-        // Extract individual sections as separate entries for all markdown docs
+        // Extract individual sections as separate entries for all markdown docs.
+        // When sections exist (including section-0 for the intro), skip the whole-doc
+        // entry — sections cover all content and give finer-grained retrieval.
         if (content.includes('##')) {
           extractMarkdownSections(content, lines, src, rel, docs);
-        }
-        
+        } else {
         // Push markdown doc with keywords
-        docs.push({ 
+        docs.push({
           id, 
           title, 
           description, 
@@ -1078,6 +1100,7 @@ async function main() {
           type: src.type,
           keywords: markdownKeywords.length > 0 ? markdownKeywords : undefined
         });
+        } // closes else (whole-doc path)
       } else if (src.type === "jsdoc") {
         // Handle JavaScript files with JSDoc
         const jsDocInfo = extractJSDocInfo(raw, path.basename(absPath));

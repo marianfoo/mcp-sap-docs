@@ -6,18 +6,22 @@ import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
 import { pipeline, env } from "@huggingface/transformers";
+import { CONFIG } from "../src/lib/config.js";
 
 const DATA_DIR = path.join(process.cwd(), "dist", "data");
 const MODELS_DIR = path.join(process.cwd(), "dist", "models");
 const SRC = path.join(DATA_DIR, "index.json");
 const DST = path.join(DATA_DIR, "docs.sqlite");
-const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
+// Single source of truth, shared with the query path (embeddingSearch.ts) so the
+// build-time and query-time model can never drift into incompatible vector spaces.
+const MODEL_ID = CONFIG.EMBEDDING_MODEL_ID;
 const BATCH_SIZE = 32;
 
 type Doc = {
   id: string;
   title?: string;
   description?: string;
+  embedText?: string;
   keywords?: string[];
   type?: string;
 };
@@ -32,6 +36,9 @@ type LibraryBundle = {
  * Title + description + first 20 keywords — stays under ~256 tokens.
  */
 function buildEmbedText(doc: Doc): string {
+  // Sections carry a pre-cleaned `embedText` (title + stripped prose) built in
+  // build-index.ts — use it verbatim so the dense leg sees prose, not breadcrumb.
+  if (doc.embedText && doc.embedText.trim()) return doc.embedText.trim();
   const parts: string[] = [];
   if (doc.title) parts.push(doc.title);
   if (doc.description) parts.push(doc.description);
@@ -64,16 +71,18 @@ async function main() {
   console.log(`📖 Reading index from ${SRC}...`);
   const raw = JSON.parse(fs.readFileSync(SRC, "utf8")) as Record<string, LibraryBundle>;
 
-  // Filter: embed only markdown and jsdoc docs (not markdown-section or sample)
+  // Filter: embed markdown, jsdoc, and markdown-section docs (not sample).
+  // markdown-section gives the dense leg per-topic granularity (it embeds each
+  // section's cleaned `embedText`); sample snippets stay excluded.
   const docs: Doc[] = [];
   for (const lib of Object.values(raw)) {
     for (const d of lib.docs) {
-      if (d.type === "markdown" || d.type === "jsdoc") {
+      if (d.type === "markdown" || d.type === "jsdoc" || d.type === "markdown-section") {
         docs.push(d);
       }
     }
   }
-  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc only)`);
+  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc + markdown-section)`);
 
   // Configure transformers to store model in dist/models/ (project-local, gitignored)
   fs.mkdirSync(MODELS_DIR, { recursive: true });

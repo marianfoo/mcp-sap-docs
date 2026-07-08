@@ -13,7 +13,7 @@ import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchReleasedObjects } from "./lib/sapReleasedObjects/index.js";
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
-import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
+import { loadEmbeddingModel, loadRerankModel } from "./lib/embeddingSearch.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -334,6 +334,11 @@ const server = createServer(async (req, res) => {
     // Pre-load the embedding model so the first search is fast (fire-and-forget)
     loadEmbeddingModel().catch((err: Error) =>
       console.warn("embedding model pre-load failed:", err.message)
+    );
+  }
+  if (CONFIG.RERANKER_ENABLED) {
+    loadRerankModel().catch((err: Error) =>
+      console.warn("reranker model pre-load failed:", err.message)
     );
   }
 

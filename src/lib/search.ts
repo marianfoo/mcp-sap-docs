@@ -6,7 +6,7 @@ import { searchSapHelp, ABAP_HELP_PRODUCTS } from "./sapHelp.js";
 import { searchCommunity } from "./localDocs.js";
 import { searchSoftwareHeroesContent } from "./softwareHeroes/index.js";
 import { SearchResponse, SearchResult as ApiSearchResult } from "./types.js";
-import { buildSemanticResults } from "./embeddingSearch.js";
+import { buildSemanticRecall, detectNewsIntent, embedQuery, rerank } from "./embeddingSearch.js";
 
 export type SearchResult = {
   id: string;
@@ -148,13 +148,15 @@ const ONLINE_TIMEOUT_MS = CONFIG.SOFTWARE_HEROES_TIMEOUT_MS;
 // Higher k = more even weighting across ranks
 const RRF_K = 60;
 
-// Source weights for RRF fusion
+// Source weights for RRF fusion — canonical unweighted (Cormack 2009): all 1.0.
+// Per-source weighting is non-standard and suppresses semantic recall; demote noisy
+// doc types with pre-fusion filters instead (see rows filtering below).
 const RRF_WEIGHTS = {
-  offline: 1.0,        // Full weight for offline (indexed) results
-  sap_help: 0.9,       // Slightly lower for SAP Help
-  sap_community: 0.6,  // Lower for community (can be noisy)
-  software_heroes: 0.85, // Software-Heroes (high quality ABAP/RAP tutorials)
-  semantic: CONFIG.EMBEDDING_WEIGHT, // Embedding-based semantic results (default 0.7)
+  offline: 1.0,
+  sap_help: 1.0,
+  sap_community: 1.0,
+  software_heroes: 1.0,
+  semantic: CONFIG.EMBEDDING_WEIGHT, // 1.0 default; env-var override for experiments
 };
 
 /**
@@ -219,12 +221,6 @@ function hasCleanCodeIntent(query: string): boolean {
   return /\b(clean\s*code|naming\s*convention|best\s*practice|style\s*guide|coding\s*standard)\b/i.test(query);
 }
 
-/**
- * Detect if query is specifically about news/releases
- */
-function hasNewsIntent(query: string): boolean {
-  return /\b(news|release|update|new\s+in|what'?s\s*new)\b/i.test(query);
-}
 
 /**
  * Extract annotation patterns from query (e.g., @UI.lineItem, @ObjectModel)
@@ -304,7 +300,8 @@ export function detectQueryContexts(query: string): string[] {
 
 // Helper to extract source ID from library_id or document path
 // Returns the raw source ID (e.g., 'abap-docs-standard') for boost lookups
-function extractSourceId(libraryIdOrPath: string): string {
+// Exported for reuse by the semantic-recall leg (embeddingSearch.ts).
+export function extractSourceId(libraryIdOrPath: string): string {
   if (libraryIdOrPath.startsWith('/')) {
     const parts = libraryIdOrPath.split('/');
     if (parts.length > 1) {
@@ -360,7 +357,7 @@ function processOnlineSource(
   const results: SearchResult[] = response.results.slice(0, maxResults).map((r, idx) => {
     const rank = idx + 1;
     const rrfScore = rrf(rank) * rrfWeight;
-    const finalScore = rrfScore * (1 + boost);
+    const finalScore = rrfScore * (CONFIG.FUSION_BOOSTS_ENABLED ? (1 + boost) : 1);
 
     return {
       id: r.id || `${sourceKind}-${idx}`,
@@ -499,6 +496,10 @@ export async function search(
   // Detect implementation intent for sample boosting
   const wantsImplementation = hasImplementationIntent(query);
 
+  // Start query embedding early — it runs while BM25 executes synchronously below,
+  // so by the time we need it (pre-fusion filter + semantic recall) it's already done.
+  const queryVecPromise = embedQuery(query).catch(() => null);
+
   const sourceFilters = sources?.length
     ? new Set(sources.map(normalizeSourceFilter).filter(Boolean))
     : null;
@@ -551,6 +552,19 @@ export async function search(
     const sourceId = extractSourceId(r.libraryId || r.id);
     return !isNonEnglishVariant(r.id || '', sourceId);
   });
+
+  // Await the pre-computed query vector (fired before BM25 above). Used for both
+  // news-intent classification and semantic recall — one embedding, two uses.
+  const queryVec = await queryVecPromise;
+  const isNewsQuery = queryVec ? await detectNewsIntent(queryVec) : false;
+
+  // Pre-fusion filter: remove What's New / release-note entries for non-news queries.
+  // ABENNEWS-* docs are fragmented single-change descriptions that flood results with
+  // low-value noise when the user is not explicitly asking about releases or updates.
+  // This belongs here (pre-fusion) so the canonical RRF scores are never distorted.
+  if (!isNewsQuery) {
+    rows = rows.filter(r => !r.id?.includes('ABENNEWS-'));
+  }
   
   // Smart ABAP library filtering based on flavor
   if (requestedAbapFlavor === 'cloud') {
@@ -658,11 +672,6 @@ export async function search(
       boost += 3.0;
     }
     
-    // Down-rank news articles for non-news queries
-    if (r.id && r.id.includes('ABENNEWS-') && !hasNewsIntent(query)) {
-      boost -= 0.8;
-    }
-    
     // Penalize example documents when user doesn't want examples
     const isExampleDoc = r.id && (r.id.includes('_ABEXA') || r.id.includes('_EXAMPLE'));
     if (isExampleDoc && !wantsImplementation) {
@@ -717,7 +726,7 @@ export async function search(
     
     // Final score = RRF score * boost multiplier
     // We use (1 + boost) so boost=0 gives multiplier of 1
-    const finalScore = rrfScore * (1 + boost);
+    const finalScore = rrfScore * (CONFIG.FUSION_BOOSTS_ENABLED ? (1 + boost) : 1);
     
     return {
       id: r.id,
@@ -739,13 +748,23 @@ export async function search(
   
   // Optionally search online sources with timeout
   let onlineResults: SearchResult[] = [];
-  
+
   if (includeOnline) {
     console.log(`🌐 [ONLINE] Starting online searches for "${query}" (${ONLINE_TIMEOUT_MS}ms timeout)...`);
-    
+
+    // Skip SAP Help for CAP/UI5 queries — they have dedicated sites (cap.cloud.sap, ui5.sap.com)
+    // with better coverage than the generic help.sap.com. Rely on offline sources + Community instead.
+    const skipSapHelp = queryContexts.includes('cap') || queryContexts.includes('ui5');
+    if (skipSapHelp) {
+      console.log(`  ⊘ Skipping SAP Help (CAP/UI5 query — using dedicated offline sources instead)`);
+    }
+
     const onlineSearches = await Promise.allSettled([
       // SAP Help search with timeout (version filter applies to this source only)
-      withTimeout(searchSapHelp(query, version, sapHelpProduct), ONLINE_TIMEOUT_MS, 'SAP Help search'),
+      // Skipped for CAP/UI5 queries since they have dedicated sites with better coverage
+      skipSapHelp
+        ? Promise.resolve({ results: [] })
+        : withTimeout(searchSapHelp(query, version, sapHelpProduct), ONLINE_TIMEOUT_MS, 'SAP Help search'),
       // SAP Community search with timeout  
       withTimeout(searchCommunity(query), ONLINE_TIMEOUT_MS, 'SAP Community search'),
       // Software-Heroes search with timeout - search both EN and DE languages
@@ -797,8 +816,9 @@ export async function search(
   }
   
   // Merge offline, semantic, and online results
-  // Semantic results re-rank BM25 candidates by cosine similarity and slot in via RRF
-  const semanticResults = await buildSemanticResults(query, offlineResults, k);
+  // Semantic results come from an independent full-corpus cosine scan (item 7b),
+  // so they can surface documents BM25 missed; they slot in via RRF fusion.
+  const semanticResults = await buildSemanticRecall(query, k, queryVec ?? undefined);
   console.log(`🧠 [SEMANTIC] ${semanticResults.length} semantic results`);
 
   const allResults = [...offlineResults, ...onlineResults, ...semanticResults];
@@ -811,7 +831,25 @@ export async function search(
   const deduped = new Map<string, SearchResult>();
   for (const result of allResults) {
     const key = dedupeKey(result);
-    if (!deduped.has(key) || deduped.get(key)!.finalScore < result.finalScore) {
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, result);
+      continue;
+    }
+    // Offline (BM25) and semantic (cosine) are INDEPENDENT retrievers that share
+    // the same dedupe key, so a document found by both should accumulate their
+    // RRF contributions — this is reciprocal-rank fusion (a sum), not a winner-
+    // take-all max. Keep the higher-scoring entry as the representative (richer
+    // boost/debug metadata) but add the two scores together.
+    if (result.sourceKind === "offline" || result.sourceKind === "semantic") {
+      const representative = existing.finalScore >= result.finalScore ? existing : result;
+      deduped.set(key, {
+        ...representative,
+        finalScore: existing.finalScore + result.finalScore,
+      });
+    } else if (existing.finalScore < result.finalScore) {
+      // Online duplicates (same canonical URL, differing version/locale params)
+      // are the SAME hit from one source — take the max, never accumulate.
       deduped.set(key, result);
     }
   }
@@ -846,7 +884,8 @@ export async function search(
   console.log(`Deduplication: ${allResults.length} -> ${deduped.size} -> ${contentDeduped.size} unique results (incl. release notes)`);
   
   // Return top k results
-  return Array.from(contentDeduped.values())
-    .sort((a, b) => b.finalScore - a.finalScore)
-    .slice(0, k);
+  const candidates = Array.from(contentDeduped.values())
+    .sort((a, b) => b.finalScore - a.finalScore);
+
+  return (await rerank(query, candidates)).slice(0, k);
 }
