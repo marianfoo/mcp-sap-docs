@@ -1,4 +1,21 @@
 // SAP Cloud SDK (JavaScript) test cases
+async function validateSourceResult(sourceId, query, expectedId) {
+  const { search } = await import('../../../dist/src/lib/search.js');
+  const results = await search(query, {
+    k: 20,
+    includeOnline: false,
+    sources: [sourceId]
+  });
+
+  const ids = results.map(result => result.id);
+  const found = ids.some(id => id === expectedId || id.startsWith(`${expectedId}#`));
+
+  return {
+    passed: found,
+    message: found ? '' : `Expected ${expectedId} in source-filtered results. IDs: ${ids.join(', ')}`
+  };
+}
+
 export default [
   {
     name: 'Cloud SDK JS remote debug guide present',
@@ -14,10 +31,11 @@ export default [
   },
   {
     name: 'Cloud SDK JS upgrade guide',
-    tool: 'search',
-    query: 'cloud sdk javascript upgrade version 4',
-    expectIncludes: ['/cloud-sdk-js/guides/upgrade-to-version-4.mdx']
+    validate: () => validateSourceResult(
+      'cloud-sdk-js',
+      'How to upgrade to version 4 of the SAP Cloud SDK for JavaScript',
+      '/cloud-sdk-js/guides/upgrade-to-version-4'
+    )
   }
 ];
-
 

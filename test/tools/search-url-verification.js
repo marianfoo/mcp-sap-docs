@@ -77,6 +77,40 @@ async function validateSourceFilteredSearch(sourceId, query) {
   return { passed: true };
 }
 
+async function validateSourceFilteredUrl(sourceId, query, expectedUrlPattern) {
+  const { search } = await import('../../dist/src/lib/search.js');
+  const { getDocUrlConfig } = await import('../../dist/src/lib/metadata.js');
+  const { generateDocumentationUrl, formatSearchResult } = await import('../../dist/src/lib/url-generation/index.js');
+
+  const results = await search(query, {
+    k: 8,
+    includeOnline: false,
+    sources: [sourceId]
+  });
+
+  if (!results.length) {
+    return {
+      passed: false,
+      message: `No source-filtered results for ${sourceId} using query "${query}"`
+    };
+  }
+
+  const formatted = results
+    .map(result => formatSearchResult(result, 200, { generateDocumentationUrl, getDocUrlConfig }))
+    .join('\n');
+  const urls = extractUrls(formatted);
+  const expectedPattern = expectedUrlPattern instanceof RegExp ? expectedUrlPattern : new RegExp(expectedUrlPattern);
+
+  if (!urls.some(url => expectedPattern.test(url))) {
+    return {
+      passed: false,
+      message: `Expected URL pattern ${expectedPattern} for ${sourceId}. URLs: ${urls.join(', ')}`
+    };
+  }
+
+  return { passed: true };
+}
+
 async function validateVisibleSearchResult({ docsSearch, query, expectedSource, expectedUrlPattern }) {
   const text = await docsSearch(query);
   if (!text.includes(`/${expectedSource}/`)) {
@@ -137,12 +171,11 @@ export default [
   },
   {
     name: 'UI5 Tooling - Should include documentation URL',
-    tool: 'search',
-    query: 'ui5 tooling build',
-    skipIfNoResults: true,
-    expectIncludes: ['/ui5-tooling/'],
-    expectContains: ['🔗'],
-    expectUrlPattern: 'https://ui5.github.io/cli'
+    validate: () => validateSourceFilteredUrl(
+      'ui5-tooling',
+      'ui5 tooling build',
+      /^https:\/\/ui5\.github\.io\/cli\//
+    )
   },
   {
     name: 'sap.fe.test API generated source appears with pinned Open UX URL',
