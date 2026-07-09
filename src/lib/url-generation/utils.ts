@@ -2,7 +2,7 @@
  * Common utilities for URL generation across different documentation sources
  */
 
-import { readSourceContentSync } from '../sourceContent.js';
+import { chooseSourceAwareUrl, readSourceContentSync } from '../sourceContent.js';
 import matter from 'gray-matter';
 
 export interface FrontmatterData {
@@ -167,8 +167,9 @@ export function formatSearchResult(
       if (config && urlGenerator.generateDocumentationUrl) {
         const sourceContent = readSourceContentSync(libraryId, relFile);
         const docUrl = urlGenerator.generateDocumentationUrl(libraryId, relFile, sourceContent || result.text || '', config);
-        if (docUrl) {
-          urlInfo = `\n   🔗 ${docUrl}`;
+        const preferredUrl = chooseSourceAwareUrl(sourceContent, docUrl, result.path, result.id);
+        if (/^https?:\/\//i.test(preferredUrl)) {
+          urlInfo = `\n   🔗 ${preferredUrl}`;
         }
       }
     } catch (error) {

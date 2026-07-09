@@ -55,6 +55,11 @@ const REQUIRED_SOURCE_DIRS: Array<{ label: string; dir: string }> = [
   { label: "openui5 src (API + samples)",     dir: "sources/openui5/src" },
   { label: "cap docs",                        dir: "sources/cap-docs" },
   { label: "wdi5 docs",                       dir: "sources/wdi5/docs" },
+  { label: "btp-fiori-tools docs",            dir: "sources/btp-fiori-tools/docs" },
+  { label: "fiori-tools-samples root",        dir: "sources/fiori-tools-samples" },
+  { label: "fiori-tools OPA tutorial",        dir: "sources/sap-tutorials/tutorials/fiori-tools-mockserver-opa-testing" },
+  { label: "open-ux-tools create README",     dir: "sources/open-ux-tools/packages/create" },
+  { label: "open-ux-tools fiori data_local",  dir: "sources/open-ux-tools/packages/fiori-docs-embeddings/data_local" },
   { label: "ui5-tooling docs",                dir: "sources/ui5-tooling/docs" },
   { label: "cloud-mta-build-tool docs",       dir: "sources/cloud-mta-build-tool/docs/docs" },
   { label: "ui5-webcomponents docs",          dir: "sources/ui5-webcomponents/docs" },
@@ -115,6 +120,21 @@ const EXCLUSION_CHECKS: ExclusionCheck[] = [
     sparseDirs: ["docs"],
     // sapui5-docs root has: viewer/ scripts/ plus docs/
     excludedDirs: ["viewer", "scripts"],
+  },
+  {
+    submodule: "sources/btp-fiori-tools",
+    sparseDirs: ["docs"],
+    excludedDirs: [],
+  },
+  {
+    submodule: "sources/sap-tutorials",
+    sparseDirs: ["tutorials/fiori-tools-mockserver-opa-testing"],
+    excludedDirs: ["tutorials/abap-environment-trial-onboarding", "tutorials/hana-cloud-mission-trial-2"],
+  },
+  {
+    submodule: "sources/open-ux-tools",
+    sparseDirs: ["packages/create", "packages/fiori-docs-embeddings/data_local"],
+    excludedDirs: ["packages/adp-tooling", "packages/axios-extension"],
   },
   {
     submodule: "sources/cloud-sdk",

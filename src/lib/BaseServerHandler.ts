@@ -55,7 +55,7 @@ import { CONFIG } from "./config.js";
 import { loadMetadata, getDocUrlConfig } from "./metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./url-generation/index.js";
 import { extractLibraryIdFromPath } from "./url-generation/utils.js";
-import { extractSourceUrlFromText, readSourceContentSync } from "./sourceContent.js";
+import { chooseSourceAwareUrl, extractSourceUrlFromText, readSourceContentSync } from "./sourceContent.js";
 import { isToolEnabled, getVariantName } from "./variant.js";
 import { searchDiscoveryCenter, getDiscoveryCenterServiceDetails } from "./discoveryCenter/index.js";
 
@@ -120,22 +120,6 @@ function createEmptySearchResponse(message: string, requestId?: string, extra: R
     requestId: requestId || 'unknown',
     ...extra
   });
-}
-
-function isAbsoluteHttpUrl(url?: string): boolean {
-  return !!url && /^https?:\/\//i.test(url);
-}
-
-function chooseSearchResultUrl(docUrl: string | null, path: string | undefined, id: string): string {
-  if (isAbsoluteHttpUrl(docUrl || undefined)) {
-    return docUrl!;
-  }
-
-  if (isAbsoluteHttpUrl(path)) {
-    return path!;
-  }
-
-  return `#${id}`;
 }
 
 /**
@@ -1269,7 +1253,7 @@ RETURNS (JSON):
               // ChatGPT-required format: id, title, url
               id: r.id,
               title: r.text.split('\n')[0] || r.id,
-              url: chooseSearchResultUrl(docUrl, r.path, r.id),
+              url: chooseSourceAwareUrl(sourceContent, docUrl, r.path, r.id),
               // Additional fields
               library_id: libraryId,
               topic: topic,

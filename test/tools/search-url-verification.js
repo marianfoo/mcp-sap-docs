@@ -51,6 +51,87 @@ function isAllowedDocumentationUrl(url) {
   }
 }
 
+async function validateSourceFilteredSearch(sourceId, query) {
+  const { search } = await import('../../dist/src/lib/search.js');
+  const results = await search(query, {
+    k: 8,
+    includeOnline: false,
+    sources: [sourceId]
+  });
+
+  if (!results.length) {
+    return {
+      passed: false,
+      message: `No source-filtered results for ${sourceId} using query "${query}"`
+    };
+  }
+
+  const invalid = results.filter(result => !String(result.id || '').startsWith(`/${sourceId}/`));
+  if (invalid.length) {
+    return {
+      passed: false,
+      message: `Source filter ${sourceId} returned non-matching IDs: ${invalid.map(result => result.id).join(', ')}`
+    };
+  }
+
+  return { passed: true };
+}
+
+async function validateSourceFilteredUrl(sourceId, query, expectedUrlPattern) {
+  const { search } = await import('../../dist/src/lib/search.js');
+  const { getDocUrlConfig } = await import('../../dist/src/lib/metadata.js');
+  const { generateDocumentationUrl, formatSearchResult } = await import('../../dist/src/lib/url-generation/index.js');
+
+  const results = await search(query, {
+    k: 8,
+    includeOnline: false,
+    sources: [sourceId]
+  });
+
+  if (!results.length) {
+    return {
+      passed: false,
+      message: `No source-filtered results for ${sourceId} using query "${query}"`
+    };
+  }
+
+  const formatted = results
+    .map(result => formatSearchResult(result, 200, { generateDocumentationUrl, getDocUrlConfig }))
+    .join('\n');
+  const urls = extractUrls(formatted);
+  const expectedPattern = expectedUrlPattern instanceof RegExp ? expectedUrlPattern : new RegExp(expectedUrlPattern);
+
+  if (!urls.some(url => expectedPattern.test(url))) {
+    return {
+      passed: false,
+      message: `Expected URL pattern ${expectedPattern} for ${sourceId}. URLs: ${urls.join(', ')}`
+    };
+  }
+
+  return { passed: true };
+}
+
+async function validateVisibleSearchResult({ docsSearch, query, expectedSource, expectedUrlPattern }) {
+  const text = await docsSearch(query);
+  if (!text.includes(`/${expectedSource}/`)) {
+    return {
+      passed: false,
+      message: `Expected /${expectedSource}/ to appear in results for "${query}".`
+    };
+  }
+
+  const urls = extractUrls(text);
+  const expectedPattern = expectedUrlPattern instanceof RegExp ? expectedUrlPattern : new RegExp(expectedUrlPattern);
+  if (!urls.some(url => expectedPattern.test(url))) {
+    return {
+      passed: false,
+      message: `Expected URL pattern ${expectedPattern} in results for "${query}". URLs: ${urls.join(', ')}`
+    };
+  }
+
+  return { passed: true };
+}
+
 export default [
   {
     name: 'CAP CDS - Should include documentation URL',
@@ -90,12 +171,82 @@ export default [
   },
   {
     name: 'UI5 Tooling - Should include documentation URL',
-    tool: 'search',
-    query: 'ui5 tooling build',
-    skipIfNoResults: true,
-    expectIncludes: ['/ui5-tooling/'],
-    expectContains: ['🔗'],
-    expectUrlPattern: 'https://ui5.github.io/cli'
+    validate: () => validateSourceFilteredUrl(
+      'ui5-tooling',
+      'ui5 tooling build',
+      /^https:\/\/ui5\.github\.io\/cli\//
+    )
+  },
+  {
+    name: 'sap.fe.test API generated source appears with pinned Open UX URL',
+    validate: ({ docsSearch }) => validateVisibleSearchResult({
+      docsSearch,
+      query: 'sap.fe.test.api.DialogActions iConfirm iCancel',
+      expectedSource: 'sap-fe-test-api',
+      expectedUrlPattern: /^https:\/\/github\.com\/SAP\/open-ux-tools\/blob\/[a-f0-9]{40}\/packages\/fiori-docs-embeddings\/data_local\/sap_fe_test_api\.md#L\d+-L\d+/
+    })
+  },
+  {
+    name: 'Fiori Development Portal generated source appears with pinned Open UX URL',
+    validate: ({ docsSearch }) => validateVisibleSearchResult({
+      docsSearch,
+      query: 'Upload Table MediaResource Attachments stream upload fiori elements',
+      expectedSource: 'fiori-development-portal',
+      expectedUrlPattern: /^https:\/\/github\.com\/SAP\/open-ux-tools\/blob\/[a-f0-9]{40}\/packages\/fiori-docs-embeddings\/data_local\/fiori_development_portal\.md#L\d+-L\d+/
+    })
+  },
+  {
+    name: 'Fiori Tools deployment docs appear with GitHub URL',
+    validate: ({ docsSearch }) => validateVisibleSearchResult({
+      docsSearch,
+      query: 'deployment configuration ui5-deploy yaml fiori tools',
+      expectedSource: 'btp-fiori-tools',
+      expectedUrlPattern: /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//
+    })
+  },
+  {
+    name: 'ux-ui5-tooling generated source appears with pinned Open UX URL',
+    validate: ({ docsSearch }) => validateVisibleSearchResult({
+      docsSearch,
+      query: 'fiori-tools-appreload middleware ui5 yaml',
+      expectedSource: 'ux-ui5-tooling',
+      expectedUrlPattern: /^https:\/\/github\.com\/SAP\/open-ux-tools\/blob\/[a-f0-9]{40}\/packages\/fiori-docs-embeddings\/data_local\/ux-ui5-tooling-README\.md#L\d+-L\d+/
+    })
+  },
+  {
+    name: 'Fiori Tools OPA guide appears with tutorial GitHub URL',
+    validate: ({ docsSearch }) => validateVisibleSearchResult({
+      docsSearch,
+      query: 'Write OPA Tests for an SAP Fiori Elements for OData V4 Application',
+      expectedSource: 'fiori-tools-opa-guide',
+      expectedUrlPattern: /^https:\/\/github\.com\/sap-tutorials\/Tutorials\/blob\/master\/tutorials\/fiori-tools-mockserver-opa-testing\//
+    })
+  },
+  {
+    name: 'Each new source returns at least one source-filtered result',
+    async validate() {
+      const checks = [
+        ['btp-fiori-tools', 'deployment configuration'],
+        ['fiori-tools-samples', 'ui5-deploy yaml'],
+        ['fiori-tools-opa-guide', 'Write OPA Tests for an SAP Fiori Elements'],
+        ['sap-ux-create', 'sap-ux create CLI Reference'],
+        ['fiori-development-portal', 'Upload Table MediaResource Attachments'],
+        ['sap-fe-test-api', 'sap.fe.test.api.DialogActions'],
+        ['fiori-tools-suite', 'Commands in SAP Fiori Tools Command Palette'],
+        ['fiori-opa5-docu', 'opaTest MUST have at least one Then assertion'],
+        ['fiori-extension-instructions', 'Custom Column Link SimpleForm bindElement'],
+        ['ux-ui5-tooling', 'fiori-tools-appreload middleware']
+      ];
+
+      for (const [sourceId, query] of checks) {
+        const result = await validateSourceFilteredSearch(sourceId, query);
+        if (!result.passed) {
+          return result;
+        }
+      }
+
+      return { passed: true };
+    }
   },
   {
     name: 'Search results should have consistent format with excerpts',

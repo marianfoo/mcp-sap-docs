@@ -2,9 +2,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Enable TypeScript support
+    // TypeScript is checked explicitly via npm run build:tsc before Vitest in
+    // package scripts. Keeping Vitest typecheck enabled starts a second checker
+    // process and can leave CI waiting after tests have already passed.
     typecheck: {
-      enabled: true
+      enabled: false
     },
     // Test environment
     environment: 'node',
@@ -22,7 +24,7 @@ export default defineConfig({
     // Test timeout
     testTimeout: 10000,
     // Reporter
-    reporter: ['verbose', 'json'],
+    reporter: ['verbose'],
     // Coverage (optional)
     coverage: {
       provider: 'v8',

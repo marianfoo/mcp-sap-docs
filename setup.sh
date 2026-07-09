@@ -96,6 +96,9 @@ get_sparse_paths() {
     sources/sapui5-docs)                 printf 'docs' ;;
     sources/openui5)                     printf 'src' ;;
     sources/wdi5)                        printf 'docs' ;;
+    sources/btp-fiori-tools)             printf 'docs' ;;
+    sources/sap-tutorials)               printf 'tutorials/fiori-tools-mockserver-opa-testing' ;;
+    sources/open-ux-tools)               printf 'packages/create packages/fiori-docs-embeddings/data_local' ;;
     sources/ui5-tooling)                 printf 'docs' ;;
     sources/cloud-mta-build-tool)        printf 'docs' ;;
     sources/ui5-webcomponents)           printf 'docs' ;;

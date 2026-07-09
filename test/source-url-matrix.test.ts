@@ -14,6 +14,9 @@ type UrlCase = {
 const fm = (id: string, title = 'Title') => `---\nid: ${id}\ntitle: ${title}\n---\n# ${title}`;
 const loio = (id: string, title = 'Title') => `<!-- loio${id} -->\n\n# ${title}`;
 const copyLoio = (id: string, title = 'Title') => `<!-- copy${id} -->\n\n# ${title}`;
+const openUxSha = '0123456789abcdef0123456789abcdef01234567';
+const openUxLineUrl = (file: string, start: number, end: number) =>
+  `https://github.com/SAP/open-ux-tools/blob/${openUxSha}/packages/fiori-docs-embeddings/data_local/${file}#L${start}-L${end}`;
 
 const sourceUrlCases: UrlCase[] = [
   // SAPUI5
@@ -282,6 +285,190 @@ const sourceUrlCases: UrlCase[] = [
     relFile: 'configuration.md',
     content: '# Configuration',
     expectedUrl: 'https://ui5-community.github.io/wdi5/#/configuration'
+  },
+
+  // SAP Fiori Tools direct sources
+  {
+    libraryId: '/btp-fiori-tools',
+    relFile: 'Deploying-an-Application/deployment-configuration-1c85927.md',
+    content: '# Deployment Configuration',
+    expectedUrl: 'https://github.com/SAP-docs/btp-fiori-tools/blob/main/docs/Deploying-an-Application/deployment-configuration-1c85927.md#deployment-configuration'
+  },
+  {
+    libraryId: '/btp-fiori-tools',
+    relFile: 'Previewing-an-Application/use-custom-middlewares-dce5315.md',
+    content: '# Use Custom Middlewares',
+    expectedUrl: 'https://github.com/SAP-docs/btp-fiori-tools/blob/main/docs/Previewing-an-Application/use-custom-middlewares-dce5315.md#use-custom-middlewares'
+  },
+  {
+    libraryId: '/btp-fiori-tools',
+    relFile: 'Generating-an-Application/generating-an-application-db44d45.md',
+    content: '# Generating an Application',
+    expectedUrl: 'https://github.com/SAP-docs/btp-fiori-tools/blob/main/docs/Generating-an-Application/generating-an-application-db44d45.md#generating-an-application'
+  },
+  {
+    libraryId: '/fiori-tools-samples',
+    relFile: 'README.md',
+    content: '# SAP Fiori tools Samples',
+    expectedUrl: 'https://github.com/SAP-samples/fiori-tools-samples/blob/main/README.md#sap-fiori-tools-samples'
+  },
+  {
+    libraryId: '/fiori-tools-samples',
+    relFile: 'V4/apps/travel/ui5-deploy.yaml',
+    content: 'builder:\n  customTasks: []\n',
+    expectedUrl: 'https://github.com/SAP-samples/fiori-tools-samples/blob/main/V4/apps/travel/ui5-deploy.yaml?plain=1'
+  },
+  {
+    libraryId: '/fiori-tools-samples',
+    relFile: 'V4/apps/travel/webapp/manifest.json',
+    content: '{"sap.app":{"id":"travel"}}',
+    expectedUrl: 'https://github.com/SAP-samples/fiori-tools-samples/blob/main/V4/apps/travel/webapp/manifest.json?plain=1'
+  },
+  {
+    libraryId: '/fiori-tools-opa-guide',
+    relFile: 'fiori-tools-mockserver-opa-testing.md',
+    content: '# Write OPA Tests for an SAP Fiori Elements for OData V4 Application',
+    expectedUrl: 'https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/fiori-tools-mockserver-opa-testing/fiori-tools-mockserver-opa-testing.md#write-opa-tests-for-an-sap-fiori-elements-for-odata-v4-application'
+  },
+  {
+    libraryId: '/fiori-tools-opa-guide',
+    relFile: 'fiori-tools-mockserver-opa-testing.md',
+    content: '## Start the Mock Server',
+    expectedUrl: 'https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/fiori-tools-mockserver-opa-testing/fiori-tools-mockserver-opa-testing.md#start-the-mock-server'
+  },
+  {
+    libraryId: '/fiori-tools-opa-guide',
+    relFile: 'fiori-tools-mockserver-opa-testing.md',
+    content: '## Add an OPA Test',
+    expectedUrl: 'https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/fiori-tools-mockserver-opa-testing/fiori-tools-mockserver-opa-testing.md#add-an-opa-test'
+  },
+  {
+    libraryId: '/sap-ux-create',
+    relFile: 'README.md',
+    content: '# @sap-ux/create CLI Reference',
+    expectedUrl: 'https://github.com/SAP/open-ux-tools/blob/main/packages/create/README.md#sap-uxcreate-cli-reference'
+  },
+  {
+    libraryId: '/sap-ux-create',
+    relFile: 'README.md',
+    content: '## Commands',
+    expectedUrl: 'https://github.com/SAP/open-ux-tools/blob/main/packages/create/README.md#commands'
+  },
+  {
+    libraryId: '/sap-ux-create',
+    relFile: 'README.md',
+    content: '## Usage',
+    expectedUrl: 'https://github.com/SAP/open-ux-tools/blob/main/packages/create/README.md#usage'
+  },
+
+  // Open UX generated sources prefer embedded provenance URLs
+  {
+    libraryId: '/fiori-development-portal',
+    relFile: '001-upload-table.md',
+    content: `# Upload Table\n\n**URL:** ${openUxLineUrl('fiori_development_portal.md', 3, 64)}`,
+    expectedUrl: openUxLineUrl('fiori_development_portal.md', 3, 64)
+  },
+  {
+    libraryId: '/fiori-development-portal',
+    relFile: '002-analytical-chart.md',
+    content: `# Analytical chart\n\n**URL:** ${openUxLineUrl('fiori_development_portal_extension.md', 3, 269)}`,
+    expectedUrl: openUxLineUrl('fiori_development_portal_extension.md', 3, 269)
+  },
+  {
+    libraryId: '/fiori-development-portal',
+    relFile: '003-building-block.md',
+    content: `# Building Block\n\n**URL:** ${openUxLineUrl('fiori_development_portal.md', 100, 140)}`,
+    expectedUrl: openUxLineUrl('fiori_development_portal.md', 100, 140)
+  },
+  {
+    libraryId: '/sap-fe-test-api',
+    relFile: '001-dialog-actions.md',
+    content: `# sap.fe.test.api.DialogActions\n\n**URL:** ${openUxLineUrl('sap_fe_test_api.md', 3, 87)}`,
+    expectedUrl: openUxLineUrl('sap_fe_test_api.md', 3, 87)
+  },
+  {
+    libraryId: '/sap-fe-test-api',
+    relFile: '002-list-report-actions.md',
+    content: `# sap.fe.test.api.ListReportActions\n\n**URL:** ${openUxLineUrl('sap_fe_test_api.md', 88, 160)}`,
+    expectedUrl: openUxLineUrl('sap_fe_test_api.md', 88, 160)
+  },
+  {
+    libraryId: '/sap-fe-test-api',
+    relFile: '003-type-definitions.md',
+    content: `# sap.fe.test.api Type Definitions\n\n**URL:** ${openUxLineUrl('sap_fe_test_api.md', 2400, 2500)}`,
+    expectedUrl: openUxLineUrl('sap_fe_test_api.md', 2400, 2500)
+  },
+  {
+    libraryId: '/fiori-tools-suite',
+    relFile: '001-commands.md',
+    content: `# Commands in SAP Fiori Tools\n\n**URL:** ${openUxLineUrl('tools-suite.md', 3, 102)}`,
+    expectedUrl: openUxLineUrl('tools-suite.md', 3, 102)
+  },
+  {
+    libraryId: '/fiori-tools-suite',
+    relFile: '002-application-info.md',
+    content: `# Commands in Application Info page\n\n**URL:** ${openUxLineUrl('tools-suite.md', 10, 50)}`,
+    expectedUrl: openUxLineUrl('tools-suite.md', 10, 50)
+  },
+  {
+    libraryId: '/fiori-tools-suite',
+    relFile: '003-command-palette.md',
+    content: `# Commands in Command Palette\n\n**URL:** ${openUxLineUrl('tools-suite.md', 51, 102)}`,
+    expectedUrl: openUxLineUrl('tools-suite.md', 51, 102)
+  },
+  {
+    libraryId: '/fiori-opa5-docu',
+    relFile: '001-opa5.md',
+    content: `# OPA5 Integration Tests\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 2, 1012)}`,
+    expectedUrl: openUxLineUrl('opa5_docu.md', 2, 1012)
+  },
+  {
+    libraryId: '/fiori-opa5-docu',
+    relFile: '002-page-objects.md',
+    content: `# Page Object Configuration\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 20, 80)}`,
+    expectedUrl: openUxLineUrl('opa5_docu.md', 20, 80)
+  },
+  {
+    libraryId: '/fiori-opa5-docu',
+    relFile: '003-api-usage.md',
+    content: `# API Usage\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 8, 18)}`,
+    expectedUrl: openUxLineUrl('opa5_docu.md', 8, 18)
+  },
+  {
+    libraryId: '/fiori-extension-instructions',
+    relFile: '001-custom-column-link.md',
+    content: `# Custom Column Link\n\n**URL:** ${openUxLineUrl('fiori_extension_instructions.md', 3, 300)}`,
+    expectedUrl: openUxLineUrl('fiori_extension_instructions.md', 3, 300)
+  },
+  {
+    libraryId: '/fiori-extension-instructions',
+    relFile: '002-controller-extension.md',
+    content: `# Controller Extension\n\n**URL:** ${openUxLineUrl('fiori_extension_instructions.md', 301, 700)}`,
+    expectedUrl: openUxLineUrl('fiori_extension_instructions.md', 301, 700)
+  },
+  {
+    libraryId: '/fiori-extension-instructions',
+    relFile: '003-fragment-dialog.md',
+    content: `# Fragment Dialog\n\n**URL:** ${openUxLineUrl('fiori_extension_instructions.md', 701, 1000)}`,
+    expectedUrl: openUxLineUrl('fiori_extension_instructions.md', 701, 1000)
+  },
+  {
+    libraryId: '/ux-ui5-tooling',
+    relFile: '001-readme.md',
+    content: `# @sap/ux-ui5-tooling\n\n**URL:** ${openUxLineUrl('ux-ui5-tooling-README.md', 2, 14)}`,
+    expectedUrl: openUxLineUrl('ux-ui5-tooling-README.md', 2, 14)
+  },
+  {
+    libraryId: '/ux-ui5-tooling',
+    relFile: '002-application-reload.md',
+    content: `# Application Reload\n\n**URL:** ${openUxLineUrl('ux-ui5-tooling-README.md', 20, 90)}`,
+    expectedUrl: openUxLineUrl('ux-ui5-tooling-README.md', 20, 90)
+  },
+  {
+    libraryId: '/ux-ui5-tooling',
+    relFile: '003-proxy.md',
+    content: `# Proxy Middleware\n\n**URL:** ${openUxLineUrl('ux-ui5-tooling-README.md', 91, 180)}`,
+    expectedUrl: openUxLineUrl('ux-ui5-tooling-README.md', 91, 180)
   },
 
   // UI5 Tooling

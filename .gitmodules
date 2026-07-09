@@ -14,6 +14,22 @@
 	path = sources/wdi5
 	url = https://github.com/ui5-community/wdi5.git
 	branch = main
+[submodule "sources/btp-fiori-tools"]
+	path = sources/btp-fiori-tools
+	url = https://github.com/SAP-docs/btp-fiori-tools.git
+	branch = main
+[submodule "sources/fiori-tools-samples"]
+	path = sources/fiori-tools-samples
+	url = https://github.com/SAP-samples/fiori-tools-samples.git
+	branch = main
+[submodule "sources/sap-tutorials"]
+	path = sources/sap-tutorials
+	url = https://github.com/sap-tutorials/Tutorials.git
+	branch = master
+[submodule "sources/open-ux-tools"]
+	path = sources/open-ux-tools
+	url = https://github.com/SAP/open-ux-tools.git
+	branch = main
 [submodule "sources/ui5-tooling"]
 	path = sources/ui5-tooling
 	url = https://github.com/SAP/ui5-tooling.git
