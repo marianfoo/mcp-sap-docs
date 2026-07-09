@@ -43,15 +43,26 @@ export async function stopServer(child) {
   await sleep(150);
 }
 
-export async function docsSearch(query) {
+async function postMcpSearch(query, searchOptions = {}) {
   const res = await fetch(`${BASE_URL}/mcp`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ role: 'user', content: String(query) })
+    body: JSON.stringify({
+      role: 'user',
+      content: String(query),
+      ...(Object.keys(searchOptions).length > 0 && { options: searchOptions })
+    })
   });
-  if (!res.ok) throw new Error(colorize(`http /mcp failed: ${res.status}`, 'red'));
+  if (!res.ok) throw new Error(colorize('http /mcp failed: ' + res.status, 'red'));
   const payload = await res.json();
   return payload?.content || '';
 }
 
+export async function search(query, options = {}) {
+  return postMcpSearch(query, { includeOnline: false, ...options });
+}
+
+export async function docsSearch(query, searchOptions = {}) {
+  return postMcpSearch(query, searchOptions);
+}
 

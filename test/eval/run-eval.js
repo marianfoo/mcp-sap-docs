@@ -22,12 +22,13 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
-import { startServerHttp, waitForStatus, stopServer, docsSearch } from "../_utils/httpClient.js";
+import { startServerHttp, waitForStatus, stopServer, search } from "../_utils/httpClient.js";
 import EVAL_QUERIES from "./eval-queries.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASELINE_PATH = join(__dirname, "baseline.json");
 const K_VALUES = [1, 3, 5, 10];
+const EVAL_K = 30; // Explicit fixed k for consistent ranking depth across baseline and live runs
 
 const c = {
   reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
@@ -140,12 +141,12 @@ async function main() {
     await waitForStatus();
     const rows = [];
     for (const q of EVAL_QUERIES) {
-      const text = await docsSearch(q.query);
+      const text = await search(q.query, { includeOnline: false, k: EVAL_K });
       const rankedIds = parseRankedIds(text);
       const s = scoreQuery(rankedIds, q.golds);
       rows.push({ id: q.id, category: q.category, query: q.query, golds: q.golds, ...s });
     }
-    report = { gitCommit: gitCommit(), agg: aggregate(rows), rows };
+    report = { gitCommit: gitCommit(), agg: aggregate(rows), rows, k: EVAL_K };
   } finally {
     await stopServer(server);
   }
@@ -159,6 +160,14 @@ async function main() {
     ? JSON.parse(readFileSync(BASELINE_PATH, "utf8"))
     : null;
   const prevById = new Map((prev?.rows ?? []).map((r) => [r.id, r]));
+
+  // Warn if baseline was created with different k
+  if (prev && prev.k !== EVAL_K) {
+    console.warn(paint(
+      `⚠️ WARNING: Baseline was created with k=${prev.k ?? "unknown"}, but running with k=${EVAL_K}. Results may not be directly comparable.`,
+      "yellow"
+    ));
+  }
 
   // ── Per-query table ──
   console.log(paint(`\nRetrieval eval — ${report.rows.length} queries @ ${report.gitCommit}`, "bold"));
@@ -188,7 +197,7 @@ async function main() {
   for (const k of K_VALUES) {
     console.log(`  hit@${String(k).padEnd(2)}           ${paint(fmtPct(a.hitAtK[k]), "cyan")}    ${fmtDelta(a.hitAtK[k], pa?.hitAtK?.[k])}`);
   }
-  console.log(`  misses (top-50)  ${paint(String(a.misses), a.misses ? "yellow" : "green")}`);
+  console.log(`  misses (top-${EVAL_K})  ${paint(String(a.misses), a.misses ? "yellow" : "green")}`);
   console.log(paint("─".repeat(78), "dim"));
 
   // ── Significance (paired, only over queries present in both runs) ──

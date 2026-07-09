@@ -86,11 +86,12 @@ function readGitMeta(repoPath: string) {
 }
 
 // Format results to be MCP-tool compatible, keep legacy formatting
-async function handleMCPRequest(content: string) {
+async function handleMCPRequest(content: string, options: any = {}) {
   try {
     // Use simple BM25 search with centralized config
-    const results = await search(content, { 
-      k: CONFIG.RETURN_K 
+    const results = await search(content, {
+      k: CONFIG.RETURN_K,
+      ...options
     });
     
     if (results.length === 0) {
@@ -285,11 +286,11 @@ const server = createServer(async (req, res) => {
     req.on("data", (chunk) => (body += chunk.toString()));
     req.on("end", async () => {
       try {
-        const mcpRequest: { role: string; content: string } = JSON.parse(body);
+        const mcpRequest: { role: string; content: string; options?: any } = JSON.parse(body);
         if (!mcpRequest.content) {
           return json(res, 400, { error: "Missing 'content' field in request body" });
         }
-        const response = await handleMCPRequest(mcpRequest.content);
+        const response = await handleMCPRequest(mcpRequest.content, mcpRequest.options);
         return json(res, 200, response);
       } catch {
         return json(res, 400, { error: "Invalid JSON" });
