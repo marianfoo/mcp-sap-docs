@@ -15,10 +15,10 @@ node test/eval/run-eval.js --json    # machine-readable report on stdout
 The runner starts `dist/src/http-server.js` itself, so it scores the currently
 built `dist/`. Rebuild first if you changed index/embeddings config.
 
-**Seeding your baseline:** `baseline.json` is included as a reference snapshot
-derived from vanilla upstream results (`pairwise-vanilla.json`). Run with
-`--update` after installing to replace it with a live run against your own
-server — numbers will differ depending on which sources you have indexed.
+`baseline.json` is the deterministic offline snapshot for the recorded variant
+and search options (`includeOnline=false`, `k=30`). The runner warns when those
+settings do not match. Use `--update` only when intentionally accepting a new
+baseline after rebuilding the same corpus configuration.
 
 ## What it measures
 

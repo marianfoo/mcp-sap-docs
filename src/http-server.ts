@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join, resolve } from "path";
 import { execSync } from "child_process";
 import { searchLibraries } from "./lib/localDocs.js";
-import { search } from "./lib/search.js";
+import { normalizeUnifiedSearchOptions, search, type UnifiedSearchOptions } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
 import { getDocUrlConfig } from "./lib/metadata.js";
 import { generateDocumentationUrl, formatSearchResult } from "./lib/url-generation/index.js";
@@ -86,13 +86,10 @@ function readGitMeta(repoPath: string) {
 }
 
 // Format results to be MCP-tool compatible, keep legacy formatting
-async function handleMCPRequest(content: string, options: any = {}) {
+async function handleMCPRequest(content: string, options: UnifiedSearchOptions) {
   try {
     // Use simple BM25 search with centralized config
-    const results = await search(content, {
-      k: CONFIG.RETURN_K,
-      ...options
-    });
+    const results = await search(content, options);
     
     if (results.length === 0) {
       return {
@@ -285,16 +282,32 @@ const server = createServer(async (req, res) => {
     let body = "";
     req.on("data", (chunk) => (body += chunk.toString()));
     req.on("end", async () => {
+      let parsed: unknown;
       try {
-        const mcpRequest: { role: string; content: string; options?: any } = JSON.parse(body);
-        if (!mcpRequest.content) {
-          return json(res, 400, { error: "Missing 'content' field in request body" });
-        }
-        const response = await handleMCPRequest(mcpRequest.content, mcpRequest.options);
-        return json(res, 200, response);
+        parsed = JSON.parse(body);
       } catch {
         return json(res, 400, { error: "Invalid JSON" });
       }
+
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+        return json(res, 400, { error: "Request body must be a JSON object" });
+      }
+
+      const mcpRequest = parsed as { content?: unknown; options?: unknown };
+      if (typeof mcpRequest.content !== "string" || mcpRequest.content.trim().length === 0) {
+        return json(res, 400, { error: "Missing 'content' field in request body" });
+      }
+
+      let options: UnifiedSearchOptions;
+      try {
+        options = normalizeUnifiedSearchOptions(mcpRequest.options);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "invalid options";
+        return json(res, 400, { error: `Invalid 'options': ${message}` });
+      }
+
+      const response = await handleMCPRequest(mcpRequest.content, options);
+      return json(res, 200, response);
     });
     return;
   }

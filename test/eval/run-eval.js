@@ -29,6 +29,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASELINE_PATH = join(__dirname, "baseline.json");
 const K_VALUES = [1, 3, 5, 10];
 const EVAL_K = 30; // Explicit fixed k for consistent ranking depth across baseline and live runs
+const EVAL_SEARCH_OPTIONS = Object.freeze({ includeOnline: false, k: EVAL_K });
+
+function evalVariant() {
+  const fromEnv = process.env.MCP_VARIANT?.trim();
+  if (fromEnv) return fromEnv;
+  try {
+    return readFileSync(join(__dirname, "..", "..", ".mcp-variant"), "utf8").trim() || "sap-docs";
+  } catch {
+    return "sap-docs";
+  }
+}
 
 const c = {
   reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
@@ -141,12 +152,19 @@ async function main() {
     await waitForStatus();
     const rows = [];
     for (const q of EVAL_QUERIES) {
-      const text = await search(q.query, { includeOnline: false, k: EVAL_K });
+      const text = await search(q.query, EVAL_SEARCH_OPTIONS);
       const rankedIds = parseRankedIds(text);
       const s = scoreQuery(rankedIds, q.golds);
       rows.push({ id: q.id, category: q.category, query: q.query, golds: q.golds, ...s });
     }
-    report = { gitCommit: gitCommit(), agg: aggregate(rows), rows, k: EVAL_K };
+    report = {
+      gitCommit: gitCommit(),
+      variant: evalVariant(),
+      searchOptions: EVAL_SEARCH_OPTIONS,
+      agg: aggregate(rows),
+      rows,
+      k: EVAL_K
+    };
   } finally {
     await stopServer(server);
   }
@@ -161,10 +179,13 @@ async function main() {
     : null;
   const prevById = new Map((prev?.rows ?? []).map((r) => [r.id, r]));
 
-  // Warn if baseline was created with different k
-  if (prev && prev.k !== EVAL_K) {
+  const baselineOptionsMatch = prev
+    && prev.variant === report.variant
+    && prev.searchOptions?.includeOnline === EVAL_SEARCH_OPTIONS.includeOnline
+    && prev.searchOptions?.k === EVAL_SEARCH_OPTIONS.k;
+  if (prev && !baselineOptionsMatch) {
     console.warn(paint(
-      `⚠️ WARNING: Baseline was created with k=${prev.k ?? "unknown"}, but running with k=${EVAL_K}. Results may not be directly comparable.`,
+      `⚠️ WARNING: Baseline profile (${prev.variant ?? "unknown"}, ${JSON.stringify(prev.searchOptions ?? { k: prev.k })}) does not match this run (${report.variant}, ${JSON.stringify(EVAL_SEARCH_OPTIONS)}). Results are not directly comparable.`,
       "yellow"
     ));
   }

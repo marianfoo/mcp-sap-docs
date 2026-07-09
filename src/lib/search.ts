@@ -58,6 +58,88 @@ export interface UnifiedSearchOptions {
   version?: string;
 }
 
+const MAX_SEARCH_RESULTS = 100;
+const MAX_SOURCE_FILTERS = 100;
+const MAX_OPTION_STRING_LENGTH = 200;
+const SEARCH_OPTION_KEYS = new Set<keyof UnifiedSearchOptions>([
+  'k',
+  'includeOnline',
+  'includeSamples',
+  'abapFlavor',
+  'product',
+  'sources',
+  'version'
+]);
+
+/**
+ * Validate untrusted search options before they reach SQLite or online search adapters.
+ * Internal MCP calls are schema-validated; the legacy HTTP endpoint is not.
+ */
+export function normalizeUnifiedSearchOptions(input: unknown): UnifiedSearchOptions {
+  if (input === undefined) {
+    return { k: Math.min(Math.max(CONFIG.RETURN_K, 1), MAX_SEARCH_RESULTS) };
+  }
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    throw new TypeError('options must be an object');
+  }
+
+  const raw = input as Record<string, unknown>;
+  const unsupported = Object.keys(raw).filter(
+    key => !SEARCH_OPTION_KEYS.has(key as keyof UnifiedSearchOptions)
+  );
+  if (unsupported.length > 0) {
+    throw new TypeError(`unsupported option${unsupported.length === 1 ? '' : 's'}: ${unsupported.join(', ')}`);
+  }
+
+  const requestedK = raw.k === undefined ? CONFIG.RETURN_K : raw.k;
+  if (typeof requestedK !== 'number' || !Number.isFinite(requestedK) || !Number.isInteger(requestedK)) {
+    throw new TypeError('k must be a finite integer');
+  }
+
+  const options: UnifiedSearchOptions = {
+    k: Math.min(Math.max(requestedK, 1), MAX_SEARCH_RESULTS)
+  };
+
+  for (const key of ['includeOnline', 'includeSamples'] as const) {
+    const value = raw[key];
+    if (value !== undefined) {
+      if (typeof value !== 'boolean') {
+        throw new TypeError(`${key} must be a boolean`);
+      }
+      options[key] = value;
+    }
+  }
+
+  if (raw.abapFlavor !== undefined) {
+    if (!['standard', 'cloud', 'auto'].includes(String(raw.abapFlavor))) {
+      throw new TypeError('abapFlavor must be standard, cloud, or auto');
+    }
+    options.abapFlavor = raw.abapFlavor as UnifiedSearchOptions['abapFlavor'];
+  }
+
+  for (const key of ['product', 'version'] as const) {
+    const value = raw[key];
+    if (value !== undefined) {
+      if (typeof value !== 'string' || value.length > MAX_OPTION_STRING_LENGTH) {
+        throw new TypeError(`${key} must be a string of at most ${MAX_OPTION_STRING_LENGTH} characters`);
+      }
+      options[key] = value;
+    }
+  }
+
+  if (raw.sources !== undefined) {
+    if (!Array.isArray(raw.sources) || raw.sources.length > MAX_SOURCE_FILTERS) {
+      throw new TypeError(`sources must be an array with at most ${MAX_SOURCE_FILTERS} entries`);
+    }
+    if (raw.sources.some(source => typeof source !== 'string' || source.length === 0 || source.length > MAX_OPTION_STRING_LENGTH)) {
+      throw new TypeError(`each source must be a non-empty string of at most ${MAX_OPTION_STRING_LENGTH} characters`);
+    }
+    options.sources = raw.sources as string[];
+  }
+
+  return options;
+}
+
 // Timeout constant for online sources (10 seconds)
 const ONLINE_TIMEOUT_MS = CONFIG.SOFTWARE_HEROES_TIMEOUT_MS;
 
