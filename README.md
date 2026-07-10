@@ -319,6 +319,8 @@ npm run build:tsc
 npm run test:url-generation
 npm run test:integration
 npm run test:software-heroes
+npm run test:discovery-center # mocked Discovery Center REST contract tests
+npm run test:discovery-center:live # opt-in live API smoke test
 npm run test:sap-objects       # SAP Released Objects unit tests
 
 # Variant-specific build checks

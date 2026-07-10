@@ -1,6 +1,6 @@
 // SAP Discovery Center search
 
-import { callFunctionImport, searchCache } from "./api.js";
+import { callDiscoveryCenterApi, searchCache } from "./api.js";
 import type {
   DiscoveryCenterSearchOptions,
   DiscoveryCenterSearchResponse,
@@ -10,7 +10,8 @@ import type {
 
 /**
  * Search SAP BTP services in the Discovery Center catalog.
- * Calls GetSearchedServices and applies optional client-side filters for category and license model.
+ * Calls the Discovery Center REST search and applies optional client-side filters
+ * for category and license model.
  */
 export async function searchDiscoveryCenter(
   options: DiscoveryCenterSearchOptions,
@@ -22,24 +23,31 @@ export async function searchDiscoveryCenter(
   // Fetch more if we need to filter client-side
   const fetchTop = category || licenseModel ? String(Math.min(clampedTop * 3, 50)) : String(clampedTop);
 
-  const raw = (await callFunctionImport(
-    "GetSearchedServices",
+  const raw = await callDiscoveryCenterApi<RawServiceEntity[]>(
+    "/search/services",
     {
-      searchString: query,
+      q: query,
       top: fetchTop,
     },
     searchCache,
-  )) as { d: { results: RawServiceEntity[] } };
+  );
 
-  let results = raw.d.results;
+  if (!Array.isArray(raw)) {
+    throw new Error("Discovery Center API returned an invalid search response");
+  }
+  if (raw.some((service) => !service?.id || !service.name)) {
+    throw new Error("Discovery Center API returned a search result without required fields");
+  }
+
+  let results = raw;
 
   // Client-side filtering (the API doesn't support these as parameters)
   if (category) {
     const lower = category.toLowerCase();
     results = results.filter(
       (s) =>
-        s.Category?.toLowerCase().includes(lower) ||
-        s.AdditionalCategories?.toLowerCase().includes(lower),
+        s.category?.toLowerCase().includes(lower) ||
+        s.additionalCategories?.toLowerCase().includes(lower),
     );
   }
 
@@ -53,11 +61,11 @@ export async function searchDiscoveryCenter(
     };
     const mapped = modelMap[licenseModel] ?? licenseModel;
     results = results.filter((s) => {
-      const models = s.LicenseModelType?.toLowerCase() ?? "";
+      const models = s.licenseModelType?.toLowerCase() ?? "";
       if (licenseModel === "free") {
         return (
           models.includes("trial") ||
-          s.Tags?.toLowerCase().includes("free tier")
+          s.tags?.toLowerCase().includes("free tier")
         );
       }
       return models.includes(mapped);
@@ -74,16 +82,16 @@ export async function searchDiscoveryCenter(
 
 function mapServiceEntity(raw: RawServiceEntity): DiscoveryCenterSearchResult {
   return {
-    id: raw.Id,
-    name: raw.Name,
-    shortName: raw.ShortName,
-    description: raw.ShortDesc,
-    category: raw.Category ?? "",
-    additionalCategories: raw.AdditionalCategories ?? "",
-    licenseModelType: raw.LicenseModelType ?? "",
-    provider: raw.Provider ?? "",
-    tags: raw.Tags ?? "",
-    ribbon: raw.Ribbon ?? "",
-    isDeprecated: raw.IsDeprecatedService ?? false,
+    id: raw.id,
+    name: raw.name,
+    shortName: raw.shortName ?? "",
+    description: raw.shortDesc ?? "",
+    category: raw.category ?? "",
+    additionalCategories: raw.additionalCategories ?? "",
+    licenseModelType: raw.licenseModelType ?? "",
+    provider: raw.provider ?? "",
+    tags: raw.tags ?? "",
+    ribbon: raw.ribbon ?? "",
+    isDeprecated: raw.isDeprecatedService ?? false,
   };
 }

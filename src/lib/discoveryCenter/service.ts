@@ -1,6 +1,6 @@
 // SAP Discovery Center service details with pricing and roadmap
 
-import { callFunctionImport, callEntitySet, searchCache, detailsCache, roadmapCache } from "./api.js";
+import { callDiscoveryCenterApi, searchCache, detailsCache, roadmapCache } from "./api.js";
 import type {
   DiscoveryCenterServiceOptions,
   DiscoveryCenterServiceResponse,
@@ -33,24 +33,32 @@ async function resolveServiceId(nameOrId: string): Promise<string> {
   if (UUID_PATTERN.test(nameOrId)) return nameOrId;
 
   // Search for the service by name
-  const raw = (await callFunctionImport(
-    "GetSearchedServices",
-    { searchString: nameOrId, top: "5" },
+  const raw = await callDiscoveryCenterApi<RawServiceEntity[]>(
+    "/search/services",
+    { q: nameOrId, top: 5 },
     searchCache,
-  )) as { d: { results: RawServiceEntity[] } };
+  );
 
-  const results = raw.d?.results;
-  if (!results || results.length === 0) {
+  if (!Array.isArray(raw)) {
+    throw new Error("Discovery Center API returned an invalid search response");
+  }
+
+  if (raw.length === 0) {
     throw new Error(`No service found matching "${nameOrId}". Use sap_discovery_center_search to find the correct service name or ID.`);
   }
 
   // Prefer exact name match (case-insensitive)
   const lower = nameOrId.toLowerCase();
-  const exact = results.find(
-    (s) => s.Name?.toLowerCase() === lower || s.ShortName?.toLowerCase() === lower,
+  const exact = raw.find(
+    (s) => s.name?.toLowerCase() === lower || s.shortName?.toLowerCase() === lower,
   );
 
-  return exact?.Id ?? results[0].Id;
+  const serviceId = exact?.id ?? raw[0]?.id;
+  if (!serviceId) {
+    throw new Error("Discovery Center API returned a search result without a service ID");
+  }
+
+  return serviceId;
 }
 
 /**
@@ -66,18 +74,15 @@ export async function getDiscoveryCenterServiceDetails(
   const serviceId = await resolveServiceId(options.serviceId);
 
   // Fetch service details
-  const detailsRaw = (await callFunctionImport(
-    "GetServicesDetails",
-    { serviceId, currency },
+  const details = await callDiscoveryCenterApi<RawServiceDetails>(
+    `/services/${encodeURIComponent(serviceId)}`,
+    { currency },
     detailsCache,
-  )) as { d: { GetServicesDetails: string } };
+  );
 
-  const detailsStr = detailsRaw.d.GetServicesDetails;
-  if (!detailsStr) {
+  if (!details?.Id) {
     throw new Error(`Service not found: ${options.serviceId}`);
   }
-
-  const details: RawServiceDetails = JSON.parse(detailsStr);
 
   // Fetch roadmap (if requested)
   let roadmap: ServiceRoadmap | null = null;
@@ -207,7 +212,7 @@ function formatPricingPlan(
           model,
           metric: br.MetricId,
           chargingPeriod: br.ChargingPeriod,
-          pricePerUnit: `${br.PricePerBlock} ${currency}`,
+          pricePerUnit: `${br.PricePerBlock} ${rp.Currency || currency}`,
           blockSize: br.BlockSize,
           includedQuantity: br.IncludedQuantity,
         });
@@ -230,61 +235,58 @@ function formatPricingPlan(
 // ---------------------------------------------------------------------------
 
 async function fetchRoadmap(serviceId: string): Promise<ServiceRoadmap | null> {
-  try {
-    // Step 1: Get the roadmap reference for the service
-    const roadmapRef = (await callFunctionImport(
-      "GetRoadmapForService",
-      { serviceId },
-      roadmapCache,
-    )) as { d: { results: RawServiceRoadmap[] } };
+  // The current UI first resolves the service to a roadmap ID, then fetches
+  // the canonical roadmap resource. Services without a roadmap return [].
+  const refs = await callDiscoveryCenterApi<RawServiceRoadmap[]>(
+    `/roadmaps/by-service/${encodeURIComponent(serviceId)}`,
+    {},
+    roadmapCache,
+  );
 
-    const refs = roadmapRef.d?.results;
-    if (!refs || refs.length === 0) return null;
-
-    const roadmapId = refs[0].Roadmap;
-    if (!roadmapId) return null;
-
-    // Step 2: Fetch the full roadmap with expanded periods, categories, and deliverables
-    const roadmapData = (await callEntitySet(
-      `Roadmaps(${roadmapId})`,
-      {
-        $expand:
-          "RoadmapPeriodDetails/RoadmapPeriodCategoryDetails/RoadmapDeliverableDetails",
-      },
-      roadmapCache,
-    )) as { d: RawRoadmap };
-
-    return formatRoadmap(roadmapData.d);
-  } catch {
-    // Many services have no roadmap; silently return null
-    return null;
+  if (!Array.isArray(refs)) {
+    throw new Error("Discovery Center API returned an invalid roadmap response");
   }
+
+  if (refs.length === 0) return null;
+
+  const roadmapId = refs[0]?.roadmap?.id;
+  if (typeof roadmapId !== "number" || !Number.isFinite(roadmapId)) {
+    throw new Error("Discovery Center API returned a roadmap reference without an ID");
+  }
+
+  const roadmap = await callDiscoveryCenterApi<RawRoadmap>(
+    `/roadmaps/${encodeURIComponent(String(roadmapId))}`,
+    {},
+    roadmapCache,
+  );
+
+  if (!roadmap || !Array.isArray(roadmap.periods)) {
+    throw new Error("Discovery Center API returned an invalid roadmap response");
+  }
+
+  return formatRoadmap(roadmap);
 }
 
 function formatRoadmap(raw: RawRoadmap): ServiceRoadmap | null {
-  if (!raw.RoadmapPeriodDetails?.results?.length) return null;
+  if (!raw.periods?.length) return null;
 
-  const periods: RoadmapPeriod[] = raw.RoadmapPeriodDetails.results.map((period) => {
-    const categories: RoadmapCategory[] = (
-      period.RoadmapPeriodCategoryDetails?.results ?? []
-    ).map((cat) => {
-      const deliverables: RoadmapDeliverable[] = (
-        cat.RoadmapDeliverableDetails?.results ?? []
-      ).map((del) => ({
-        title: del.Title,
-        description: stripHtml(del.Description ?? ""),
-        type: del.Type ?? "",
-        tags: del.Tags ?? "",
+  const periods: RoadmapPeriod[] = raw.periods.map((period) => {
+    const categories: RoadmapCategory[] = (period.categories ?? []).map((cat) => {
+      const deliverables: RoadmapDeliverable[] = (cat.deliverables ?? []).map((del) => ({
+        title: del.title,
+        description: stripHtml(del.description ?? ""),
+        type: del.type ?? "",
+        tags: del.tags ?? "",
       }));
 
       return {
-        category: cat.Title,
+        category: cat.title,
         deliverables,
       };
     });
 
     return {
-      title: period.Title,
+      title: period.title,
       categories,
     };
   });
@@ -300,6 +302,7 @@ function stripHtml(html: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
