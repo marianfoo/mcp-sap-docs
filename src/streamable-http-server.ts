@@ -14,7 +14,7 @@ import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
 
-const VERSION = "0.3.50"; // x-release-please-version
+const VERSION = "0.3.51"; // x-release-please-version
 const variant = getVariantConfig();
 
 
