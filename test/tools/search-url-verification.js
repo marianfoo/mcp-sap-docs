@@ -111,21 +111,30 @@ async function validateSourceFilteredUrl(sourceId, query, expectedUrlPattern) {
   return { passed: true };
 }
 
-async function validateVisibleSearchResult({ docsSearch, query, expectedSource, expectedUrlPattern }) {
+async function validateVisibleSearchResult({
+  docsSearch,
+  query,
+  expectedSource,
+  expectedSources,
+  expectedUrlPattern,
+  expectedUrlPatterns
+}) {
   const text = await docsSearch(query);
-  if (!text.includes(`/${expectedSource}/`)) {
+  const sources = expectedSources || [expectedSource];
+  if (!sources.some(source => text.includes(`/${source}/`))) {
     return {
       passed: false,
-      message: `Expected /${expectedSource}/ to appear in results for "${query}".`
+      message: `Expected one of ${sources.map(source => `/${source}/`).join(', ')} to appear in results for "${query}".`
     };
   }
 
   const urls = extractUrls(text);
-  const expectedPattern = expectedUrlPattern instanceof RegExp ? expectedUrlPattern : new RegExp(expectedUrlPattern);
-  if (!urls.some(url => expectedPattern.test(url))) {
+  const patterns = expectedUrlPatterns || [expectedUrlPattern];
+  const normalizedPatterns = patterns.map(pattern => pattern instanceof RegExp ? pattern : new RegExp(pattern));
+  if (!urls.some(url => normalizedPatterns.some(pattern => pattern.test(url)))) {
     return {
       passed: false,
-      message: `Expected URL pattern ${expectedPattern} in results for "${query}". URLs: ${urls.join(', ')}`
+      message: `Expected one of URL patterns ${normalizedPatterns.join(', ')} in results for "${query}". URLs: ${urls.join(', ')}`
     };
   }
 
@@ -196,12 +205,15 @@ export default [
     })
   },
   {
-    name: 'Fiori Tools deployment docs appear with GitHub URL',
+    name: 'Fiori Tools deployment sources appear with GitHub URL',
     validate: ({ docsSearch }) => validateVisibleSearchResult({
       docsSearch,
       query: 'deployment configuration ui5-deploy yaml fiori tools',
-      expectedSource: 'btp-fiori-tools',
-      expectedUrlPattern: /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//
+      expectedSources: ['btp-fiori-tools', 'fiori-tools-samples'],
+      expectedUrlPatterns: [
+        /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//,
+        /^https:\/\/github\.com\/SAP-samples\/fiori-tools-samples\/blob\/main\//
+      ]
     })
   },
   {

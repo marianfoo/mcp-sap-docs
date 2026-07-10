@@ -1086,7 +1086,7 @@ async function main() {
         
         // Extract individual sections for fine-grained retrieval while retaining the
         // parent document entry below. Existing search/fetch clients rely on stable
-        // whole-document IDs such as /cloud-sdk-js/guides/upgrade-to-version-4.mdx.
+        // whole-document IDs such as /cloud-sdk-js/guides/upgrade-to-version-4.
         if (content.includes('##')) {
           extractMarkdownSections(content, lines, src, rel, docs);
         }
