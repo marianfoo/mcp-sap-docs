@@ -1,22 +1,27 @@
 {
-  "gitCommit": "bd5d738",
+  "gitCommit": "13ba9a3",
+  "variant": "sap-docs",
+  "searchOptions": {
+    "includeOnline": false,
+    "k": 30
+  },
   "agg": {
-    "queries": 19,
-    "mrr": 0.9122807017543861,
+    "queries": 44,
+    "mrr": 0.4455613830613831,
     "hitAtK": {
-      "1": 0.8421052631578947,
-      "3": 1,
-      "5": 1,
-      "10": 1
+      "1": 0.4090909090909091,
+      "3": 0.45454545454545453,
+      "5": 0.5,
+      "10": 0.5227272727272727
     },
-    "misses": 0
+    "misses": 18
   },
   "rows": [
     {
       "id": "abap-regex-pcre",
       "category": "abap-regex",
       "query": "FIND PCRE regex with unicode character property class",
-      "expected": [
+      "golds": [
         "ABENREGEX_PCRE_SYNTAX"
       ],
       "firstRelevantRank": 1,
@@ -27,13 +32,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-gzip",
       "category": "abap-api",
       "query": "compress binary data with CL_ABAP_GZIP",
-      "expected": [
+      "golds": [
         "ABENCL_ABAP_GZIP"
       ],
       "firstRelevantRank": 1,
@@ -44,13 +49,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-string-templates",
       "category": "abap-strings",
       "query": "string template formatting options in ABAP",
-      "expected": [
+      "golds": [
         "ABENSTRING_TEMPLATES_PREDEF_FORMAT",
         "ABENSTRING_TEMPLATES"
       ],
@@ -62,13 +67,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-authority-check",
       "category": "abap-security",
       "query": "perform an authority check in ABAP",
-      "expected": [
+      "golds": [
         "ABAPAUTHORITY-CHECK",
         "ABENBC_AUTHORITY_CHECK"
       ],
@@ -80,13 +85,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-for-all-entries",
       "category": "abap-sql",
       "query": "SELECT FOR ALL ENTRIES performance",
-      "expected": [
+      "golds": [
         "ABENWHERE_ALL_ENTRIES",
         "FOR_ALL_ENTRIES"
       ],
@@ -98,13 +103,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-loop-group-by",
       "category": "abap-itab",
       "query": "loop at internal table group by",
-      "expected": [
+      "golds": [
         "ABAPLOOP_AT_GROUP",
         "LOOP_AT_ITAB_GROUP_BY"
       ],
@@ -116,13 +121,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-secondary-key",
       "category": "abap-itab",
       "query": "secondary internal table key sorted hashed",
-      "expected": [
+      "golds": [
         "SECONDARY_KEY",
         "01_Internal_Tables"
       ],
@@ -134,13 +139,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "abap-unit-test",
       "category": "abap-test",
       "query": "ABAP unit test class for testing methods",
-      "expected": [
+      "golds": [
         "ABAPCLASS_FOR_TESTING",
         "ABAPMETHODS_TESTING"
       ],
@@ -152,13 +157,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "cds-define-view",
       "category": "cds",
       "query": "define CDS view entity with select from",
-      "expected": [
+      "golds": [
         "ABENCDS_DEFINE_VIEW_ENTITY"
       ],
       "firstRelevantRank": 1,
@@ -169,33 +174,16 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "cds-value-help-annotation",
       "category": "cds-annotation",
       "query": "value help annotation for a CDS field",
-      "expected": [
+      "golds": [
         "ABENCDS_F1_DEFINE_ANNOTATION_TYPE",
         "field-help",
         "valueHelp"
-      ],
-      "firstRelevantRank": 2,
-      "rr": 0.5,
-      "hit": {
-        "1": 0,
-        "3": 1,
-        "5": 1,
-        "10": 1
-      },
-      "returned": 50
-    },
-    {
-      "id": "rap-determination",
-      "category": "rap",
-      "query": "RAP determination on save in behavior definition",
-      "expected": [
-        "ABENBDL_DETERMINATIONS"
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
@@ -205,13 +193,30 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
+    },
+    {
+      "id": "rap-determination",
+      "category": "rap",
+      "query": "RAP determination on save in behavior definition",
+      "golds": [
+        "ABENBDL_DETERMINATIONS"
+      ],
+      "firstRelevantRank": 4,
+      "rr": 0.25,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
     },
     {
       "id": "rap-eml-modify",
       "category": "rap-eml",
       "query": "modify entity with EML in RAP",
-      "expected": [
+      "golds": [
         "ABAPMODIFY_ENTITY_ENTITIES_OP",
         "08_EML"
       ],
@@ -223,13 +228,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "ui5-two-way-binding",
       "category": "ui5",
       "query": "JSONModel two way data binding in UI5",
-      "expected": [
+      "golds": [
         "two-way-data-binding",
         "data-binding-68b9644",
         "odata-v2-model"
@@ -242,13 +247,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "ui5-growing-table",
       "category": "ui5",
       "query": "growing table scroll in sap.m.Table",
-      "expected": [
+      "golds": [
         "growing-feature-for-table-and-list",
         "GrowingList"
       ],
@@ -260,13 +265,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "ui5-fiori-elements-lineitem",
       "category": "fiori-elements",
       "query": "fiori elements list report line item annotation",
-      "expected": [
+      "golds": [
         "06_SAP_Fiori_Elements",
         "LineItem"
       ],
@@ -278,13 +283,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "wdi5-locator",
       "category": "wdi5",
       "query": "wdi5 locator to click a button",
-      "expected": [
+      "golds": [
         "/wdi5/locators",
         "/wdi5/usage"
       ],
@@ -296,13 +301,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "cap-associations",
       "category": "cap",
       "query": "define entity associations in CAP",
-      "expected": [
+      "golds": [
         "/cap/guides/domain-modeling#associations",
         "/cap/cds/cdl"
       ],
@@ -314,13 +319,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "cap-expose-projection",
       "category": "cap",
       "query": "expose entities as a projection in a CAP service",
-      "expected": [
+      "golds": [
         "/cap/cds/cdl#exposed-entities",
         "/cap/guides/using-services"
       ],
@@ -332,13 +337,13 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
     },
     {
       "id": "btp-destination",
       "category": "btp",
       "query": "BTP destination service for connectivity",
-      "expected": [
+      "golds": [
         "btp-destination-service",
         "destination"
       ],
@@ -350,7 +355,438 @@
         "5": 1,
         "10": 1
       },
-      "returned": 50
+      "returned": 30
+    },
+    {
+      "id": "abap-gzip-lexical",
+      "category": "lexical-gap",
+      "query": "reduce the size of a byte string in memory before storing it",
+      "golds": [
+        "ABENCL_ABAP_GZIP",
+        "SCMS_XSTRING_COMPRESS"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "abap-authority-check-lexical",
+      "category": "lexical-gap",
+      "query": "check whether the logged-in user is allowed to perform this action",
+      "golds": [
+        "ABAPAUTHORITY-CHECK",
+        "ABENBC_AUTHORITY_CHECK"
+      ],
+      "firstRelevantRank": 9,
+      "rr": 0.1111111111111111,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "abap-for-all-entries-lexical",
+      "category": "lexical-gap",
+      "query": "read database rows for every key stored in an internal table",
+      "golds": [
+        "ABENWHERE_ALL_ENTRIES",
+        "FOR_ALL_ENTRIES"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "best-exceptions-vs-returncodes",
+      "category": "best-practice",
+      "query": "what is the recommended way to signal a failure from an ABAP method",
+      "golds": [
+        "prefer-exceptions-to-return-codes"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "best-composition-vs-inheritance",
+      "category": "best-practice",
+      "query": "is it better to extend a class or wrap it when reusing behavior in ABAP",
+      "golds": [
+        "prefer-composition-to-inheritance"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "best-new-vs-create-object",
+      "category": "best-practice",
+      "query": "recommended way to instantiate a class in modern ABAP",
+      "golds": [
+        "prefer-new-to-create-object"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "best-package-architecture",
+      "category": "best-practice",
+      "query": "how should I organize packages for a maintainable SAP application",
+      "golds": [
+        "architecture_and_structure",
+        "package-strategy"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-read-table-vs-loop",
+      "category": "coverage-test",
+      "query": "fastest way to find one record in an internal table without looping over it",
+      "golds": [
+        "prefer-read-table-to-loop-at"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-line-exists",
+      "category": "coverage-test",
+      "query": "how to check whether a row exists in a table without reading it into a variable",
+      "golds": [
+        "prefer-line-exists-to-read-table-or-loop-at"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-insert-vs-append",
+      "category": "coverage-test",
+      "query": "recommended statement to add rows to a sorted or hashed internal table",
+      "golds": [
+        "prefer-insert-into-table-to-append-to"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-avoid-default-key",
+      "category": "coverage-test",
+      "query": "why you should not rely on the standard table key when looking up rows",
+      "golds": [
+        "avoid-default-key"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-inline-declarations",
+      "category": "coverage-test",
+      "query": "should I declare variables up front or inline where they are first used",
+      "golds": [
+        "prefer-inline-to-up-front-declarations"
+      ],
+      "firstRelevantRank": 13,
+      "rr": 0.07692307692307693,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-oo-vs-procedural",
+      "category": "coverage-test",
+      "query": "is it better to write new business logic in classes or in reports and function modules",
+      "golds": [
+        "prefer-object-orientation-to-procedural-programming"
+      ],
+      "firstRelevantRank": 28,
+      "rr": 0.03571428571428571,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-loop-where-vs-if",
+      "category": "coverage-test",
+      "query": "cleaner way to skip rows in a loop instead of wrapping the body in an if",
+      "golds": [
+        "prefer-loop-at-where-to-nested-if"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-cap-event-handlers",
+      "category": "coverage-test",
+      "query": "where do I put custom logic that runs when a CAP service request comes in",
+      "golds": [
+        "providing-services#event-handlers"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "cov-cap-view-parameters",
+      "category": "coverage-test",
+      "query": "how to define a CAP view that accepts input parameters",
+      "golds": [
+        "cdl#views-with-parameters"
+      ],
+      "firstRelevantRank": 4,
+      "rr": 0.25,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-read-table",
+      "category": "lexical-gap",
+      "query": "get a single entry out of an internal table using its key value",
+      "golds": [
+        "ABAPREAD_TABLE"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-sort-itab",
+      "category": "lexical-gap",
+      "query": "arrange the rows of an internal table into a particular order",
+      "golds": [
+        "ABAPSORT_ITAB"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-collect",
+      "category": "lexical-gap",
+      "query": "accumulate numeric totals into a table summed up per key",
+      "golds": [
+        "ABAPCOLLECT"
+      ],
+      "firstRelevantRank": 21,
+      "rr": 0.047619047619047616,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-delete-duplicates",
+      "category": "lexical-gap",
+      "query": "remove repeated adjacent rows from an internal table",
+      "golds": [
+        "ABAPDELETE_DUPLICATES"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-try-catch",
+      "category": "lexical-gap",
+      "query": "handle a runtime error gracefully so the program does not dump",
+      "golds": [
+        "ABAPTRY"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-rtti",
+      "category": "lexical-gap",
+      "query": "inspect the type of a data object while the program is running",
+      "golds": [
+        "ABENRTTI"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "para-asjson",
+      "category": "lexical-gap",
+      "query": "turn an ABAP structure into a JSON string",
+      "golds": [
+        "ABENABAP_ASJSON"
+      ],
+      "firstRelevantRank": null,
+      "rr": 0,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 0
+      },
+      "returned": 30
+    },
+    {
+      "id": "abap-raise-exception-class",
+      "category": "abap-exceptions",
+      "query": "RAISE EXCEPTION TYPE class based exception",
+      "golds": [
+        "ABAPRAISE_EXCEPTION_CLASS",
+        "ABAPRAISE_EXCEPTION"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "abap-convert-date",
+      "category": "abap-datetime",
+      "query": "CONVERT DATE time stamp into time zone",
+      "golds": [
+        "ABAPCONVERT_DATE"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
     }
-  ]
+  ],
+  "k": 30
 }
