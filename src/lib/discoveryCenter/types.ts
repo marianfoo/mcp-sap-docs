@@ -1,5 +1,5 @@
 // SAP Discovery Center types
-// Public OData V2 API at https://discovery-center.cloud.sap/servicecatalog/
+// REST API used by the SAP Discovery Center UI at /servicecatalog/api/v1/
 
 // ---------------------------------------------------------------------------
 // Search
@@ -136,26 +136,26 @@ export interface DiscoveryCenterServiceResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Raw OData response shapes (internal, not exported from index)
+// Raw REST response shapes (internal, not exported from index)
 // ---------------------------------------------------------------------------
 
 export interface RawServiceEntity {
-  Id: string;
-  Name: string;
-  ShortName: string;
-  ShortDesc: string;
-  Category: string;
-  AdditionalCategories: string;
-  LicenseModelType: string;
-  Provider: string;
-  Tags: string;
-  Ribbon: string;
-  IsDeprecatedService: boolean;
-  Icon: string;
-  HasSapStoreLink: boolean;
-  MaterialId: string;
-  RegionDataCenter: string;
-  ProductId: string;
+  id: string;
+  name: string;
+  shortName?: string;
+  shortDesc?: string;
+  category?: string;
+  additionalCategories?: string;
+  licenseModelType?: string;
+  provider?: string;
+  tags?: string;
+  ribbon?: string;
+  isDeprecatedService?: boolean;
+  icon?: string;
+  hasSapStoreLink?: boolean;
+  materialId?: string;
+  regionDataCenter?: string;
+  productId?: string;
 }
 
 export interface RawResource {
@@ -280,40 +280,37 @@ export interface RawServiceDetails {
 
 // Roadmap raw types
 export interface RawRoadmapDeliverable {
-  DeliveryId: string;
-  DeliveryStatus: string | null;
-  Description: string;
-  Id: number;
-  RoadmapPeriodCategory: number;
-  ServiceId: string;
-  Tags: string;
-  Title: string;
-  Type: string;
+  id: number;
+  deliveryId: string;
+  deliveryStatus: string | null;
+  description: string;
+  serviceId: string;
+  tags: string;
+  title: string;
+  type: string;
 }
 
 export interface RawRoadmapPeriodCategory {
-  Id: number;
-  Period: number;
-  Title: string;
-  RoadmapDeliverableDetails: { results: RawRoadmapDeliverable[] };
+  id: number;
+  title: string;
+  deliverables: RawRoadmapDeliverable[];
 }
 
 export interface RawRoadmapPeriod {
-  Id: number;
-  ReleasedVersions: string | null;
-  Roadmap: number;
-  Title: string;
-  RoadmapPeriodCategoryDetails: { results: RawRoadmapPeriodCategory[] };
+  id: number;
+  releasedVersions: string | null;
+  title: string;
+  categories: RawRoadmapPeriodCategory[];
 }
 
 export interface RawRoadmap {
-  Id: number;
-  ProductId: string;
-  RoadmapPeriodDetails: { results: RawRoadmapPeriod[] };
+  id: number;
+  productId: string;
+  periods: RawRoadmapPeriod[];
 }
 
 export interface RawServiceRoadmap {
-  Id: string;
-  Name: string;
-  Roadmap: number;
+  id: string;
+  name: string;
+  roadmap: { id: number } | null;
 }

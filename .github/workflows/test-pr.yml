@@ -63,6 +63,7 @@ jobs:
         # setup.sh already built and verified docs.sqlite above. Run tests
         # against that database so PR checks do not rebuild embeddings twice.
         npm run test:url-generation
+        npm run test:discovery-center
         npm run test:integration:run
         
         # Additional database health verification after tests
