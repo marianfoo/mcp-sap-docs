@@ -265,7 +265,8 @@ function fetchDocMeta(ids: string[]): Map<string, DocMetaRow> {
 export async function buildSemanticRecall(
   query: string,
   k: number,
-  precomputedVec?: Float32Array
+  precomputedVec?: Float32Array,
+  documentFilter?: (id: string) => boolean
 ): Promise<SearchResult[]> {
   if (CONFIG.EMBEDDING_WEIGHT <= 0) return [];
   if (!loadCorpusEmbeddings()) return [];
@@ -291,13 +292,16 @@ export async function buildSemanticRecall(
   // (no data copy), so each row is scored by the shared cosineSimilarity helper
   // without allocating a per-document vector.
   const scores = new Float32Array(n);
+  const candidateIndexes: number[] = [];
   for (let i = 0; i < n; i++) {
+    if (documentFilter && !documentFilter(ids[i])) continue;
     const base = i * dim;
     scores[i] = cosineSimilarity(queryVec, matrix.subarray(base, base + dim));
+    candidateIndexes.push(i);
   }
 
-  // Select top-k by score.
-  const order = Array.from({ length: n }, (_, i) => i)
+  // Select top-k by score from documents allowed by the caller's search filters.
+  const order = candidateIndexes
     .sort((a, b) => scores[b] - scores[a])
     .slice(0, k);
 

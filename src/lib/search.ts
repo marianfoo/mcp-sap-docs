@@ -441,6 +441,35 @@ function isNonEnglishVariant(id: string, sourceId: string): boolean {
   return false;
 }
 
+type SemanticDocumentFilterOptions = {
+  sourceFilters: ReadonlySet<string> | null;
+  includeSamples: boolean;
+  requestedAbapFlavor: 'standard' | 'cloud';
+  isNewsQuery: boolean;
+};
+
+/** Apply offline search constraints to full-corpus semantic recall. */
+export function isSemanticDocumentAllowed(
+  id: string,
+  options: SemanticDocumentFilterOptions
+): boolean {
+  const sourceId = extractSourceId(id);
+
+  if (options.sourceFilters && !options.sourceFilters.has(sourceId)) return false;
+  if (!options.includeSamples && SAMPLE_SOURCES.includes(sourceId)) return false;
+  if (isNonEnglishVariant(id, sourceId)) return false;
+  if (!options.isNewsQuery && id.includes('ABENNEWS-')) return false;
+
+  if (id.includes('/abap-docs-')) {
+    const expectedSource = options.requestedAbapFlavor === 'cloud'
+      ? 'abap-docs-cloud'
+      : 'abap-docs-standard';
+    return sourceId === expectedSource;
+  }
+
+  return true;
+}
+
 /**
  * Unified search across ABAP documentation sources
  * 
@@ -818,7 +847,18 @@ export async function search(
   // Merge offline, semantic, and online results
   // Semantic results come from an independent full-corpus cosine scan (item 7b),
   // so they can surface documents BM25 missed; they slot in via RRF fusion.
-  const semanticResults = await buildSemanticRecall(query, k, queryVec ?? undefined);
+  const semanticFilterOptions: SemanticDocumentFilterOptions = {
+    sourceFilters,
+    includeSamples,
+    requestedAbapFlavor,
+    isNewsQuery
+  };
+  const semanticResults = await buildSemanticRecall(
+    query,
+    k,
+    queryVec ?? undefined,
+    id => isSemanticDocumentAllowed(id, semanticFilterOptions)
+  );
   console.log(`🧠 [SEMANTIC] ${semanticResults.length} semantic results`);
 
   const allResults = [...offlineResults, ...onlineResults, ...semanticResults];

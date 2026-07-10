@@ -1084,12 +1084,13 @@ async function main() {
         
         id = `${src.id}/${rel.replace(/\.mdx?$/, "")}`;
         
-        // Extract individual sections as separate entries for all markdown docs.
-        // When sections exist (including section-0 for the intro), skip the whole-doc
-        // entry — sections cover all content and give finer-grained retrieval.
+        // Extract individual sections for fine-grained retrieval while retaining the
+        // parent document entry below. Existing search/fetch clients rely on stable
+        // whole-document IDs such as /cloud-sdk-js/guides/upgrade-to-version-4.mdx.
         if (content.includes('##')) {
           extractMarkdownSections(content, lines, src, rel, docs);
-        } else {
+        }
+
         // Push markdown doc with keywords
         docs.push({
           id, 
@@ -1100,7 +1101,6 @@ async function main() {
           type: src.type,
           keywords: markdownKeywords.length > 0 ? markdownKeywords : undefined
         });
-        } // closes else (whole-doc path)
       } else if (src.type === "jsdoc") {
         // Handle JavaScript files with JSDoc
         const jsDocInfo = extractJSDocInfo(raw, path.basename(absPath));

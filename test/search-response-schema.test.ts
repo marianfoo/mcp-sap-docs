@@ -66,6 +66,35 @@ describe('search response schema', () => {
     expect(() => normalizeUnifiedSearchOptions({ arbitraryOption: true })).toThrow('unsupported option');
   });
 
+  it('applies offline constraints to full-corpus semantic recall', async () => {
+    const { isSemanticDocumentAllowed } = await import('../src/lib/search.js');
+    const defaults = {
+      sourceFilters: null,
+      includeSamples: true,
+      requestedAbapFlavor: 'standard' as const,
+      isNewsQuery: false
+    };
+
+    expect(isSemanticDocumentAllowed('/btp-fiori-tools/deploy/configuration', {
+      ...defaults,
+      sourceFilters: new Set(['btp-fiori-tools'])
+    })).toBe(true);
+    expect(isSemanticDocumentAllowed('/cloud-sdk-js/guides/deployment', {
+      ...defaults,
+      sourceFilters: new Set(['btp-fiori-tools'])
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/openui5-samples/sap.m/Button', {
+      ...defaults,
+      includeSamples: false
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/abap-docs-cloud/ABAPSELECT', defaults)).toBe(false);
+    expect(isSemanticDocumentAllowed('/abap-docs-cloud/ABAPSELECT', {
+      ...defaults,
+      requestedAbapFlavor: 'cloud'
+    })).toBe(true);
+    expect(isSemanticDocumentAllowed('/abap-docs-standard/ABENNEWS-758', defaults)).toBe(false);
+  });
+
   it('returns schema-compliant empty results instead of an MCP schema error', async () => {
     vi.resetModules();
     vi.doMock('../src/lib/search.js', () => ({
