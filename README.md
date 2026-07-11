@@ -58,7 +58,7 @@ An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to
 
 | Tool | Description |
 |------|-------------|
-| `search` | Unified hybrid search (BM25 + semantic) across offline docs and optional online sources. Supports `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources` parameters. |
+| `search` | Unified hybrid search (BM25 + semantic) across offline docs and optional online sources. Supports `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `product`, `version`, `sources` parameters. |
 | `fetch` | Retrieve full document content by ID returned from `search`. |
 | `abap_feature_matrix` | Check ABAP feature availability across SAP releases (7.40–LATEST) using the [Software Heroes feature matrix](https://software-heroes.com/en/abap-feature-matrix). |
 | `sap_community_search` | Dedicated SAP Community search via the Khoros LiQL API — returns full content of top posts. Use when `search` results are insufficient for specific errors or workarounds. |
@@ -122,9 +122,11 @@ Ranking and filtering highlights:
 
 - **Hybrid BM25 + Semantic (embedding) search** — keyword and meaning, fused via RRF
 - Reciprocal Rank Fusion (RRF) across offline and online sources
-- Source-level boosts from metadata
+- Canonical unweighted RRF by default; metadata/context boosts remain available behind `FUSION_BOOSTS_ENABLED=true` for controlled experiments
 - `includeSamples` can remove sample-heavy sources
-- `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries while keeping non-ABAP sources
+- `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries; when set EXPLICITLY it also scopes the online SAP Help leg to the matching ABAP product (`standard`→`ABAP_PLATFORM_NEW`, `cloud`→`ABAP_ENVIRONMENT`). It is a query-DOMAIN signal ("ABAP-language question"), not a system flag. Route by domain: ABAP language → `standard`/`cloud`; functional/config → `auto` + `product`; CAP/UI5/Fiori → `auto` (the offline corpus is authoritative — the online SAP Help leg is **not** scoped for these yet, so it can still add some off-topic/low-value hits; per-domain online routing/skip is a known follow-up)
+- `product` (optional) scopes the online SAP Help leg to one product id (e.g. `SAP_S4HANA_ON-PREMISE` for functional/config questions `abapFlavor` can't express); takes precedence over the abapFlavor mapping. Copy a real value from a result's `metadata.product`; an unknown product safely falls back to unscoped
+- `version` (optional) pins the online SAP Help leg to a release; copy a result's `versionId` exactly (never guess); a non-matching token falls back to latest
 - `sources` can restrict offline libraries explicitly
 
 ## Hybrid Search

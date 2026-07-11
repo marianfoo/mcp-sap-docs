@@ -11,7 +11,7 @@ import { BaseServerHandler } from "./lib/BaseServerHandler.js";
 import { getVariantConfig, isToolEnabled } from "./lib/variant.js";
 import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js";
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
-import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
+import { loadEmbeddingModel, loadRerankModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
 
 const VERSION = "0.3.51"; // x-release-please-version
@@ -101,6 +101,11 @@ async function main() {
     // Pre-load the embedding model so the first search is fast (fire-and-forget)
     loadEmbeddingModel().catch((err: Error) =>
       logger.warn("embedding model pre-load failed", { error: err.message })
+    );
+  }
+  if (CONFIG.RERANKER_ENABLED) {
+    loadRerankModel().catch((err: Error) =>
+      logger.warn("reranker model pre-load failed", { error: err.message })
     );
   }
 

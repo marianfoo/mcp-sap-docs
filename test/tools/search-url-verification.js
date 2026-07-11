@@ -37,6 +37,29 @@ function extractUrls(text) {
   return urls;
 }
 
+export function extractVisibleResults(text) {
+  const starts = [...String(text || '').matchAll(/⭐️ \*\*(.+?)\*\*[^\n]*\n/g)];
+  return starts.map((match, index) => {
+    const start = match.index ?? 0;
+    const end = index + 1 < starts.length ? (starts[index + 1].index ?? text.length) : text.length;
+    const block = text.slice(start, end);
+    return {
+      id: match[1],
+      url: extractUrls(block)[0] || ''
+    };
+  });
+}
+
+export function hasMatchingVisibleResult(text, expectations) {
+  const visibleResults = extractVisibleResults(text);
+  return expectations.some(({ source, urlPattern }) => {
+    const pattern = urlPattern instanceof RegExp ? urlPattern : new RegExp(urlPattern);
+    return visibleResults.some(result =>
+      result.id.startsWith(`/${source}/`) && pattern.test(result.url)
+    );
+  });
+}
+
 function isAllowedDocumentationUrl(url) {
   try {
     const normalized = url.replace(/\/$/, '');
@@ -111,21 +134,22 @@ async function validateSourceFilteredUrl(sourceId, query, expectedUrlPattern) {
   return { passed: true };
 }
 
-async function validateVisibleSearchResult({ docsSearch, query, expectedSource, expectedUrlPattern }) {
+async function validateVisibleSearchResult({
+  docsSearch,
+  query,
+  expectedSource,
+  expectedUrlPattern,
+  expectedResults
+}) {
   const text = await docsSearch(query);
-  if (!text.includes(`/${expectedSource}/`)) {
-    return {
-      passed: false,
-      message: `Expected /${expectedSource}/ to appear in results for "${query}".`
-    };
-  }
+  const expectations = expectedResults || [{ source: expectedSource, urlPattern: expectedUrlPattern }];
+  const visibleResults = extractVisibleResults(text);
+  const matched = hasMatchingVisibleResult(text, expectations);
 
-  const urls = extractUrls(text);
-  const expectedPattern = expectedUrlPattern instanceof RegExp ? expectedUrlPattern : new RegExp(expectedUrlPattern);
-  if (!urls.some(url => expectedPattern.test(url))) {
+  if (!matched) {
     return {
       passed: false,
-      message: `Expected URL pattern ${expectedPattern} in results for "${query}". URLs: ${urls.join(', ')}`
+      message: `Expected a result with a matching source and URL for "${query}". Results: ${visibleResults.map(result => `${result.id} -> ${result.url || '(no URL)'}`).join(', ')}`
     };
   }
 
@@ -196,12 +220,20 @@ export default [
     })
   },
   {
-    name: 'Fiori Tools deployment docs appear with GitHub URL',
+    name: 'Fiori Tools deployment sources appear with GitHub URL',
     validate: ({ docsSearch }) => validateVisibleSearchResult({
       docsSearch,
       query: 'deployment configuration ui5-deploy yaml fiori tools',
-      expectedSource: 'btp-fiori-tools',
-      expectedUrlPattern: /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//
+      expectedResults: [
+        {
+          source: 'btp-fiori-tools',
+          urlPattern: /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//
+        },
+        {
+          source: 'fiori-tools-samples',
+          urlPattern: /^https:\/\/github\.com\/SAP-samples\/fiori-tools-samples\/blob\/main\//
+        }
+      ]
     })
   },
   {

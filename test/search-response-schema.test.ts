@@ -66,6 +66,67 @@ describe('search response schema', () => {
     expect(() => normalizeUnifiedSearchOptions({ arbitraryOption: true })).toThrow('unsupported option');
   });
 
+  it('applies offline constraints to full-corpus semantic recall', async () => {
+    const { isSemanticDocumentAllowed } = await import('../src/lib/search.js');
+    const defaults = {
+      sourceFilters: null,
+      includeSamples: true,
+      requestedAbapFlavor: 'standard' as const,
+      isNewsQuery: false
+    };
+
+    expect(isSemanticDocumentAllowed('/btp-fiori-tools/deploy/configuration', {
+      ...defaults,
+      sourceFilters: new Set(['btp-fiori-tools'])
+    })).toBe(true);
+    expect(isSemanticDocumentAllowed('/cloud-sdk-js/guides/deployment', {
+      ...defaults,
+      sourceFilters: new Set(['btp-fiori-tools'])
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/openui5-samples/sap.m/Button', {
+      ...defaults,
+      includeSamples: false
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/fiori-tools-samples/V4/apps/travel/ui5.yaml', {
+      ...defaults,
+      includeSamples: false
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/teched2025-dt260/exercises/readme', {
+      ...defaults,
+      includeSamples: false
+    })).toBe(false);
+    expect(isSemanticDocumentAllowed('/abap-docs-cloud/ABAPSELECT', defaults)).toBe(false);
+    expect(isSemanticDocumentAllowed('/abap-docs-cloud/ABAPSELECT', {
+      ...defaults,
+      requestedAbapFlavor: 'cloud'
+    })).toBe(true);
+    expect(isSemanticDocumentAllowed('/abap-docs-standard/ABENNEWS-758', defaults)).toBe(false);
+  });
+
+  it('does not invoke embedding work when the semantic artifact is unavailable', async () => {
+    vi.resetModules();
+    const embedQuery = vi.fn();
+    const buildSemanticRecall = vi.fn(async () => []);
+
+    vi.doMock('../src/lib/searchDb.js', () => ({
+      lookupExactDocs: vi.fn(() => []),
+      searchFTS: vi.fn(() => [])
+    }));
+    vi.doMock('../src/lib/embeddingSearch.js', () => ({
+      isSemanticSearchAvailable: vi.fn(() => false),
+      embedQuery,
+      detectNewsIntent: vi.fn(),
+      buildSemanticRecall,
+      rerank: vi.fn(async (_query: string, docs: unknown[]) => docs)
+    }));
+
+    const { search } = await import('../src/lib/search.js');
+    await search('what changed in this release', { includeOnline: false, k: 5 });
+
+    expect(embedQuery).not.toHaveBeenCalled();
+    expect(buildSemanticRecall).not.toHaveBeenCalled();
+  });
+
   it('returns schema-compliant empty results instead of an MCP schema error', async () => {
     vi.resetModules();
     vi.doMock('../src/lib/search.js', () => ({
