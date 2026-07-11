@@ -849,6 +849,7 @@ function extractJSDocInfo(content: string, fileName: string) {
 
 function extractMarkdownSections(content: string, lines: string[], src: any, relFile: string, docs: DocEntry[]) {
   const sections: { title: string; content: string; startLine: number; level: number }[] = [];
+  const slugOccurrences = new Map<string, number>();
   let currentSection: { title: string; content: string; startLine: number; level: number } | null = null;
   
   for (let i = 0; i < lines.length; i++) {
@@ -940,8 +941,15 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
     // Count code snippets in this section
     const snippetCount = (section.content.match(/```/g)?.length || 0) / 2;
     
-    // Create section entry
-    const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    // Keep section IDs unique when a document repeats headings (common in release
+    // notes and troubleshooting guides). Empty ASCII slugs use their source line.
+    const baseSlug = section.title.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || `section-${section.startLine + 1}`;
+    const occurrence = slugOccurrences.get(baseSlug) || 0;
+    slugOccurrences.set(baseSlug, occurrence + 1);
+    const sectionSlug = occurrence === 0 ? baseSlug : `${baseSlug}-${occurrence}`;
+    const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${sectionSlug}`;
 
     // Dedicated embedding text: the section TITLE + cleaned section PROSE (code &
     // breadcrumb stripped via the shared normalizer). This is what the dense leg

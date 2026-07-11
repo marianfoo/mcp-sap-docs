@@ -55,6 +55,13 @@ describe("embeddings build artifact", () => {
       expect(row.sections).toBeGreaterThan(0);
     });
 
+    it("keeps document IDs unique across the FTS corpus", () => {
+      const row = db!
+        .prepare("SELECT count(*) AS rows, count(DISTINCT id) AS uniqueIds FROM docs")
+        .get() as { rows: number; uniqueIds: number };
+      expect(row.uniqueIds).toBe(row.rows);
+    });
+
     it("records model, dimension, and document count metadata", () => {
       const metadata = db!
         .prepare(`

@@ -202,7 +202,10 @@ async function main() {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   console.log(`✅ Embeddings built successfully!`);
-  console.log(`   📄 Embedded: ${inserted} documents`);
+  console.log(`   📄 Embedded: ${vectorCount} unique documents`);
+  if (inserted !== vectorCount) {
+    console.log(`   ℹ️  Replaced duplicate document IDs: ${inserted - vectorCount}`);
+  }
   if (skipped > 0) console.log(`   ⚠️  Skipped (no text): ${skipped}`);
   console.log(`   ⏱️  Elapsed: ${elapsed}s`);
   console.log(`   💾 docs.sqlite: ${(sizeBefore / 1024 / 1024).toFixed(1)} MB → ${(sizeAfter / 1024 / 1024).toFixed(1)} MB (+${((sizeAfter - sizeBefore) / 1024 / 1024).toFixed(1)} MB)`);
