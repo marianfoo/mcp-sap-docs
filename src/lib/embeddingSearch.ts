@@ -164,6 +164,62 @@ function embeddingsTableExists(): boolean {
   }
 }
 
+type EmbeddingMetadata = {
+  modelId: string;
+  dimension: number;
+  documentCount: number;
+};
+
+let warnedAboutLegacyMetadata = false;
+let warnedAboutModelMismatch = false;
+
+function readEmbeddingMetadata(): EmbeddingMetadata | null {
+  try {
+    const db = openDb();
+    const table = db.prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='embedding_metadata'`
+    ).get() as { name: string } | undefined;
+    if (!table) return null;
+
+    const row = db.prepare(
+      `SELECT model_id AS modelId, dimension, document_count AS documentCount
+       FROM embedding_metadata WHERE id = 1`
+    ).get() as EmbeddingMetadata | undefined;
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cheap semantic-availability check used before query embedding. Artifacts without
+ * compatibility metadata fall back to FTS until embeddings are rebuilt.
+ */
+export function isSemanticSearchAvailable(): boolean {
+  if (CONFIG.EMBEDDING_WEIGHT <= 0 || !embeddingsTableExists()) return false;
+
+  const metadata = readEmbeddingMetadata();
+  if (!metadata) {
+    if (!warnedAboutLegacyMetadata) {
+      warnedAboutLegacyMetadata = true;
+      console.warn("⚠️  Embeddings metadata missing; semantic search disabled until embeddings are rebuilt.");
+    }
+    return false;
+  }
+
+  if (metadata.modelId !== CONFIG.EMBEDDING_MODEL_ID) {
+    if (!warnedAboutModelMismatch) {
+      warnedAboutModelMismatch = true;
+      console.warn(
+        `⚠️  Embedding model mismatch: database=${metadata.modelId}, runtime=${CONFIG.EMBEDDING_MODEL_ID}. Semantic search disabled.`
+      );
+    }
+    return false;
+  }
+
+  return metadata.dimension > 0 && metadata.documentCount > 0;
+}
+
 const SEMANTIC_RRF_K = 60;
 
 function rrf(rank: number): number {
@@ -179,12 +235,12 @@ function rrf(rank: number): number {
 // there was nothing for the re-ranker to promote. buildSemanticRecall instead
 // runs an INDEPENDENT cosine scan over the ENTIRE embedding corpus and fuses the
 // winners via RRF alongside the BM25 leg — the canonical dense+sparse hybrid.
-// At ~19k vectors a brute-force scan is ~11ms/query (measured) and needs no ANN
-// index. BM25 keeps the higher RRF weight, so lexical precision is preserved.
+// The current corpus is ~46k vectors and still small enough for a brute-force
+// scan without an ANN index. BM25 provides the independent lexical leg.
 
 // Cached corpus matrix: N vectors packed contiguously as a single [N * DIM]
 // Float32Array, with a parallel doc_id[] (matrix row i ↔ corpusIds[i]). Loaded
-// once on first query (~28MB / ~370ms) and reused for every subsequent query.
+// once on first query and reused for every subsequent query.
 let corpusMatrix: Float32Array | null = null;
 let corpusIds: string[] | null = null;
 let corpusDim = 0;
@@ -195,7 +251,7 @@ let corpusDim = 0;
  */
 function loadCorpusEmbeddings(): boolean {
   if (corpusMatrix && corpusIds) return true;
-  if (!embeddingsTableExists()) return false;
+  if (!isSemanticSearchAvailable()) return false;
 
   const db = openDb();
   const rows = db
@@ -205,6 +261,23 @@ function loadCorpusEmbeddings(): boolean {
   if (rows.length === 0) return false;
 
   const dim = rows[0].vec.byteLength / 4;
+  const metadata = readEmbeddingMetadata();
+  if (metadata && metadata.documentCount !== rows.length) {
+    console.warn(
+      `⚠️  Embedding document count mismatch: metadata=${metadata.documentCount}, vectors=${rows.length}. Semantic search disabled.`
+    );
+    return false;
+  }
+  if (metadata && metadata.dimension !== dim) {
+    console.warn(
+      `⚠️  Embedding dimension mismatch in database: metadata=${metadata.dimension}, vectors=${dim}. Semantic search disabled.`
+    );
+    return false;
+  }
+  if (rows.some(row => row.vec.byteLength !== dim * 4)) {
+    console.warn("⚠️  Embedding corpus contains inconsistent vector dimensions. Semantic search disabled.");
+    return false;
+  }
   const matrix = new Float32Array(rows.length * dim);
   const ids = new Array<string>(rows.length);
   for (let i = 0; i < rows.length; i++) {
@@ -287,6 +360,13 @@ export async function buildSemanticRecall(
   const ids = corpusIds!;
   const dim = corpusDim;
   const n = ids.length;
+
+  if (queryVec.length !== dim) {
+    console.warn(
+      `⚠️  Query embedding dimension ${queryVec.length} does not match corpus dimension ${dim}. Semantic search disabled for this query.`
+    );
+    return [];
+  }
 
   // Brute-force cosine over the whole corpus. matrix.subarray(...) is a view
   // (no data copy), so each row is scored by the shared cosineSimilarity helper

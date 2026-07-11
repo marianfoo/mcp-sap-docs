@@ -958,7 +958,7 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
       snippetCount,
       relFile,
       type: 'markdown-section' as any,
-      parentDocument: `${src.id}/${relFile.replace(/\.md$/, "")}`,
+      parentDocument: `${src.id}/${relFile.replace(/\.mdx?$/, "")}`,
       sectionStartLine: section.startLine,
       headingLevel: section.level
     });

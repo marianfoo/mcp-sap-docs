@@ -37,6 +37,29 @@ function extractUrls(text) {
   return urls;
 }
 
+export function extractVisibleResults(text) {
+  const starts = [...String(text || '').matchAll(/⭐️ \*\*(.+?)\*\*[^\n]*\n/g)];
+  return starts.map((match, index) => {
+    const start = match.index ?? 0;
+    const end = index + 1 < starts.length ? (starts[index + 1].index ?? text.length) : text.length;
+    const block = text.slice(start, end);
+    return {
+      id: match[1],
+      url: extractUrls(block)[0] || ''
+    };
+  });
+}
+
+export function hasMatchingVisibleResult(text, expectations) {
+  const visibleResults = extractVisibleResults(text);
+  return expectations.some(({ source, urlPattern }) => {
+    const pattern = urlPattern instanceof RegExp ? urlPattern : new RegExp(urlPattern);
+    return visibleResults.some(result =>
+      result.id.startsWith(`/${source}/`) && pattern.test(result.url)
+    );
+  });
+}
+
 function isAllowedDocumentationUrl(url) {
   try {
     const normalized = url.replace(/\/$/, '');
@@ -115,26 +138,18 @@ async function validateVisibleSearchResult({
   docsSearch,
   query,
   expectedSource,
-  expectedSources,
   expectedUrlPattern,
-  expectedUrlPatterns
+  expectedResults
 }) {
   const text = await docsSearch(query);
-  const sources = expectedSources || [expectedSource];
-  if (!sources.some(source => text.includes(`/${source}/`))) {
-    return {
-      passed: false,
-      message: `Expected one of ${sources.map(source => `/${source}/`).join(', ')} to appear in results for "${query}".`
-    };
-  }
+  const expectations = expectedResults || [{ source: expectedSource, urlPattern: expectedUrlPattern }];
+  const visibleResults = extractVisibleResults(text);
+  const matched = hasMatchingVisibleResult(text, expectations);
 
-  const urls = extractUrls(text);
-  const patterns = expectedUrlPatterns || [expectedUrlPattern];
-  const normalizedPatterns = patterns.map(pattern => pattern instanceof RegExp ? pattern : new RegExp(pattern));
-  if (!urls.some(url => normalizedPatterns.some(pattern => pattern.test(url)))) {
+  if (!matched) {
     return {
       passed: false,
-      message: `Expected one of URL patterns ${normalizedPatterns.join(', ')} in results for "${query}". URLs: ${urls.join(', ')}`
+      message: `Expected a result with a matching source and URL for "${query}". Results: ${visibleResults.map(result => `${result.id} -> ${result.url || '(no URL)'}`).join(', ')}`
     };
   }
 
@@ -209,10 +224,15 @@ export default [
     validate: ({ docsSearch }) => validateVisibleSearchResult({
       docsSearch,
       query: 'deployment configuration ui5-deploy yaml fiori tools',
-      expectedSources: ['btp-fiori-tools', 'fiori-tools-samples'],
-      expectedUrlPatterns: [
-        /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//,
-        /^https:\/\/github\.com\/SAP-samples\/fiori-tools-samples\/blob\/main\//
+      expectedResults: [
+        {
+          source: 'btp-fiori-tools',
+          urlPattern: /^https:\/\/github\.com\/SAP-docs\/btp-fiori-tools\/blob\/main\/docs\//
+        },
+        {
+          source: 'fiori-tools-samples',
+          urlPattern: /^https:\/\/github\.com\/SAP-samples\/fiori-tools-samples\/blob\/main\//
+        }
       ]
     })
   },

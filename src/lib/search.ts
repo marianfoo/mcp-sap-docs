@@ -1,12 +1,12 @@
 // Unified ABAP/RAP search using FTS5 with optional online sources
 import { lookupExactDocs, searchFTS } from "./searchDb.js";
 import { CONFIG } from "./config.js";
-import { loadMetadata, getSourceBoosts, expandQueryTerms, getContextBoosts, getAllContextBoosts } from "./metadata.js";
+import { loadMetadata, getMetadata, getSourceBoosts, expandQueryTerms, getContextBoosts, getAllContextBoosts } from "./metadata.js";
 import { searchSapHelp, ABAP_HELP_PRODUCTS } from "./sapHelp.js";
 import { searchCommunity } from "./localDocs.js";
 import { searchSoftwareHeroesContent } from "./softwareHeroes/index.js";
 import { SearchResponse, SearchResult as ApiSearchResult } from "./types.js";
-import { buildSemanticRecall, detectNewsIntent, embedQuery, rerank } from "./embeddingSearch.js";
+import { buildSemanticRecall, detectNewsIntent, embedQuery, isSemanticSearchAvailable, rerank } from "./embeddingSearch.js";
 
 export type SearchResult = {
   id: string;
@@ -221,6 +221,11 @@ function hasCleanCodeIntent(query: string): boolean {
   return /\b(clean\s*code|naming\s*convention|best\s*practice|style\s*guide|coding\s*standard)\b/i.test(query);
 }
 
+/** Detect release/news intent without requiring the embedding model. */
+function hasNewsIntent(query: string): boolean {
+  return /\b(news|release|update|upgrade|new\s+in|what'?s\s*new|what\s+changed|changelog|deprecat(?:ed|ion))\b/i.test(query);
+}
+
 
 /**
  * Extract annotation patterns from query (e.g., @UI.lineItem, @ObjectModel)
@@ -408,8 +413,10 @@ function determineAbapFlavor(query: string, explicitFlavor?: 'standard' | 'cloud
   return 'standard';
 }
 
-// Sample-heavy sources (code repositories and cheat sheets)
-const SAMPLE_SOURCES = [
+// Sources historically treated as sample-heavy even when their metadata type is
+// documentation. Metadata entries with type="samples" are added dynamically so
+// newly onboarded sample repositories cannot bypass includeSamples=false.
+const LEGACY_SAMPLE_SOURCES = [
   'openui5-samples',
   'cap-fiori-showcase',
   'abap-platform-rap-opensap',
@@ -418,6 +425,22 @@ const SAMPLE_SOURCES = [
   'abap-cheat-sheets',
   'abap-fiori-showcase'
 ];
+
+let sampleSourceIds: ReadonlySet<string> | null = null;
+
+function getSampleSourceIds(): ReadonlySet<string> {
+  if (!sampleSourceIds) {
+    const fromMetadata = getMetadata().sources
+      .filter(source => source.type === 'samples')
+      .map(source => normalizeSourceFilter(source.libraryId || source.id));
+    sampleSourceIds = new Set([...LEGACY_SAMPLE_SOURCES, ...fromMetadata]);
+  }
+  return sampleSourceIds;
+}
+
+function isSampleSource(sourceId: string): boolean {
+  return getSampleSourceIds().has(sourceId);
+}
 
 // Language suffixes to filter out for multi-language sources (e.g., CleanABAP_de, CleanABAP_ja)
 // These are translation duplicates of English content
@@ -456,7 +479,7 @@ export function isSemanticDocumentAllowed(
   const sourceId = extractSourceId(id);
 
   if (options.sourceFilters && !options.sourceFilters.has(sourceId)) return false;
-  if (!options.includeSamples && SAMPLE_SOURCES.includes(sourceId)) return false;
+  if (!options.includeSamples && isSampleSource(sourceId)) return false;
   if (isNonEnglishVariant(id, sourceId)) return false;
   if (!options.isNewsQuery && id.includes('ABENNEWS-')) return false;
 
@@ -525,9 +548,13 @@ export async function search(
   // Detect implementation intent for sample boosting
   const wantsImplementation = hasImplementationIntent(query);
 
-  // Start query embedding early — it runs while BM25 executes synchronously below,
-  // so by the time we need it (pre-fusion filter + semantic recall) it's already done.
-  const queryVecPromise = embedQuery(query).catch(() => null);
+  // FTS-only builds intentionally omit both vectors and the model cache. Check the
+  // database artifact before embedding so those deployments never download or run
+  // a transformer as a side effect of their first search request.
+  const semanticAvailable = isSemanticSearchAvailable();
+  const queryVecPromise = semanticAvailable
+    ? embedQuery(query).catch(() => null)
+    : Promise.resolve(null);
 
   const sourceFilters = sources?.length
     ? new Set(sources.map(normalizeSourceFilter).filter(Boolean))
@@ -571,7 +598,7 @@ export async function search(
   if (!includeSamples) {
     rows = rows.filter(r => {
       const sourceId = extractSourceId(r.libraryId || r.id);
-      return !SAMPLE_SOURCES.includes(sourceId);
+      return !isSampleSource(sourceId);
     });
   }
   
@@ -585,7 +612,7 @@ export async function search(
   // Await the pre-computed query vector (fired before BM25 above). Used for both
   // news-intent classification and semantic recall — one embedding, two uses.
   const queryVec = await queryVecPromise;
-  const isNewsQuery = queryVec ? await detectNewsIntent(queryVec) : false;
+  const isNewsQuery = queryVec ? await detectNewsIntent(queryVec) : hasNewsIntent(query);
 
   // Pre-fusion filter: remove What's New / release-note entries for non-news queries.
   // ABENNEWS-* docs are fragmented single-change descriptions that flood results with
@@ -660,7 +687,7 @@ export async function search(
     }
     
     // Intent-based sample boosting
-    if (wantsImplementation && SAMPLE_SOURCES.includes(sourceId)) {
+    if (wantsImplementation && isSampleSource(sourceId)) {
       boost += 1.5; // Significant boost for samples when user wants implementation
     }
     
@@ -853,12 +880,14 @@ export async function search(
     requestedAbapFlavor,
     isNewsQuery
   };
-  const semanticResults = await buildSemanticRecall(
-    query,
-    k,
-    queryVec ?? undefined,
-    id => isSemanticDocumentAllowed(id, semanticFilterOptions)
-  );
+  const semanticResults = queryVec
+    ? await buildSemanticRecall(
+        query,
+        k,
+        queryVec,
+        id => isSemanticDocumentAllowed(id, semanticFilterOptions)
+      )
+    : [];
   console.log(`🧠 [SEMANTIC] ${semanticResults.length} semantic results`);
 
   const allResults = [...offlineResults, ...onlineResults, ...semanticResults];

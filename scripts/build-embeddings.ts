@@ -102,13 +102,21 @@ async function main() {
   db.pragma("journal_mode = WAL");
   db.pragma("synchronous = NORMAL");
 
-  // Fresh embeddings table (idempotent: re-run is safe)
+  // Fresh embeddings artifact (idempotent: re-run is safe). Metadata makes model
+  // and dimension compatibility verifiable at query time.
   db.exec(`DROP TABLE IF EXISTS embeddings`);
+  db.exec(`DROP TABLE IF EXISTS embedding_metadata`);
   db.exec(`
     CREATE TABLE embeddings (
       doc_id TEXT NOT NULL PRIMARY KEY,
       vec    BLOB NOT NULL
-    )
+    );
+    CREATE TABLE embedding_metadata (
+      id             INTEGER PRIMARY KEY CHECK (id = 1),
+      model_id       TEXT NOT NULL,
+      dimension      INTEGER NOT NULL CHECK (dimension > 0),
+      document_count INTEGER NOT NULL CHECK (document_count > 0)
+    );
   `);
 
   const sizeBefore = fs.statSync(DST).size;
@@ -118,6 +126,7 @@ async function main() {
   const startTime = Date.now();
   let inserted = 0;
   let skipped = 0;
+  let embeddingDimension = 0;
 
   // Process in batches
   const tx = db.transaction((batch: Doc[]) => {
@@ -150,6 +159,13 @@ async function main() {
     // output.data is a flat Float32Array: [batch_size × dim]
     const flatData = output.data as Float32Array;
     const dim = flatData.length / batch.length;
+    if (!Number.isInteger(dim) || dim <= 0) {
+      throw new Error(`Invalid embedding dimension ${dim} for batch at offset ${offset}`);
+    }
+    if (embeddingDimension !== 0 && embeddingDimension !== dim) {
+      throw new Error(`Embedding dimension changed from ${embeddingDimension} to ${dim}`);
+    }
+    embeddingDimension = dim;
 
     batchVecs = batch.map((_, i) => {
       const text = texts[i];
@@ -171,6 +187,14 @@ async function main() {
 
   // Create index for fast lookups (doc_id is already PRIMARY KEY, so this is redundant but explicit)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_embeddings_doc_id ON embeddings(doc_id)`);
+  const vectorCount = (db.prepare(`SELECT count(*) AS n FROM embeddings`).get() as { n: number }).n;
+  if (vectorCount === 0 || embeddingDimension === 0) {
+    throw new Error("No embeddings were generated");
+  }
+  db.prepare(
+    `INSERT INTO embedding_metadata (id, model_id, dimension, document_count)
+     VALUES (1, ?, ?, ?)`
+  ).run(MODEL_ID, embeddingDimension, vectorCount);
 
   db.close();
 

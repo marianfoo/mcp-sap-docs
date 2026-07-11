@@ -122,7 +122,7 @@ Ranking and filtering highlights:
 
 - **Hybrid BM25 + Semantic (embedding) search** — keyword and meaning, fused via RRF
 - Reciprocal Rank Fusion (RRF) across offline and online sources
-- Source-level boosts from metadata
+- Canonical unweighted RRF by default; metadata/context boosts remain available behind `FUSION_BOOSTS_ENABLED=true` for controlled experiments
 - `includeSamples` can remove sample-heavy sources
 - `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries; when set EXPLICITLY it also scopes the online SAP Help leg to the matching ABAP product (`standard`→`ABAP_PLATFORM_NEW`, `cloud`→`ABAP_ENVIRONMENT`). It is a query-DOMAIN signal ("ABAP-language question"), not a system flag. Route by domain: ABAP language → `standard`/`cloud`; functional/config → `auto` + `product`; CAP/UI5/Fiori → `auto` (the offline corpus is authoritative — the online SAP Help leg is **not** scoped for these yet, so it can still add some off-topic/low-value hits; per-domain online routing/skip is a known follow-up)
 - `product` (optional) scopes the online SAP Help leg to one product id (e.g. `SAP_S4HANA_ON-PREMISE` for functional/config questions `abapFlavor` can't express); takes precedence over the abapFlavor mapping. Copy a real value from a result's `metadata.product`; an unknown product safely falls back to unscoped
