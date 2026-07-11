@@ -849,7 +849,7 @@ function extractJSDocInfo(content: string, fileName: string) {
 
 function extractMarkdownSections(content: string, lines: string[], src: any, relFile: string, docs: DocEntry[]) {
   const sections: { title: string; content: string; startLine: number; level: number }[] = [];
-  const slugOccurrences = new Map<string, number>();
+  const usedSlugs = new Set<string>();
   let currentSection: { title: string; content: string; startLine: number; level: number } | null = null;
   
   for (let i = 0; i < lines.length; i++) {
@@ -946,9 +946,12 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
     const baseSlug = section.title.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || `section-${section.startLine + 1}`;
-    const occurrence = slugOccurrences.get(baseSlug) || 0;
-    slugOccurrences.set(baseSlug, occurrence + 1);
-    const sectionSlug = occurrence === 0 ? baseSlug : `${baseSlug}-${occurrence}`;
+    let sectionSlug = baseSlug;
+    let suffix = 1;
+    while (usedSlugs.has(sectionSlug)) {
+      sectionSlug = `${baseSlug}-${suffix++}`;
+    }
+    usedSlugs.add(sectionSlug);
     const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${sectionSlug}`;
 
     // Dedicated embedding text: the section TITLE + cleaned section PROSE (code &
@@ -1001,6 +1004,7 @@ async function main() {
     const files = Array.from(new Set(await fg(patterns, { cwd: src.absDir, absolute: true }))).sort();
 
     const docs: DocEntry[] = [];
+    const usedSampleIds = new Set<string>();
 
     for (const absPath of files) {
       const rel = path.relative(src.absDir, absPath).replace(/\\/g, "/");
@@ -1143,7 +1147,17 @@ async function main() {
         title = sampleInfo.title;
         description = sampleInfo.description;
         snippetCount = sampleInfo.snippetCount;
-        id = `${src.id}/${rel.replace(/\.(js|xml|json|html)$/, "")}`;
+        const baseSampleId = `${src.id}/${rel.replace(/\.(js|xml|json|html)$/, "")}`;
+        id = baseSampleId;
+        if (usedSampleIds.has(id)) {
+          const extension = path.extname(rel).slice(1).toLowerCase() || 'sample';
+          id = `${baseSampleId}.${extension}`;
+          let suffix = 1;
+          while (usedSampleIds.has(id)) {
+            id = `${baseSampleId}.${extension}-${suffix++}`;
+          }
+        }
+        usedSampleIds.add(id);
         
         // Skip empty files or non-meaningful samples
         if (raw.trim().length < 50) {
