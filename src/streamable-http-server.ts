@@ -13,6 +13,7 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
+import { startSseKeepAlive } from "./lib/sseKeepAlive.js";
 
 const VERSION = "0.3.51"; // x-release-please-version
 const variant = getVariantConfig();
@@ -277,6 +278,10 @@ async function main() {
         return;
       }
       
+      // Stop idle SSE streams from being killed after 5 min and triggering a 409 reconnect
+      // storm — see the comment on startSseKeepAlive.
+      startSseKeepAlive(res);
+
       // Handle the request with the transport
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
