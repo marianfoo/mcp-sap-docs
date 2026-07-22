@@ -15,7 +15,7 @@ import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
 import { startSseKeepAlive } from "./lib/sseKeepAlive.js";
 
-const VERSION = "0.3.51"; // x-release-please-version
+const VERSION = "0.3.52"; // x-release-please-version
 const variant = getVariantConfig();
 
 
