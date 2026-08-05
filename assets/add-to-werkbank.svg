@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="197" height="44" viewBox="0 0 197 44" role="img" aria-label="Add to Werkbank">
+  <title>Add to Werkbank</title>
+  <rect width="197" height="44" rx="9" fill="#5B3FE8"/>
+  <g transform="translate(18 11)">
+    <path d="M11 0 22 11 11 22 0 11z" fill="#ffffff"/>
+    <path d="M11 0 15.5 11 11 22 6.5 11z" fill="#5B3FE8" opacity=".18"/>
+  </g>
+  <text x="50" y="28" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif"
+        font-size="15.5" font-weight="600" fill="#ffffff">Add to Werkbank</text>
+</svg>
