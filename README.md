@@ -357,5 +357,5 @@ MCP_VARIANT=abap npm run build:fts
 - `docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md`
 - `REMOTE_SETUP.md`
 
-[werkbank-badge]: https://img.shields.io/badge/Add%20to%20Werkbank-6d28d9?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NCA0NCI+PHBhdGggZD0iTTIyIDQgMzggMjAgMjIgNDAgNiAyMHoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=
-[werkbank-install]: https://mcp-sap-docs.marianzeis.de/install/werkbank?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
+[werkbank-badge]: assets/add-to-werkbank.svg
+[werkbank-install]: werkbank://install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9

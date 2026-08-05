@@ -16,12 +16,6 @@ import { CONFIG } from "./lib/config.js";
 
 const VERSION = "0.3.51"; // x-release-please-version
 const variant = getVariantConfig();
-const WERKBANK_INSTALL_NAME = 'sap-docs';
-const WERKBANK_INSTALL_CONFIG = Buffer.from(JSON.stringify({
-  type: 'streamable_http',
-  url: 'https://mcp-sap-docs.marianzeis.de/mcp',
-  description: 'SAP documentation, notes and community search'
-})).toString('base64url');
 
 
 // Simple in-memory event store for resumability
@@ -123,27 +117,6 @@ async function main() {
     origin: '*', // Allow all origins - adjust as needed for production
     exposedHeaders: ['Mcp-Session-Id']
   }));
-
-  // GitHub strips custom URL schemes from rendered README links. Keep the
-  // user-initiated click on HTTPS, then hand it off to the local Werkbank app.
-  app.get('/install/werkbank', (req: Request, res: Response) => {
-    const name = typeof req.query.name === 'string' ? req.query.name : '';
-    const config = typeof req.query.config === 'string' ? req.query.config : '';
-
-    if (name !== WERKBANK_INSTALL_NAME || config !== WERKBANK_INSTALL_CONFIG) {
-      res.status(400).json({
-        error: 'Invalid Werkbank install link',
-        message: 'The install link parameters do not match the sap-docs configuration.'
-      });
-      return;
-    }
-
-    const installParams = new URLSearchParams({ name, config });
-    const installUrl = `werkbank://install-mcp?${installParams.toString()}`;
-
-    res.set('Cache-Control', 'no-store');
-    res.redirect(302, installUrl);
-  });
 
   // Store transports by session ID
   const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
