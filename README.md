@@ -358,4 +358,4 @@ MCP_VARIANT=abap npm run build:fts
 - `REMOTE_SETUP.md`
 
 [werkbank-badge]: assets/add-to-werkbank.svg
-[werkbank-install]: werkbank://install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
+[werkbank-install]: https://getwerkbank.com/install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
