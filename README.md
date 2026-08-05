@@ -2,6 +2,25 @@
 
 An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to SAP documentation through a unified search and fetch interface. It combines a local full-text + semantic index over git-cloned SAP docs with optional live queries to SAP Help, SAP Community, and Software Heroes — all exposed as MCP tools.
 
+## Install
+
+[![Add to Werkbank][werkbank-badge]][werkbank-install]
+
+Or add it to any MCP client that supports streamable HTTP:
+
+```json
+{
+  "mcpServers": {
+    "sap-docs": {
+      "type": "http",
+      "url": "https://mcp-sap-docs.marianzeis.de/mcp"
+    }
+  }
+}
+```
+
+No API key or login required — the server is public and read-only.
+
 ## Public Hosted Endpoint
 
 > **Ready to use — no setup required**
@@ -337,3 +356,6 @@ MCP_VARIANT=abap npm run build:fts
 - `docs/TESTS.md`
 - `docs/UPSTREAM-ONE-WAY-SYNC-IMPLEMENTATION.md`
 - `REMOTE_SETUP.md`
+
+[werkbank-badge]: https://img.shields.io/badge/Add%20to%20Werkbank-6d28d9?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NCA0NCI+PHBhdGggZD0iTTIyIDQgMzggMjAgMjIgNDAgNiAyMHoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=
+[werkbank-install]: werkbank://install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
