@@ -17,7 +17,7 @@ import { BoundedEventStore } from "./lib/boundedEventStore.js";
 import { SessionRecord, SessionRegistry } from "./lib/sessionRegistry.js";
 import { startSseKeepAlive } from "./lib/sseKeepAlive.js";
 
-const VERSION = "0.3.52"; // x-release-please-version
+const VERSION = "0.3.53"; // x-release-please-version
 const variant = getVariantConfig();
 
 function positiveIntegerEnv(name: string, fallback: number): number {
