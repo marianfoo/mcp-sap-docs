@@ -13,59 +13,35 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
+import { SessionRecord, SessionRegistry } from "./lib/sessionRegistry.js";
 import { startSseKeepAlive } from "./lib/sseKeepAlive.js";
 
 const VERSION = "0.3.52"; // x-release-please-version
 const variant = getVariantConfig();
 
+function positiveIntegerEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
 
-// Simple in-memory event store for resumability
-class InMemoryEventStore {
-  private events: Map<string, Array<{ eventId: string; message: any }>> = new Map();
-  private eventCounter = 0;
-
-  async storeEvent(streamId: string, message: any): Promise<string> {
-    const eventId = `event-${this.eventCounter++}`;
-    
-    if (!this.events.has(streamId)) {
-      this.events.set(streamId, []);
-    }
-    
-    this.events.get(streamId)!.push({ eventId, message });
-    
-    // Keep only last 100 events per stream to prevent memory issues
-    const streamEvents = this.events.get(streamId)!;
-    if (streamEvents.length > 100) {
-      streamEvents.splice(0, streamEvents.length - 100);
-    }
-    
-    return eventId;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    logger.warn(`Ignoring invalid ${name}`, { value: raw, fallback });
+    return fallback;
   }
 
-  async replayEventsAfter(lastEventId: string, { send }: { send: (eventId: string, message: any) => Promise<void> }): Promise<string> {
-    // Find the stream that contains this event ID
-    for (const [streamId, events] of this.events.entries()) {
-      const eventIndex = events.findIndex(e => e.eventId === lastEventId);
-      if (eventIndex !== -1) {
-        // Replay all events after the specified event ID
-        for (let i = eventIndex + 1; i < events.length; i++) {
-          const event = events[i];
-          await send(event.eventId, event.message);
-        }
-        return streamId;
-      }
-    }
-    
-    // If event ID not found, return a new stream ID
-    return `stream-${randomUUID()}`;
-  }
+  return parsed;
+}
+
+interface ActiveSession {
+  transport: StreamableHTTPServerTransport;
+  server: Server;
 }
 
 function createServer() {
   const serverOptions: NonNullable<ConstructorParameters<typeof Server>[1]> & {
     protocolVersions?: string[];
   } = {
-    protocolVersions: ["2025-07-09"],
+    protocolVersions: ["2025-11-25"],
     capabilities: {
       // resources: {},  // DISABLED: Causes 60,000+ resources which breaks Cursor
       tools: {}       // Enable tools capability
@@ -108,6 +84,10 @@ async function main() {
   const portEnv = process.env.PORT || process.env.MCP_PORT;
   const MCP_PORT = portEnv ? parseInt(portEnv, 10) : variant.server.streamablePort;
   const MCP_HOST = process.env.MCP_HOST || '127.0.0.1';
+  const sessionIdleTtlMs = positiveIntegerEnv("MCP_SESSION_IDLE_TTL_MS", 30 * 60 * 1000);
+  const sessionSweepIntervalMs = positiveIntegerEnv("MCP_SESSION_SWEEP_INTERVAL_MS", 60 * 1000);
+  const maxSessions = positiveIntegerEnv("MCP_MAX_SESSIONS", 1000);
+  const maxRssMb = positiveIntegerEnv("MCP_MAX_RSS_MB", 1024);
   
   // Create Express application
   const app = express();
@@ -119,11 +99,51 @@ async function main() {
     exposedHeaders: ['Mcp-Session-Id']
   }));
 
-  // Store transports by session ID
-  const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
-  
-  // Create event store for resumability
-  const eventStore = new InMemoryEventStore();
+  // Public clients frequently abandon sessions without sending DELETE. Keep the
+  // registry bounded so those transports cannot retain MCP Server instances
+  // until the process exhausts its heap.
+  const sessions = new SessionRegistry<ActiveSession>({
+    idleTtlMs: sessionIdleTtlMs,
+    maxSessions,
+  });
+
+  const removeSession = (
+    sessionId: string | undefined,
+    trigger: "onsessionclosed" | "onclose",
+    context: Record<string, unknown> = {},
+  ) => {
+    if (!sessionId) return;
+
+    const removed = sessions.delete(sessionId);
+    if (removed) {
+      logger.logTransportEvent("session_closed", sessionId, {
+        ...context,
+        trigger,
+        transportCount: sessions.size,
+      });
+    }
+  };
+
+  const closeSession = async (
+    record: SessionRecord<ActiveSession>,
+    trigger: "idle_timeout" | "capacity_limit" | "shutdown",
+  ) => {
+    logger.logTransportEvent("session_evicted", record.id, {
+      trigger,
+      idleMs: Date.now() - record.lastActivityAt,
+      transportCount: sessions.size,
+    });
+
+    try {
+      await record.value.server.close();
+    } catch (error) {
+      logger.warn("Error closing evicted MCP session", {
+        sessionId: record.id,
+        trigger,
+        error: String(error),
+      });
+    }
+  };
 
   // Legacy SSE endpoint - redirect to MCP
   app.all('/sse', (req: Request, res: Response) => {
@@ -134,7 +154,7 @@ async function main() {
         old_endpoint: "/sse",
         new_endpoint: "/mcp",
         transport: "MCP Streamable HTTP", 
-        protocol_version: "2025-07-09"
+        protocol_version: "2025-11-25"
       },
       documentation: "https://github.com/marianfoo/mcp-sap-docs#connect-from-your-mcp-client",
       alternatives: {
@@ -156,18 +176,21 @@ async function main() {
       sessionId: req.headers['mcp-session-id'] as string || 'none'
     });
     
+    let oneShotServer: Server | undefined;
+
     try {
       // Check for existing session ID
       const sessionId = req.headers['mcp-session-id'] as string;
       let transport: StreamableHTTPServerTransport;
+      const activeSession = sessionId ? sessions.get(sessionId) : undefined;
       
-      if (sessionId && transports[sessionId]) {
+      if (activeSession) {
         // Reuse existing transport
-        transport = transports[sessionId];
+        transport = activeSession.value.transport;
         logger.logTransportEvent('transport_reused', sessionId, { 
           requestId, 
           method: req.method,
-          transportCount: Object.keys(transports).length
+          transportCount: sessions.size
         });
       } else if (req.method === 'POST' && req.is('application/json') && req.body?.method === 'initialize') {
         // Initialization request — create a fresh transport.
@@ -177,53 +200,33 @@ async function main() {
         // `onsessionclosed`, in-memory map wiped). Per MCP spec the client is
         // permitted to re-send `initialize` to recover; the server generates a
         // new Mcp-Session-Id and the client should adopt it.
-        const cleanupTransport = (
-          sessionId: string | undefined,
-          trigger: "onsessionclosed" | "onclose",
-          context: Record<string, unknown> = {}
-        ) => {
-          if (!sessionId) {
-            return;
-          }
-
-          const hadTransport = Boolean(transports[sessionId]);
-
-          if (hadTransport) {
-            delete transports[sessionId];
-          }
-
-          logger.logTransportEvent("session_closed", sessionId, {
-            ...context,
-            trigger,
-            transportCount: Object.keys(transports).length,
-            ...(hadTransport ? {} : { note: "session already cleaned up" })
-          });
-        };
-
+        let mcpServer: Server;
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
-          eventStore, // Enable resumability
           onsessioninitialized: (sessionId: string) => {
             // Store the transport by session ID when session is initialized
             logger.logTransportEvent('session_initialized', sessionId, {
               requestId,
-              transportCount: Object.keys(transports).length + 1
+              transportCount: sessions.size + 1
             });
-            transports[sessionId] = transport;
+            const evicted = sessions.add(sessionId, { transport, server: mcpServer });
+            for (const record of evicted) {
+              void closeSession(record, "capacity_limit");
+            }
           },
           onsessionclosed: (sessionId: string) => {
-            cleanupTransport(sessionId, 'onsessionclosed');
+            removeSession(sessionId, 'onsessionclosed');
           }
         });
 
         // Set up onclose handler to clean up transport when closed
         transport.onclose = () => {
-          cleanupTransport(transport.sessionId, 'onclose', { requestId });
+          removeSession(transport.sessionId, 'onclose', { requestId });
         };
         
         // Connect the transport to the MCP server
-        const server = createServer();
-        await server.connect(transport);
+        mcpServer = createServer();
+        await mcpServer.connect(transport);
         
         logger.logTransportEvent('transport_created', undefined, { 
           requestId,
@@ -251,8 +254,8 @@ async function main() {
           sessionIdGenerator: undefined, // Stateless — no session
         });
 
-        const server = createServer();
-        await server.connect(transport);
+        oneShotServer = createServer();
+        await oneShotServer.connect(transport);
       } else {
         // Invalid request — only non-POST or non-JSON requests reach this branch
         // after the stateless-fallback above. Typical case: GET/DELETE /mcp
@@ -304,6 +307,16 @@ async function main() {
           id: null,
         });
       }
+    } finally {
+      // Stateless requests have no registry entry or future stream to retain.
+      // Close their server explicitly instead of waiting for garbage collection.
+      if (oneShotServer) {
+        try {
+          await oneShotServer.close();
+        } catch (error) {
+          logger.debug("Error closing one-shot MCP server", { error: String(error) });
+        }
+      }
     }
   });
 
@@ -315,7 +328,9 @@ async function main() {
       version: VERSION,
       timestamp: new Date().toISOString(),
       transport: 'streamable-http',
-      protocol: '2025-07-09'
+      protocol: '2025-11-25',
+      activeSessions: sessions.size,
+      rssMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
     });
   });
 
@@ -328,15 +343,15 @@ async function main() {
   });
 
   // Configure server timeouts for MCP connections
-  server.timeout = 0;           // Disable HTTP timeout for long-lived MCP connections
-  server.keepAliveTimeout = 0;  // Disable keep-alive timeout
-  server.headersTimeout = 0;    // Disable headers timeout
+  server.timeout = 0;                // Long-lived MCP streams are allowed
+  server.keepAliveTimeout = 65_000;  // Bound idle HTTP keep-alive sockets
+  server.headersTimeout = 70_000;    // Must remain greater than keepAliveTimeout
   
   console.log(`📚 MCP Streamable HTTP Server listening on http://${MCP_HOST}:${MCP_PORT}`);
   console.log(`
 ==============================================
 MCP STREAMABLE HTTP SERVER
-Protocol version: 2025-07-09
+Protocol version: 2025-11-25
 
 Endpoint: /mcp
 Methods: GET, POST, DELETE
@@ -362,46 +377,75 @@ Health check: GET /health
   logger.info("MCP SAP Docs Streamable HTTP server ready", {
     transport: "streamable-http",
     port: MCP_PORT,
-    pid: process.pid
+    pid: process.pid,
+    sessionIdleTtlMs,
+    sessionSweepIntervalMs,
+    maxSessions,
+    maxRssMb,
   });
 
-  // Set up performance monitoring (every 5 minutes)
+  const sessionSweepInterval = setInterval(() => {
+    const expired = sessions.sweepExpired();
+    if (expired.length > 0) {
+      logger.info("Expired abandoned MCP sessions", {
+        expiredSessions: expired.length,
+        activeSessions: sessions.size,
+      });
+      for (const record of expired) {
+        void closeSession(record, "idle_timeout");
+      }
+    }
+  }, sessionSweepIntervalMs);
+
+  // Set up performance monitoring (every 5 minutes). Log aggregates only;
+  // serializing every session ID generated very large production logs.
   const performanceInterval = setInterval(() => {
+    const memory = process.memoryUsage();
     logger.logPerformanceMetrics();
     logger.info('Active sessions status', {
-      activeSessions: Object.keys(transports).length,
-      sessionIds: Object.keys(transports),
+      activeSessions: sessions.size,
+      oldestIdleMs: sessions.oldestIdleMs(),
+      rssMb: Math.round(memory.rss / 1024 / 1024),
+      heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
       timestamp: new Date().toISOString()
     });
   }, 5 * 60 * 1000);
 
-  // Handle server shutdown
-  process.on('SIGINT', async () => {
-    logger.info('Shutdown signal received, closing server gracefully');
-    
-    // Clear performance monitoring
+  let shuttingDown = false;
+  const shutdown = async (reason: string, exitCode: number) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    logger.info('Shutdown requested, closing server gracefully', { reason });
+    clearInterval(sessionSweepInterval);
     clearInterval(performanceInterval);
-    
-    // Close all active transports to properly clean up resources
-    const sessionIds = Object.keys(transports);
-    logger.info(`Closing ${sessionIds.length} active sessions`);
-    
-    for (const sessionId of sessionIds) {
-      try {
-        logger.logTransportEvent('session_shutdown', sessionId);
-        await transports[sessionId].close();
-        delete transports[sessionId];
-      } catch (error) {
-        logger.error('Error closing transport during shutdown', {
-          sessionId,
-          error: String(error)
-        });
-      }
+    clearInterval(memoryWatchInterval);
+
+    const activeSessions = sessions.takeAll();
+    logger.info(`Closing ${activeSessions.length} active sessions`, { reason });
+    await Promise.allSettled(activeSessions.map((record) => closeSession(record, "shutdown")));
+
+    server.close();
+    logger.info('Server shutdown complete', { reason, exitCode });
+    process.exit(exitCode);
+  };
+
+  // PM2 metrics are not always available. This in-process RSS watchdog is a
+  // final circuit breaker that restarts cleanly before V8 reaches a fatal OOM.
+  const memoryWatchInterval = setInterval(() => {
+    const rssMb = process.memoryUsage().rss / 1024 / 1024;
+    if (rssMb > maxRssMb) {
+      logger.error("RSS memory ceiling exceeded", {
+        rssMb: Math.round(rssMb),
+        maxRssMb,
+        activeSessions: sessions.size,
+      });
+      void shutdown("rss_memory_ceiling", 1);
     }
-    
-    logger.info('Server shutdown complete');
-    process.exit(0);
-  });
+  }, 60 * 1000);
+
+  process.on('SIGINT', () => void shutdown("SIGINT", 0));
+  process.on('SIGTERM', () => void shutdown("SIGTERM", 0));
 }
 
 main().catch((e) => {
