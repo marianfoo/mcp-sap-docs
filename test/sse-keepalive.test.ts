@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import express from "express";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
@@ -60,6 +60,24 @@ describe("startSseKeepAlive", () => {
     const base = await listen(app);
     const res = await fetch(`${base}/json`);
     expect(await res.json()).toEqual({ ok: true });
+  });
+
+  it("reports successful heartbeats so active MCP sessions can refresh their TTL", async () => {
+    const app = express();
+    const onHeartbeat = vi.fn();
+    app.get("/sse", (_req, res) => {
+      startSseKeepAlive(res, INTERVAL, onHeartbeat);
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      res.flushHeaders();
+    });
+
+    const base = await listen(app);
+    const res = await fetch(`${base}/sse`, { headers: { accept: "text/event-stream" } });
+    const reader = res.body!.getReader();
+    await reader.read();
+
+    expect(onHeartbeat).toHaveBeenCalled();
+    await reader.cancel();
   });
 
   it("clears the interval once the response is closed", async () => {

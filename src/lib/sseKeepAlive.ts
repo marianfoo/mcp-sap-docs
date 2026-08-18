@@ -24,7 +24,11 @@ const SSE_KEEPALIVE_MS = 30_000;
  * skips data-less events). The content-type check matters: the same handler also serves
  * plain `application/json` responses, and a stray comment line would corrupt those.
  */
-export function startSseKeepAlive(res: ServerResponse, intervalMs = SSE_KEEPALIVE_MS): NodeJS.Timeout {
+export function startSseKeepAlive(
+  res: ServerResponse,
+  intervalMs = SSE_KEEPALIVE_MS,
+  onHeartbeat?: () => void,
+): NodeJS.Timeout {
   const timer = setInterval(() => {
     if (
       res.headersSent &&
@@ -33,6 +37,7 @@ export function startSseKeepAlive(res: ServerResponse, intervalMs = SSE_KEEPALIV
       String(res.getHeader("content-type") ?? "").includes("text/event-stream")
     ) {
       res.write(": keepalive\n\n");
+      onHeartbeat?.();
     }
   }, intervalMs);
 

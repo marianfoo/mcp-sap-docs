@@ -13,6 +13,7 @@ import { prefetchFeatureMatrix } from "./lib/softwareHeroes/abapFeatureMatrix.js
 import { prefetchUi5LibDiff } from "./lib/ui5LibDiff/index.js";
 import { loadEmbeddingModel } from "./lib/embeddingSearch.js";
 import { CONFIG } from "./lib/config.js";
+import { BoundedEventStore } from "./lib/boundedEventStore.js";
 import { SessionRecord, SessionRegistry } from "./lib/sessionRegistry.js";
 import { startSseKeepAlive } from "./lib/sseKeepAlive.js";
 
@@ -35,6 +36,7 @@ function positiveIntegerEnv(name: string, fallback: number): number {
 interface ActiveSession {
   transport: StreamableHTTPServerTransport;
   server: Server;
+  eventStore: BoundedEventStore;
 }
 
 function createServer() {
@@ -88,6 +90,9 @@ async function main() {
   const sessionSweepIntervalMs = positiveIntegerEnv("MCP_SESSION_SWEEP_INTERVAL_MS", 60 * 1000);
   const maxSessions = positiveIntegerEnv("MCP_MAX_SESSIONS", 1000);
   const maxRssMb = positiveIntegerEnv("MCP_MAX_RSS_MB", 1024);
+  const eventStoreTtlMs = positiveIntegerEnv("MCP_EVENT_STORE_TTL_MS", 5 * 60 * 1000);
+  const maxEventStreamsPerSession = positiveIntegerEnv("MCP_MAX_EVENT_STREAMS_PER_SESSION", 8);
+  const maxEventsPerStream = positiveIntegerEnv("MCP_MAX_EVENTS_PER_STREAM", 16);
   
   // Create Express application
   const app = express();
@@ -116,6 +121,7 @@ async function main() {
 
     const removed = sessions.delete(sessionId);
     if (removed) {
+      removed.value.eventStore.clear();
       logger.logTransportEvent("session_closed", sessionId, {
         ...context,
         trigger,
@@ -142,6 +148,8 @@ async function main() {
         trigger,
         error: String(error),
       });
+    } finally {
+      record.value.eventStore.clear();
     }
   };
 
@@ -201,15 +209,21 @@ async function main() {
         // permitted to re-send `initialize` to recover; the server generates a
         // new Mcp-Session-Id and the client should adopt it.
         let mcpServer: Server;
+        const eventStore = new BoundedEventStore({
+          ttlMs: eventStoreTtlMs,
+          maxStreams: maxEventStreamsPerSession,
+          maxEventsPerStream,
+        });
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
+          eventStore,
           onsessioninitialized: (sessionId: string) => {
             // Store the transport by session ID when session is initialized
             logger.logTransportEvent('session_initialized', sessionId, {
               requestId,
               transportCount: sessions.size + 1
             });
-            const evicted = sessions.add(sessionId, { transport, server: mcpServer });
+            const evicted = sessions.add(sessionId, { transport, server: mcpServer, eventStore });
             for (const record of evicted) {
               void closeSession(record, "capacity_limit");
             }
@@ -283,7 +297,11 @@ async function main() {
       
       // Stop idle SSE streams from being killed after 5 min and triggering a 409 reconnect
       // storm — see the comment on startSseKeepAlive.
-      startSseKeepAlive(res);
+      startSseKeepAlive(
+        res,
+        undefined,
+        sessionId ? () => sessions.get(sessionId) : undefined,
+      );
 
       // Handle the request with the transport
       await transport.handleRequest(req, res, req.body);
@@ -382,6 +400,9 @@ Health check: GET /health
     sessionSweepIntervalMs,
     maxSessions,
     maxRssMb,
+    eventStoreTtlMs,
+    maxEventStreamsPerSession,
+    maxEventsPerStream,
   });
 
   const sessionSweepInterval = setInterval(() => {

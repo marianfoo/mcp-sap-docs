@@ -76,7 +76,10 @@ module.exports = {
         MCP_SESSION_IDLE_TTL_MS: "1800000",
         MCP_SESSION_SWEEP_INTERVAL_MS: "60000",
         MCP_MAX_SESSIONS: "1000",
-        MCP_MAX_RSS_MB: "1024"
+        MCP_MAX_RSS_MB: "1024",
+        MCP_EVENT_STORE_TTL_MS: "300000",
+        MCP_MAX_EVENT_STREAMS_PER_SESSION: "8",
+        MCP_MAX_EVENTS_PER_STREAM: "16"
       },
       autorestart: true,
       max_memory_restart: "1G",
