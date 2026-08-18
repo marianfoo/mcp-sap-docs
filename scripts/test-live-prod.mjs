@@ -34,7 +34,7 @@ const sapBase = getArg("--sap-url", process.env.SAP_DOCS_URL || "https://mcp-sap
 const abapBase = getArg("--abap-url", process.env.ABAP_MCP_URL || "https://mcp-abap.marianzeis.de");
 
 const MCP_ACCEPT = "application/json, text/event-stream";
-const INIT_PROTOCOL = "2025-07-09";
+const INIT_PROTOCOL = "2025-11-25";
 
 const servers = [
   {
