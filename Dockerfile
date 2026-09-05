@@ -4,7 +4,6 @@
 # ============ Build Stage ============
 FROM node:22-slim AS builder
 ARG MCP_VARIANT=sap-docs
-ARG BUILD_EMBEDDINGS=true
 ENV MCP_VARIANT=${MCP_VARIANT}
 
 # Install git (required for submodules)
@@ -17,8 +16,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev for build)
-RUN npm ci
+# Install all dependencies (including dev for build). The download cache is not
+# needed afterwards and would otherwise bloat max-mode build cache exports.
+RUN npm ci --no-audit --no-fund && \
+    rm -rf /root/.npm
 
 # Copy source code
 COPY . .
@@ -100,6 +101,7 @@ RUN UI5_LIB_DIFF_ENABLED="$(node --input-type=module -e ' \
 
 # Build TypeScript and the local search corpus. Semantic embeddings are useful
 # for query quality, but can be disabled for a smaller/faster CF image.
+ARG BUILD_EMBEDDINGS=true
 RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
       npm run build:fts-only; \
     else \
@@ -117,7 +119,6 @@ RUN find sources -name .git -type d -prune -exec rm -rf {} + && \
 # ============ Production Stage ============
 FROM node:22-slim AS production
 ARG MCP_VARIANT=sap-docs
-ARG BUILD_EMBEDDINGS=true
 ENV MCP_VARIANT=${MCP_VARIANT}
 LABEL org.opencontainers.image.source="https://github.com/marianfoo/mcp-sap-docs"
 
@@ -131,9 +132,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev
-RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
+# Install production dependencies and prune embedding-only packages in the same
+# layer. Removing them later would leave their bytes in the install layer.
+ARG BUILD_EMBEDDINGS=true
+RUN npm ci --omit=dev --no-audit --no-fund && \
+    if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
       rm -rf \
         node_modules/@huggingface \
         node_modules/@img \
@@ -141,19 +144,22 @@ RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
         node_modules/onnxruntime-node \
         node_modules/onnxruntime-web \
         node_modules/sharp; \
-    fi
+    fi && \
+    rm -rf /root/.npm
+
+# Create the non-root user before copying, so the artifacts land with the right
+# owner. A `chown -R /app` afterwards rewrites every file's metadata, which on an
+# overlay filesystem copies node_modules, sources and dist into one more layer.
+# node_modules stays root-owned: it is only read at runtime.
+RUN useradd -r -u 1001 mcpuser && chown mcpuser:mcpuser /app
 
 # Copy built artifacts from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/docs ./docs
-COPY --from=builder /app/sources ./sources
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/src/metadata.json ./src/metadata.json
-COPY --from=builder /app/.mcp-variant ./.mcp-variant
-
-# Create non-root user for security
-RUN useradd -r -u 1001 mcpuser && \
-    chown -R mcpuser:mcpuser /app
+COPY --from=builder --chown=mcpuser:mcpuser /app/dist ./dist
+COPY --from=builder --chown=mcpuser:mcpuser /app/docs ./docs
+COPY --from=builder --chown=mcpuser:mcpuser /app/sources ./sources
+COPY --from=builder --chown=mcpuser:mcpuser /app/config ./config
+COPY --from=builder --chown=mcpuser:mcpuser /app/src/metadata.json ./src/metadata.json
+COPY --from=builder --chown=mcpuser:mcpuser /app/.mcp-variant ./.mcp-variant
 
 USER mcpuser
 

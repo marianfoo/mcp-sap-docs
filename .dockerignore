@@ -6,6 +6,9 @@
 # Development
 .vscode
 .cursor
+# Parsed separately; do not let build-control edits invalidate COPY . .
+Dockerfile
+.dockerignore
 *.md
 !README.md
 
