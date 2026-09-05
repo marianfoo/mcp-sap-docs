@@ -143,17 +143,19 @@ RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
         node_modules/sharp; \
     fi
 
-# Copy built artifacts from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/docs ./docs
-COPY --from=builder /app/sources ./sources
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/src/metadata.json ./src/metadata.json
-COPY --from=builder /app/.mcp-variant ./.mcp-variant
+# Create the non-root user before copying, so the artifacts land with the right
+# owner. A `chown -R /app` afterwards rewrites every file's metadata, which on an
+# overlay filesystem copies node_modules, sources and dist into one more layer.
+# node_modules stays root-owned: it is only read at runtime.
+RUN useradd -r -u 1001 mcpuser && chown mcpuser:mcpuser /app
 
-# Create non-root user for security
-RUN useradd -r -u 1001 mcpuser && \
-    chown -R mcpuser:mcpuser /app
+# Copy built artifacts from builder
+COPY --from=builder --chown=mcpuser:mcpuser /app/dist ./dist
+COPY --from=builder --chown=mcpuser:mcpuser /app/docs ./docs
+COPY --from=builder --chown=mcpuser:mcpuser /app/sources ./sources
+COPY --from=builder --chown=mcpuser:mcpuser /app/config ./config
+COPY --from=builder --chown=mcpuser:mcpuser /app/src/metadata.json ./src/metadata.json
+COPY --from=builder --chown=mcpuser:mcpuser /app/.mcp-variant ./.mcp-variant
 
 USER mcpuser
 
