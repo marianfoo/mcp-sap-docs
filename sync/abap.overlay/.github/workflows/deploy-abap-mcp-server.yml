@@ -1,8 +1,9 @@
 name: Deploy MCP stack
 
 on:
-  release:
-    types: [ published ]
+  # Upstream releases arrive as sync pushes; this repository does not publish releases.
+  push:
+    branches: [ main ]
 
   # Allow manual triggering
   workflow_dispatch:

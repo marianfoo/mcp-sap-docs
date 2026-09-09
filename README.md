@@ -298,28 +298,40 @@ This repository contains direct sync automation:
 
 Flow:
 
-1. Push to `mcp-sap-docs/main`
-2. Workflow clones `abap-mcp-server`
-3. Tracked upstream files are synced (with exclude rules)
-4. ABAP overlay is applied
-5. `.mcp-variant` is forced to `abap`
-6. ABAP package identity is patched
-7. Commit is pushed to `abap-mcp-server/main`
+1. Release Please publishes a release in `mcp-sap-docs` after its release PR is merged
+2. The release workflow explicitly dispatches the ABAP sync workflow
+3. The sync workflow clones `abap-mcp-server`
+4. Tracked upstream files are synced (with exclude rules), then the ABAP overlay is applied
+5. `.mcp-variant` is forced to `abap` and ABAP package identity is patched
+6. A sync commit is pushed to `abap-mcp-server/main`
+7. That push triggers the ABAP deployment workflow
+
+The sync workflow also supports manual runs, including dry runs and a custom target branch.
+Only pushes to the downstream `main` branch trigger automatic deployment.
 
 Required secret in `mcp-sap-docs` repo:
 
-- `ABAP_REPO_SYNC_TOKEN`
-
-Commit message controls:
-
-- `[skip-sync]` skips sync workflow
+- `ABAP_REPO_SYNC_TOKEN`: a dedicated token with access to push code and workflow
+  changes to `abap-mcp-server`. Keep this separate from `GITHUB_TOKEN`, whose
+  pushes do not trigger subsequent workflows.
 
 ## Deployment Model
 
-- `mcp-sap-docs`: upstream implementation + sync trigger
-- `abap-mcp-server`: deployment trigger remains push-to-main in that repository
+- `mcp-sap-docs`: owns release versions and dispatches its deployment and ABAP sync when a release is created
+- `abap-mcp-server`: deploys on pushes to `main`, including upstream sync commits, or via `workflow_dispatch`
 
-This preserves ABAP deployment automation while keeping one shared upstream codebase.
+The downstream repository does not publish GitHub releases. Its deployment must
+therefore listen for sync pushes, not `release: published`. Upstream releases
+control when automatic syncs occur.
+
+The ABAP deployment workflow is maintained in
+`sync/abap.overlay/.github/workflows/deploy-abap-mcp-server.yml`. Change that
+upstream overlay so the fix persists across future syncs.
+
+After merging a deployment fix, publish the next upstream release or manually run
+`sync-to-abap-main.yml` against upstream `main`. Confirm that the downstream deploy
+run succeeds and that `https://mcp-abap.marianzeis.de/health` reports the version in
+the synced ABAP `package.json`; a successful sync alone does not confirm deployment.
 
 ## PM2 Runtime
 
