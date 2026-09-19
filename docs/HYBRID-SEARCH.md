@@ -92,11 +92,11 @@ so re-running is always safe. The model is downloaded once and cached in `dist/m
 
 ---
 
-## Daily Updates
+## Weekly Updates
 
 The `update-submodules.yml` workflow calls `bash setup.sh`, which calls `npm run build`.
 Since `build:embeddings` is part of `npm run build`, embeddings are rebuilt automatically
-on every daily source update. No workflow changes are needed.
+on every weekly source update. No workflow changes are needed.
 
 ---
 
