@@ -30,4 +30,5 @@ jobs:
             flock -w 1800 9
 
             MCP_VARIANT=sap-docs SKIP_NESTED_SUBMODULES=1 bash setup.sh
-            curl --fail --silent --show-error http://127.0.0.1:3122/health
+            curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-connrefused \
+              http://127.0.0.1:3122/health
