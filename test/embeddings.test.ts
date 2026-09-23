@@ -5,10 +5,11 @@
  * in dist/data/docs.sqlite. All tests are skipped gracefully when the table is
  * absent (i.e., before the first `npm run build:embeddings` run).
  */
-import { describe, it, expect } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
 import path from "path";
 import { existsSync } from "fs";
+import { CONFIG } from "../src/lib/config.js";
 
 const DB_PATH = path.join(process.cwd(), "dist", "data", "docs.sqlite");
 
@@ -27,34 +28,57 @@ function embeddingsTableExists(db: Database.Database): boolean {
 describe("embeddings build artifact", () => {
   const db = openDb();
   const tableExists = db ? embeddingsTableExists(db) : false;
+  afterAll(() => db?.close());
 
   if (!tableExists) {
     it.skip(
       "embeddings table not yet built — run `npm run build:embeddings` first",
       () => {}
     );
-    db?.close();
     // No further tests
   } else {
     it("embeddings table exists in docs.sqlite", () => {
       expect(tableExists).toBe(true);
     });
 
-    it("row count is between 15,000 and 25,000", () => {
+    it("contains the expanded corpus including markdown sections", () => {
       const row = db!
-        .prepare("SELECT count(*) as n FROM embeddings")
-        .get() as { n: number };
+        .prepare(`
+          SELECT
+            count(*) AS n,
+            sum(CASE WHEN docs.type = 'markdown-section' THEN 1 ELSE 0 END) AS sections
+          FROM embeddings
+          JOIN docs ON docs.id = embeddings.doc_id
+        `)
+        .get() as { n: number; sections: number };
       expect(row.n).toBeGreaterThan(15_000);
-      expect(row.n).toBeLessThan(25_000);
+      expect(row.sections).toBeGreaterThan(0);
     });
 
-    it("embedding dimension is 384 (BLOB length = 1536 bytes)", () => {
+    it("keeps document IDs unique across the FTS corpus", () => {
       const row = db!
-        .prepare("SELECT length(vec) as len FROM embeddings LIMIT 1")
-        .get() as { len: number } | undefined;
-      expect(row).toBeDefined();
-      // 384 dimensions × 4 bytes (Float32) = 1536 bytes
-      expect(row!.len).toBe(1536);
+        .prepare("SELECT count(*) AS rows, count(DISTINCT id) AS uniqueIds FROM docs")
+        .get() as { rows: number; uniqueIds: number };
+      expect(row.uniqueIds).toBe(row.rows);
+    });
+
+    it("records model, dimension, and document count metadata", () => {
+      const metadata = db!
+        .prepare(`
+          SELECT model_id AS modelId, dimension, document_count AS documentCount
+          FROM embedding_metadata WHERE id = 1
+        `)
+        .get() as { modelId: string; dimension: number; documentCount: number } | undefined;
+      const vectors = db!
+        .prepare("SELECT count(*) AS n, min(length(vec)) AS minLen, max(length(vec)) AS maxLen FROM embeddings")
+        .get() as { n: number; minLen: number; maxLen: number };
+
+      expect(metadata).toBeDefined();
+      expect(metadata!.modelId).toBe(CONFIG.EMBEDDING_MODEL_ID);
+      expect(metadata!.documentCount).toBe(vectors.n);
+      expect(metadata!.dimension).toBeGreaterThan(0);
+      expect(vectors.minLen).toBe(metadata!.dimension * 4);
+      expect(vectors.maxLen).toBe(metadata!.dimension * 4);
     });
 
     it("sample embedding is L2-normalized (‖v‖ ≈ 1.0)", () => {
@@ -95,7 +119,5 @@ describe("embeddings build artifact", () => {
 
       expect(missing).toBe(0);
     });
-
-    db!.close();
   }
 });

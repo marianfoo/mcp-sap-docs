@@ -60,9 +60,20 @@ export const CONFIG = {
   // Hybrid Search (BM25 + Embeddings) Configuration
   // ---------------------------------------------------------------------------
 
-  // RRF weight for semantic (embedding) results (default: 0.7)
-  // Lower than offline BM25 weight (1.0) so BM25 precision is preserved
-  EMBEDDING_WEIGHT: Number(process.env.EMBEDDING_WEIGHT || 0.7),
+  // RRF weight for semantic (embedding) results. 1.0 = canonical unweighted RRF (Cormack 2009).
+  // Reduce below 1.0 only for controlled experiments; rebuild embeddings if switching models.
+  EMBEDDING_WEIGHT: Number(process.env.EMBEDDING_WEIGHT || 1.0),
+  // Per-document fused-score boosts (× (1+boost)). Default OFF = canonical unweighted RRF.
+  // Noise-doc demotion belongs in pre-fusion filters (see search.ts); boosts are for experiments.
+  FUSION_BOOSTS_ENABLED: process.env.FUSION_BOOSTS_ENABLED === "true",
+
+  // HuggingFace/transformers model id used to compute embeddings. This value
+  // MUST be identical at build time (scripts/build-embeddings.ts) and query time
+  // (embeddingSearch.ts) — a different model produces an incompatible vector
+  // space, so cosine scores become silent garbage. To bake off another model,
+  // change this default (then re-run `npm run build:embeddings`); the env var is
+  // only for throwaway experiments where you set it for BOTH build and runtime.
+  EMBEDDING_MODEL_ID: process.env.EMBEDDING_MODEL_ID || "Xenova/all-MiniLM-L6-v2",
 
   // Directory where the embedding model is cached (gitignored, in-project)
   MODELS_DIR: process.env.MODELS_DIR || "dist/models",
@@ -70,6 +81,11 @@ export const CONFIG = {
   // Preload the embedding model at startup. Disable this for FTS-only builds
   // where dist/data/docs.sqlite intentionally has no embeddings table.
   PRELOAD_EMBEDDINGS: process.env.MCP_PRELOAD_EMBEDDINGS !== "false",
+
+  // Cross-encoder reranker. Default OFF — enable after eval confirms quality lift.
+  // Set RERANKER_ENABLED=true to activate; re-run eval to measure MRR delta.
+  RERANKER_ENABLED: process.env.RERANKER_ENABLED === "true",
+  RERANKER_MODEL_ID: process.env.RERANKER_MODEL_ID || "cross-encoder/ms-marco-MiniLM-L-6-v2",
 
   // ---------------------------------------------------------------------------
   // UI5 Lib Diff Configuration

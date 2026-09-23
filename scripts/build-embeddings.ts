@@ -6,18 +6,22 @@ import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
 import { pipeline, env } from "@huggingface/transformers";
+import { CONFIG } from "../src/lib/config.js";
 
 const DATA_DIR = path.join(process.cwd(), "dist", "data");
 const MODELS_DIR = path.join(process.cwd(), "dist", "models");
 const SRC = path.join(DATA_DIR, "index.json");
 const DST = path.join(DATA_DIR, "docs.sqlite");
-const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
+// Single source of truth, shared with the query path (embeddingSearch.ts) so the
+// build-time and query-time model can never drift into incompatible vector spaces.
+const MODEL_ID = CONFIG.EMBEDDING_MODEL_ID;
 const BATCH_SIZE = 32;
 
 type Doc = {
   id: string;
   title?: string;
   description?: string;
+  embedText?: string;
   keywords?: string[];
   type?: string;
 };
@@ -32,6 +36,9 @@ type LibraryBundle = {
  * Title + description + first 20 keywords — stays under ~256 tokens.
  */
 function buildEmbedText(doc: Doc): string {
+  // Sections carry a pre-cleaned `embedText` (title + stripped prose) built in
+  // build-index.ts — use it verbatim so the dense leg sees prose, not breadcrumb.
+  if (doc.embedText && doc.embedText.trim()) return doc.embedText.trim();
   const parts: string[] = [];
   if (doc.title) parts.push(doc.title);
   if (doc.description) parts.push(doc.description);
@@ -64,16 +71,18 @@ async function main() {
   console.log(`📖 Reading index from ${SRC}...`);
   const raw = JSON.parse(fs.readFileSync(SRC, "utf8")) as Record<string, LibraryBundle>;
 
-  // Filter: embed only markdown and jsdoc docs (not markdown-section or sample)
+  // Filter: embed markdown, jsdoc, and markdown-section docs (not sample).
+  // markdown-section gives the dense leg per-topic granularity (it embeds each
+  // section's cleaned `embedText`); sample snippets stay excluded.
   const docs: Doc[] = [];
   for (const lib of Object.values(raw)) {
     for (const d of lib.docs) {
-      if (d.type === "markdown" || d.type === "jsdoc") {
+      if (d.type === "markdown" || d.type === "jsdoc" || d.type === "markdown-section") {
         docs.push(d);
       }
     }
   }
-  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc only)`);
+  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc + markdown-section)`);
 
   // Configure transformers to store model in dist/models/ (project-local, gitignored)
   fs.mkdirSync(MODELS_DIR, { recursive: true });
@@ -93,13 +102,21 @@ async function main() {
   db.pragma("journal_mode = WAL");
   db.pragma("synchronous = NORMAL");
 
-  // Fresh embeddings table (idempotent: re-run is safe)
+  // Fresh embeddings artifact (idempotent: re-run is safe). Metadata makes model
+  // and dimension compatibility verifiable at query time.
   db.exec(`DROP TABLE IF EXISTS embeddings`);
+  db.exec(`DROP TABLE IF EXISTS embedding_metadata`);
   db.exec(`
     CREATE TABLE embeddings (
       doc_id TEXT NOT NULL PRIMARY KEY,
       vec    BLOB NOT NULL
-    )
+    );
+    CREATE TABLE embedding_metadata (
+      id             INTEGER PRIMARY KEY CHECK (id = 1),
+      model_id       TEXT NOT NULL,
+      dimension      INTEGER NOT NULL CHECK (dimension > 0),
+      document_count INTEGER NOT NULL CHECK (document_count > 0)
+    );
   `);
 
   const sizeBefore = fs.statSync(DST).size;
@@ -109,6 +126,7 @@ async function main() {
   const startTime = Date.now();
   let inserted = 0;
   let skipped = 0;
+  let embeddingDimension = 0;
 
   // Process in batches
   const tx = db.transaction((batch: Doc[]) => {
@@ -141,6 +159,13 @@ async function main() {
     // output.data is a flat Float32Array: [batch_size × dim]
     const flatData = output.data as Float32Array;
     const dim = flatData.length / batch.length;
+    if (!Number.isInteger(dim) || dim <= 0) {
+      throw new Error(`Invalid embedding dimension ${dim} for batch at offset ${offset}`);
+    }
+    if (embeddingDimension !== 0 && embeddingDimension !== dim) {
+      throw new Error(`Embedding dimension changed from ${embeddingDimension} to ${dim}`);
+    }
+    embeddingDimension = dim;
 
     batchVecs = batch.map((_, i) => {
       const text = texts[i];
@@ -162,6 +187,14 @@ async function main() {
 
   // Create index for fast lookups (doc_id is already PRIMARY KEY, so this is redundant but explicit)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_embeddings_doc_id ON embeddings(doc_id)`);
+  const vectorCount = (db.prepare(`SELECT count(*) AS n FROM embeddings`).get() as { n: number }).n;
+  if (vectorCount === 0 || embeddingDimension === 0) {
+    throw new Error("No embeddings were generated");
+  }
+  db.prepare(
+    `INSERT INTO embedding_metadata (id, model_id, dimension, document_count)
+     VALUES (1, ?, ?, ?)`
+  ).run(MODEL_ID, embeddingDimension, vectorCount);
 
   db.close();
 
@@ -169,7 +202,10 @@ async function main() {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   console.log(`✅ Embeddings built successfully!`);
-  console.log(`   📄 Embedded: ${inserted} documents`);
+  console.log(`   📄 Embedded: ${vectorCount} unique documents`);
+  if (inserted !== vectorCount) {
+    console.log(`   ℹ️  Replaced duplicate document IDs: ${inserted - vectorCount}`);
+  }
   if (skipped > 0) console.log(`   ⚠️  Skipped (no text): ${skipped}`);
   console.log(`   ⏱️  Elapsed: ${elapsed}s`);
   console.log(`   💾 docs.sqlite: ${(sizeBefore / 1024 / 1024).toFixed(1)} MB → ${(sizeAfter / 1024 / 1024).toFixed(1)} MB (+${((sizeAfter - sizeBefore) / 1024 / 1024).toFixed(1)} MB)`);

@@ -64,7 +64,9 @@ jobs:
         # against that database so PR checks do not rebuild embeddings twice.
         npm run test:url-generation
         npm run test:discovery-center
+        npm run test:embeddings
         npm run test:integration:run
+        npm run eval
         
         # Additional database health verification after tests
         echo "==> Post-test database integrity check"
