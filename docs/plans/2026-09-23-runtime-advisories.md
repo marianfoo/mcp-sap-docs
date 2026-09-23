@@ -13,8 +13,10 @@ already allow fixes for 16 of them; the lockfile pins older transitive versions.
    or application code for this update.
 2. Run a production-only audit in PR CI and fail on future critical advisories.
    Two high advisories remain, so a high-severity gate would fail every PR.
-3. Track the remaining `sharp` / `@huggingface/transformers` advisories as a
-   separate major-version migration. Do not describe this PR as audit-clean.
+3. Handle the remaining `sharp` / `@huggingface/transformers` advisories
+   separately. The patched `sharp` needs Node 20.9+, while this PR's CI uses
+   Node 18. Test a `sharp` override or Transformers upgrade on Node 22 before
+   changing the embedding stack. Do not describe this PR as audit-clean.
 
 ## Verification
 
@@ -22,5 +24,3 @@ already allow fixes for 16 of them; the lockfile pins older transitive versions.
 - Run `npm ci`, TypeScript build, and focused local tests.
 - Check that only allowed package versions changed and that the Node 18 PR
   workflow can install the lockfile.
-- Merge this before the pending 0.3.56 release PR so the release uses the
-  refreshed lockfile.
