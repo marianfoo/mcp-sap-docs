@@ -21,7 +21,7 @@ should not clone all documentation sources and build the index during staging.
 
 The recommended flow is:
 
-1. Deploy an existing semantic Docker image to BTP CF.
+1. Deploy an existing Docker image containing embeddings to BTP CF.
 2. Use MTA for app name, route, resource settings, and later service bindings.
 3. Use SAP Job Scheduling Service to trigger a daily redeploy so CF pulls the
    current image tag.
@@ -42,7 +42,7 @@ There are two separate decisions:
 - How the app is deployed to CF: MTA or direct `cf push`.
 - Where the image comes from: maintained public image or your own registry.
 
-Recommended default: deploy the maintained semantic image with MTA. Use direct
+Recommended default: deploy the maintained image containing embeddings with MTA. Use direct
 `cf push` first when you want a quick trial in a dev space.
 
 | Option | Best for | Upsides | Downsides |
@@ -54,7 +54,7 @@ Recommended default: deploy the maintained semantic image with MTA. Use direct
 | Job Scheduling Service refresh | Keeping a moving image tag current in CF | Runs fully inside BTP CF, visible in the customer's space, and avoids adding a refresh endpoint to the public MCP server. | Needs a scheduler service instance, a small deployer app, deploy credentials that work without browser SSO, and extra temporary memory for CF tasks. |
 
 In quota-constrained spaces, do not run the direct `cf push` trial app and the
-MTA app at the same time unless you have enough memory for both. The semantic app
+MTA app at the same time unless you have enough memory for both. The image profile
 uses `1024M` memory and `6144M` disk.
 
 Reference docs:
@@ -70,43 +70,35 @@ Reference docs:
 
 ## Semantic Embeddings
 
-Semantic embeddings are recommended for `sap-docs` because they improve
-natural-language and paraphrase-heavy searches. They are not required for the
-server to start.
+Images may contain complete embedding artifacts, but ranking defaults to lexical
+search (`EMBEDDING_WEIGHT=0`). The model is not preloaded at zero even when
+`MCP_PRELOAD_EMBEDDINGS=true`.
 
-With embeddings:
+Semantic ranking is an explicit opt-in after evaluating your own queries. A positive
+weight such as `0.7` enables it only with complete document and section vectors.
+Our evaluation found real relevance regressions; embeddings are not a general search
+quality recommendation. See [Hybrid Search](HYBRID-SEARCH.md) for limitations, rebuild
+requirements and the compatibility note for existing positive environment values.
 
-- Search quality is better for meaning-based queries.
-- The image is larger because `docs.sqlite` contains vectors and `dist/models`
-  contains `Xenova/all-MiniLM-L6-v2`.
-- Startup memory is higher when `MCP_PRELOAD_EMBEDDINGS=true`.
-
-Without embeddings:
-
-- BM25/FTS search, fetch, and online sources still work.
-- The image is smaller and faster to build.
-- Semantic reranking is not available.
-- This is a quota and startup fallback, not the recommended cost-saving mode for
-  a single always-on CF app. With SAP's GB/month rounding, `512M` for a full
-  month still rounds up to `1 GB/month`.
-
-Recommended semantic defaults:
+The maintained image includes vectors in `docs.sqlite` and the cached MiniLM model.
+That increases image size and build time even when runtime ranking stays lexical.
+The historically validated resource profile for that image is:
 
 - memory: `1024M`
 - disk quota: `6144M`
 - instances: `1`
-- `MCP_PRELOAD_EMBEDDINGS=true`
+- `MCP_PRELOAD_EMBEDDINGS=true` (effective only with a positive weight)
 
-FTS-only fallback defaults:
+An image built without embeddings supports BM25/FTS, fetch and online sources, with
+no semantic reranking. The existing smaller-image resource profile is:
 
 - memory: `512M`
 - disk quota: `4096M`
 - instances: `1`
 - `MCP_PRELOAD_EMBEDDINGS=false`
 
-Use these fallback values only when the semantic image does not fit the target
-space or embedding preload is too tight for available memory. Keep the semantic
-profile when the goal is search quality and the target space can fit it.
+Choose image contents and resources based on the required features and measured usage.
+Including model files in an image does not activate them or establish better relevance.
 
 ## Cost Estimate
 
@@ -136,7 +128,7 @@ Simple standalone estimate:
 
 | Scenario | Calculation | Billable CF runtime | Runtime cost at `85.00 EUR` | Runtime cost at `110.50 EUR` |
 | --- | --- | --- | --- | --- |
-| Recommended semantic app, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
+| Image with embeddings, always on | `1 GB * 1 instance * 730 h / 730` | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
 | FTS-only fallback, one always-on instance | `0.5 GB * 1 instance * 730 h / 730`, rounded up | `1 GB/month` | `85.00 EUR/month` | `110.50 EUR/month` |
 
 FTS-only is not a cost optimization for one always-on instance: both `512M` and
@@ -415,12 +407,12 @@ Later protection should add XSUAA and MCP OAuth metadata as a separate change.
 
 ## Resource Tuning
 
-Default deployment values for the recommended semantic profile:
+Default deployment values for the image containing embeddings:
 
 - memory: `1024M`
 - disk quota: `6144M`
 - instances: `1`
-- embeddings preload: `true`
+- embeddings preload: `true` (only effective with a positive weight)
 
 These defaults were validated with the semantic image. The observed disk usage
 was above `4G`, so `6144M` is intentional headroom for image layer expansion,
@@ -430,10 +422,11 @@ Parameter guidance:
 
 | Parameter | Default | Why it matters |
 | --- | --- | --- |
-| `memory` / `-m` | `1024M` | Runtime RAM per app instance. Embedding preload keeps the model resident so the first semantic query is not slow. |
+| `memory` / `-m` | `1024M` | Runtime RAM per app instance. Positive-weight semantic mode can keep the model resident; default lexical mode does not. |
 | `disk-quota` / `disk_quota` / `-k` | `6144M` | CF Docker apps need enough disk for the uncompressed image filesystem. Use `4096M` only for FTS-only fallback when the semantic image is too large. |
 | `instances` / `-i` | `1` | One instance minimizes quota use. Use more only when you need availability during deploys or platform maintenance. |
-| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the embedding model at startup. Set false only when startup memory is too tight or you intentionally use an FTS-only image. |
+| `EMBEDDING_WEIGHT` | `0` | Positive finite values opt into semantic ranking; evaluate the documented relevance tradeoffs first. |
+| `MCP_PRELOAD_EMBEDDINGS` | `true` | Loads the model at startup only when `EMBEDDING_WEIGHT` is positive. Set false for on-demand loading. |
 | `health-check-type` | `http` | Confirms the app can serve `/health`, not only that a port opened. |
 | `timeout` / `-t` | `180-240` | Large images can take longer to pull/start. The allowed maximum is foundation-specific. |
 

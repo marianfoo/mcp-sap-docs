@@ -1,6 +1,9 @@
 import { getVariantConfig } from "./variant.js";
 
 const variant = getVariantConfig();
+const configuredEmbeddingWeight = Number(process.env.EMBEDDING_WEIGHT || 0);
+const embeddingWeight = Number.isFinite(configuredEmbeddingWeight) && configuredEmbeddingWeight > 0
+  ? configuredEmbeddingWeight : 0;
 
 // Central configuration for search system
 export const CONFIG = {
@@ -60,16 +63,16 @@ export const CONFIG = {
   // Hybrid Search (BM25 + Embeddings) Configuration
   // ---------------------------------------------------------------------------
 
-  // RRF weight for semantic (embedding) results (default: 0.7)
-  // Lower than offline BM25 weight (1.0) so BM25 precision is preserved
-  EMBEDDING_WEIGHT: Number(process.env.EMBEDDING_WEIGHT || 0.7),
+  // Semantic ranking is opt-in; use lexical ranking by default.
+  // Set a positive weight (for example 0.7) after evaluating your search workload.
+  EMBEDDING_WEIGHT: embeddingWeight,
 
   // Directory where the embedding model is cached (gitignored, in-project)
   MODELS_DIR: process.env.MODELS_DIR || "dist/models",
 
-  // Preload the embedding model at startup. Disable this for FTS-only builds
-  // where dist/data/docs.sqlite intentionally has no embeddings table.
-  PRELOAD_EMBEDDINGS: process.env.MCP_PRELOAD_EMBEDDINGS !== "false",
+  // Preload only when semantic ranking is enabled. The existing switch can
+  // still disable preloading for FTS-only artifacts or load-on-demand usage.
+  PRELOAD_EMBEDDINGS: embeddingWeight > 0 && process.env.MCP_PRELOAD_EMBEDDINGS !== "false",
 
   // ---------------------------------------------------------------------------
   // UI5 Lib Diff Configuration

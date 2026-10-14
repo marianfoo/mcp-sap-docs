@@ -1,4 +1,4 @@
-// Build pipeline step 3: Generates embedding vectors for markdown + jsdoc docs
+// Build pipeline step 3: Generates embedding vectors for documents and Markdown sections
 // and stores them in the embeddings table in dist/data/docs.sqlite.
 // Uses Xenova/all-MiniLM-L6-v2 (384-dim) via @huggingface/transformers.
 // Model is downloaded once to dist/models/ and reused on subsequent runs.
@@ -64,16 +64,20 @@ async function main() {
   console.log(`📖 Reading index from ${SRC}...`);
   const raw = JSON.parse(fs.readFileSync(SRC, "utf8")) as Record<string, LibraryBundle>;
 
-  // Filter: embed only markdown and jsdoc docs (not markdown-section or sample)
+  // Include sections so fusion does not favor whole pages merely because they
+  // have a vector. Code samples remain lexical-only.
   const docs: Doc[] = [];
   for (const lib of Object.values(raw)) {
     for (const d of lib.docs) {
-      if (d.type === "markdown" || d.type === "jsdoc") {
+      if (d.type === "markdown" || d.type === "jsdoc" || d.type === "markdown-section") {
+        if (!buildEmbedText(d)) {
+          throw new Error(`No embedding text for ${d.id}; fix the index before building embeddings.`);
+        }
         docs.push(d);
       }
     }
   }
-  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc only)`);
+  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc + markdown-section)`);
 
   // Configure transformers to store model in dist/models/ (project-local, gitignored)
   fs.mkdirSync(MODELS_DIR, { recursive: true });
@@ -107,29 +111,20 @@ async function main() {
   const ins = db.prepare(`INSERT OR REPLACE INTO embeddings (doc_id, vec) VALUES (?, ?)`);
 
   const startTime = Date.now();
-  let inserted = 0;
-  let skipped = 0;
 
   // Process in batches
   const tx = db.transaction((batch: Doc[]) => {
     for (let i = 0; i < batch.length; i++) {
       const doc = batch[i];
-      const text = buildEmbedText(doc);
-      if (!text) {
-        skipped++;
-        return;
-      }
       // embedding is already computed outside the transaction
       // We pass pre-computed vecs via closure
       const vec = batchVecs[i];
-      if (!vec) return;
       ins.run(doc.id, vec);
-      inserted++;
     }
   });
 
   // We need to compute embeddings per batch then insert
-  let batchVecs: (Buffer | null)[] = [];
+  let batchVecs: Buffer[] = [];
 
   for (let offset = 0; offset < docs.length; offset += BATCH_SIZE) {
     const batch = docs.slice(offset, offset + BATCH_SIZE);
@@ -143,8 +138,6 @@ async function main() {
     const dim = flatData.length / batch.length;
 
     batchVecs = batch.map((_, i) => {
-      const text = texts[i];
-      if (!text) return null;
       const vec = new Float32Array(flatData.buffer, flatData.byteOffset + i * dim * 4, dim);
       const normalized = l2Normalize(new Float32Array(vec)); // copy + normalize
       return Buffer.from(normalized.buffer);
@@ -163,14 +156,14 @@ async function main() {
   // Create index for fast lookups (doc_id is already PRIMARY KEY, so this is redundant but explicit)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_embeddings_doc_id ON embeddings(doc_id)`);
 
+  const stored = db.prepare("SELECT count(*) AS n FROM embeddings").get() as { n: number };
   db.close();
 
   const sizeAfter = fs.statSync(DST).size;
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   console.log(`✅ Embeddings built successfully!`);
-  console.log(`   📄 Embedded: ${inserted} documents`);
-  if (skipped > 0) console.log(`   ⚠️  Skipped (no text): ${skipped}`);
+  console.log(`   📄 Embedded: ${stored.n} unique document IDs (${docs.length} input rows)`);
   console.log(`   ⏱️  Elapsed: ${elapsed}s`);
   console.log(`   💾 docs.sqlite: ${(sizeBefore / 1024 / 1024).toFixed(1)} MB → ${(sizeAfter / 1024 / 1024).toFixed(1)} MB (+${((sizeAfter - sizeBefore) / 1024 / 1024).toFixed(1)} MB)`);
   console.log(`   📍 Location: ${DST}`);

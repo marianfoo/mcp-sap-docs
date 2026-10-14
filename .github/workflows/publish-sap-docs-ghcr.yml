@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       build_embeddings:
-        description: "Build semantic embeddings and cache the model in the image"
+        description: "Include embedding artifacts for opt-in ranking (runtime default is lexical)"
         required: true
         default: true
         type: boolean

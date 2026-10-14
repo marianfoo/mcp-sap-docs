@@ -5,7 +5,7 @@
  * in dist/data/docs.sqlite. All tests are skipped gracefully when the table is
  * absent (i.e., before the first `npm run build:embeddings` run).
  */
-import { describe, it, expect } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import Database from "better-sqlite3";
 import path from "path";
 import { existsSync } from "fs";
@@ -27,39 +27,44 @@ function embeddingsTableExists(db: Database.Database): boolean {
 describe("embeddings build artifact", () => {
   const db = openDb();
   const tableExists = db ? embeddingsTableExists(db) : false;
+  afterAll(() => db?.close());
 
   if (!tableExists) {
     it.skip(
       "embeddings table not yet built — run `npm run build:embeddings` first",
       () => {}
     );
-    db?.close();
     // No further tests
   } else {
     it("embeddings table exists in docs.sqlite", () => {
       expect(tableExists).toBe(true);
     });
 
-    it("row count is between 15,000 and 25,000", () => {
+    it("covers every indexed document and section, excluding code samples", () => {
       const row = db!
         .prepare("SELECT count(*) as n FROM embeddings")
         .get() as { n: number };
-      expect(row.n).toBeGreaterThan(15_000);
-      expect(row.n).toBeLessThan(25_000);
+      const expected = db!.prepare(`
+        SELECT count(DISTINCT id) AS n FROM docs
+        WHERE type IN ('markdown', 'jsdoc', 'markdown-section')
+      `).get() as { n: number };
+      expect(row.n).toBeGreaterThan(0);
+      expect(row.n).toBe(expected.n);
     });
 
     it("embedding dimension is 384 (BLOB length = 1536 bytes)", () => {
       const row = db!
-        .prepare("SELECT length(vec) as len FROM embeddings LIMIT 1")
-        .get() as { len: number } | undefined;
+        .prepare("SELECT min(length(vec)) as minLen, max(length(vec)) as maxLen FROM embeddings")
+        .get() as { minLen: number; maxLen: number } | undefined;
       expect(row).toBeDefined();
       // 384 dimensions × 4 bytes (Float32) = 1536 bytes
-      expect(row!.len).toBe(1536);
+      expect(row!.minLen).toBe(1536);
+      expect(row!.maxLen).toBe(1536);
     });
 
     it("sample embedding is L2-normalized (‖v‖ ≈ 1.0)", () => {
       const row = db!
-        .prepare("SELECT vec FROM embeddings LIMIT 1")
+        .prepare("SELECT vec FROM embeddings ORDER BY doc_id LIMIT 1")
         .get() as { vec: Buffer } | undefined;
       expect(row).toBeDefined();
 
@@ -75,27 +80,16 @@ describe("embeddings build artifact", () => {
       expect(norm).toBeLessThan(1.005);
     });
 
-    it("all doc_ids in embeddings exist in the docs FTS table", () => {
-      // Sample up to 100 random doc_ids for performance
+    it("embedding IDs exactly match eligible document and section IDs", () => {
+      // Compare sets once; avoid nondeterministic sampling and repeated FTS scans.
+      const ids = new Set((db!.prepare("SELECT id FROM docs WHERE type IN ('markdown', 'jsdoc', 'markdown-section')").all() as { id: string }[]).map(row => row.id));
       const rows = db!
-        .prepare("SELECT doc_id FROM embeddings ORDER BY RANDOM() LIMIT 100")
+        .prepare("SELECT doc_id FROM embeddings")
         .all() as { doc_id: string }[];
 
       expect(rows.length).toBeGreaterThan(0);
 
-      const checkStmt = db!.prepare(
-        "SELECT count(*) as n FROM docs WHERE id = ?"
-      );
-
-      let missing = 0;
-      for (const { doc_id } of rows) {
-        const r = checkStmt.get(doc_id) as { n: number };
-        if (r.n === 0) missing++;
-      }
-
-      expect(missing).toBe(0);
+      expect(new Set(rows.map(row => row.doc_id))).toEqual(ids);
     });
-
-    db!.close();
   }
 });

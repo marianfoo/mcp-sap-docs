@@ -99,8 +99,8 @@ RUN UI5_LIB_DIFF_ENABLED="$(node --input-type=module -e ' \
       npm run download:ui5-lib-diff; \
     fi
 
-# Build TypeScript and the local search corpus. Semantic embeddings are useful
-# for query quality, but can be disabled for a smaller/faster CF image.
+# Build TypeScript and the local corpus. Optional embedding artifacts support
+# explicit positive EMBEDDING_WEIGHT; runtime ranking remains lexical by default.
 ARG BUILD_EMBEDDINGS=true
 RUN if [ "$BUILD_EMBEDDINGS" = "false" ]; then \
       npm run build:fts-only; \
@@ -170,6 +170,7 @@ EXPOSE 3122 3124
 ENV NODE_ENV=production
 ENV MCP_PORT=3122
 ENV MCP_HOST=0.0.0.0
+# Preloading also requires an explicit positive runtime EMBEDDING_WEIGHT.
 ENV MCP_PRELOAD_EMBEDDINGS=${BUILD_EMBEDDINGS}
 
 # Health check
