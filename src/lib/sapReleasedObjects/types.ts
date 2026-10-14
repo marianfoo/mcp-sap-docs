@@ -25,9 +25,14 @@ export interface RawReleaseFile {
   objectClassifications?: RawObjectEntry[];
 }
 
-export interface SAPObject {
+export interface ObjectIdentity {
   objectType: string;
   objectName: string;
+  tadirObject?: string;
+  tadirObjName?: string;
+}
+
+export interface SAPObject extends ObjectIdentity {
   softwareComponent: string;
   applicationComponent: string;
   state: string;
@@ -35,13 +40,14 @@ export interface SAPObject {
   source: "released" | "classicApi";
   successor?: {
     classification: string;
-    objects?: Array<{ objectType: string; objectName: string }>;
+    objects?: ObjectIdentity[];
     conceptName?: string;
   };
 }
 
 export interface DataStore {
   objectsMap: Map<string, SAPObject>;
+  tadirMap: Map<string, SAPObject>;
   byType: Map<string, SAPObject[]>;
   byLevel: Map<CleanCoreLevel, SAPObject[]>;
   byAppComponent: Map<string, SAPObject[]>;
@@ -78,6 +84,8 @@ export interface ObjectDetailsResult {
   found: boolean;
   objectType?: string;
   objectName?: string;
+  tadirObject?: string;
+  tadirObjName?: string;
   systemType?: SystemType;
   softwareComponent?: string;
   applicationComponent?: string;

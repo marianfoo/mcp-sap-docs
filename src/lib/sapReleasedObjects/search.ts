@@ -82,7 +82,10 @@ export async function searchObjects(opts: SearchObjectsOptions): Promise<SearchO
     const qLower = q.toLowerCase();
     scored = candidates
       .map((obj) => {
-        let score = scoreName(obj.objectName, qUpper, qLower);
+        let score = Math.max(
+          scoreName(obj.objectName, qUpper, qLower),
+          scoreName(obj.tadirObjName ?? "", qUpper, qLower)
+        );
         if (score === 0 && obj.applicationComponent.toUpperCase().includes(qUpper)) score = 3;
         return { obj, score };
       })
@@ -129,26 +132,15 @@ function computeCompliance(
   return "non_compliant";
 }
 
+function findObject(store: DataStore, type: string, name: string): SAPObject | undefined {
+  const key = `${type}:${name}`.toUpperCase();
+  return store.objectsMap.get(key) ?? store.tadirMap.get(key);
+}
+
 export async function getObjectDetails(opts: GetObjectDetailsOptions): Promise<ObjectDetailsResult> {
   const systemType: SystemType = opts.system_type ?? "public_cloud";
   const store = await getDataStore(systemType);
-
-  const typeUpper = opts.object_type.toUpperCase();
-  const nameUpper = opts.object_name.toUpperCase();
-  const key = `${typeUpper}:${nameUpper}`;
-
-  // Exact match first
-  let obj = store.objectsMap.get(key);
-
-  // Case-insensitive fallback
-  if (!obj) {
-    for (const [k, v] of store.objectsMap) {
-      if (k.toUpperCase() === key) {
-        obj = v;
-        break;
-      }
-    }
-  }
+  const obj = findObject(store, opts.object_type, opts.object_name);
 
   if (!obj) {
     return { found: false, objectType: opts.object_type, objectName: opts.object_name, systemType };
@@ -158,8 +150,7 @@ export async function getObjectDetails(opts: GetObjectDetailsOptions): Promise<O
   let successorObjects: SAPObject[] | undefined;
   if (obj.successor?.objects?.length) {
     successorObjects = obj.successor.objects.flatMap((s) => {
-      const succKey = `${s.objectType}:${s.objectName}`;
-      const found = store.objectsMap.get(succKey);
+      const found = findObject(store, s.objectType, s.objectName);
       return found ? [found] : [];
     });
   }
@@ -174,6 +165,8 @@ export async function getObjectDetails(opts: GetObjectDetailsOptions): Promise<O
     found: true,
     objectType: obj.objectType,
     objectName: obj.objectName,
+    tadirObject: obj.tadirObject,
+    tadirObjName: obj.tadirObjName,
     systemType,
     softwareComponent: obj.softwareComponent,
     applicationComponent: obj.applicationComponent,

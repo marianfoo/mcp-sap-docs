@@ -1,0 +1,79 @@
+{
+  "source": "SAP/abap-atc-cr-cv-s4hc@4aeb6577fd0e9ef4c87309c55dc5c60974903671/src/objectReleaseInfoLatest.json",
+  "objectReleaseInfo": [
+    {
+      "tadirObject": "ENHS",
+      "tadirObjName": "ES_EDC_CONSISTENCY_CLOUD",
+      "objectType": "BADI_DEF",
+      "objectKey": "EDC_DETERMINE_RESULT_PROC_CUST",
+      "softwareComponent": "SAPSCORE",
+      "applicationComponent": "CA-GTF-CSC-EDC",
+      "state": "deprecated",
+      "successorClassification": "oneObject",
+      "successors": [
+        {
+          "tadirObject": "ENHS",
+          "tadirObjName": "ES_EDC_CONSISTENCY_CLOUD",
+          "objectType": "BADI_DEF",
+          "objectKey": "EDC_MODIFY_CHECK_RESULT"
+        }
+      ]
+    },
+    {
+      "tadirObject": "FUGR",
+      "tadirObjName": "0012",
+      "objectType": "FUNC",
+      "objectKey": "BAPI_COSTCENTER_GETLIST",
+      "softwareComponent": "SAPSCORE",
+      "applicationComponent": "CO-OM-2CL",
+      "state": "notToBeReleased",
+      "successorClassification": "oneObject",
+      "successors": [
+        {
+          "tadirObject": "DDLS",
+          "tadirObjName": "I_COSTCENTER",
+          "objectType": "CDS_STOB",
+          "objectKey": "I_COSTCENTER"
+        }
+      ]
+    },
+    {
+      "tadirObject": "FUGR",
+      "tadirObjName": "0012",
+      "objectType": "FUNC",
+      "objectKey": "BAPI_COSTCENTER_GETDETAIL",
+      "softwareComponent": "SAPSCORE",
+      "applicationComponent": "CO-OM-2CL",
+      "state": "notToBeReleased",
+      "successorClassification": "oneObject",
+      "successors": [
+        {
+          "tadirObject": "DDLS",
+          "tadirObjName": "I_COSTCENTER",
+          "objectType": "CDS_STOB",
+          "objectKey": "I_COSTCENTER"
+        }
+      ]
+    },
+    {
+      "tadirObject": "DDLS",
+      "tadirObjName": "I_COSTCENTER",
+      "objectType": "CDS_STOB",
+      "objectKey": "I_COSTCENTER",
+      "softwareComponent": "SAPSCORE",
+      "applicationComponent": "CO-OM-2CL",
+      "state": "released",
+      "successorClassification": ""
+    },
+    {
+      "tadirObject": "ENHS",
+      "tadirObjName": "ES_EDC_CONSISTENCY_CLOUD",
+      "objectType": "BADI_DEF",
+      "objectKey": "EDC_MODIFY_CHECK_RESULT",
+      "softwareComponent": "SAPSCORE",
+      "applicationComponent": "CA-GTF-CSC-EDC",
+      "state": "released",
+      "successorClassification": ""
+    }
+  ]
+}
