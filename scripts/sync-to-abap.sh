@@ -72,11 +72,13 @@ while IFS= read -r stale; do
   fi
 done < "$STALE_TRACKED"
 
-rsync -a --files-from="$FILE_LIST" "$ROOT_DIR/" "$TARGET_DIR/"
+# Fresh checkouts can share timestamps even when same-sized files differ.
+# Compare content so a release version or overlay change cannot be skipped.
+rsync -a --checksum --files-from="$FILE_LIST" "$ROOT_DIR/" "$TARGET_DIR/"
 
 echo "Applying ABAP overlay"
 if [ -d "$ROOT_DIR/sync/abap.overlay" ]; then
-  rsync -a "$ROOT_DIR/sync/abap.overlay/" "$TARGET_DIR/"
+  rsync -a --checksum "$ROOT_DIR/sync/abap.overlay/" "$TARGET_DIR/"
 fi
 
 echo "Setting ABAP variant selector"
