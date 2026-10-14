@@ -45,7 +45,9 @@ Sections need their own vectors because they are distinct search candidates. Cod
 samples remain lexical-only and can lose relative rank to documents receiving a
 semantic contribution. Storage is one vector per document ID: repeated headings can
 share an ID, so their last stored vector may describe a different section of the same
-file. These are additional opt-in limitations; ID construction is unchanged. A missing eligible vector disables semantic ranking for
+file. These are additional opt-in limitations; ID construction is unchanged.
+
+A missing eligible vector disables semantic ranking for
 **all queries**, with one warning per database connection explaining the rebuild.
 Older artifacts that omitted sections therefore use lexical search until rebuilt.
 Missing embedding tables and unavailable models also fall back to lexical search.
@@ -81,7 +83,8 @@ TEST_MCP_PORT=43129 npm run test:integration:run
 
 For semantic testing, run the integration command with `EMBEDDING_WEIGHT=0.7` after a
 complete artifact build. This currently fails two of 42 relevance/identity checks. On
-macOS, the runner's forced failure exit can also trigger the existing ONNX abort. Also verify a representative MCP `search` request with
+macOS, the runner's forced failure exit can also trigger the existing ONNX abort.
+Also verify a representative MCP `search` request with
 `includeOnline=false` at weights zero and a positive value. Old or incomplete artifacts
 must produce the same lexical result at either weight and emit the rebuild warning.
 
