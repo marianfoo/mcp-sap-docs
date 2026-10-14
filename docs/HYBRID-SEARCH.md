@@ -29,7 +29,8 @@ semantic ranking remains opt-in. See [the fix plan](search-score-fusion-plan.md)
    Documents without a semantic contribution retain their lexical scores.
 5. Online results join the results, duplicates are removed and the top `k` are returned.
 
-Taking the maximum of the two contributions previously discarded the semantic leg.
+Taking the maximum previously kept only the larger contribution, usually the boosted
+lexical one. It lost the additive contribution, but could still affect some rankings.
 The fix sums only the independent lexical and semantic legs; repeated online URLs
 still count once. Returned offline document IDs and fetch behavior are preserved.
 
@@ -41,7 +42,10 @@ model is cached in `dist/models/`.
 
 Build vectors for **all** `markdown`, `jsdoc` and `markdown-section` document IDs.
 Sections need their own vectors because they are distinct search candidates. Code
-samples remain lexical-only. A missing eligible vector disables semantic ranking for
+samples remain lexical-only and can lose relative rank to documents receiving a
+semantic contribution. Storage is one vector per document ID: repeated headings can
+share an ID, so their last stored vector may describe a different section of the same
+file. These are additional opt-in limitations; ID construction is unchanged. A missing eligible vector disables semantic ranking for
 **all queries**, with one warning per database connection explaining the rebuild.
 Older artifacts that omitted sections therefore use lexical search until rebuilt.
 Missing embedding tables and unavailable models also fall back to lexical search.
@@ -76,6 +80,16 @@ TEST_MCP_PORT=43129 npm run test:integration:run
 ```
 
 For semantic testing, run the integration command with `EMBEDDING_WEIGHT=0.7` after a
-complete artifact build. Also verify a representative MCP `search` request with
+complete artifact build. This currently fails two of 42 relevance/identity checks. On
+macOS, the runner's forced failure exit can also trigger the existing ONNX abort. Also verify a representative MCP `search` request with
 `includeOnline=false` at weights zero and a positive value. Old or incomplete artifacts
 must produce the same lexical result at either weight and emit the rebuild warning.
+
+## Upgrade note
+
+The configured default changes from nominal `0.7` to `0`. Default IDs and scores
+match the old default on our 44-query offline fixture and the reported RAP query, not
+necessarily every possible query or result limit. Existing positive environment values
+remain active: after a full artifact rebuild they enable the corrected semantic mode
+and its documented relevance tradeoffs. Set `EMBEDDING_WEIGHT=0` to choose lexical
+ranking explicitly.

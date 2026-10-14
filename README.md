@@ -279,7 +279,8 @@ docker run --rm -p 3124:3124 \
 
 For BTP CF, the recommended `sap-docs` path is to deploy the maintained
 `ghcr.io/marianfoo/mcp-sap-docs:sap-docs` image with MTA. Cloud Foundry only
-pulls and runs the prepared semantic image.
+pulls and runs the prepared image, including embedding artifacts. Ranking remains
+lexical unless a positive `EMBEDDING_WEIGHT` is explicitly configured.
 
 See [docs/BTP-CF-DEPLOYMENT.md](docs/BTP-CF-DEPLOYMENT.md) for the public-first
 deployment guide. Start with

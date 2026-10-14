@@ -97,3 +97,8 @@ The Docs build grew from 19,749 to 39,068 vectors, 71.4 to 113.5 MiB SQLite and 
 466 seconds. PR #71 needed 43,967 vectors, 126.0 MiB and 653 seconds on the same machine.
 Source-only deployment is insufficient for the new semantic mode. No separate mirror
 implementation is needed; the upstream sync carries the fix.
+
+The current deploy workflow stops services before setup/build. Before deployment,
+measure the complete build on the target host or equivalent staging system and state
+the expected downtime. The local extra 312 seconds is not a host prediction. Do not
+start deployment solely from these workstation timings.

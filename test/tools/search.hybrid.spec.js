@@ -1,5 +1,5 @@
-// Hybrid search quality tests — paraphrase queries that BM25 misses but embeddings catch.
-// These are regression tests for the semantic search layer.
+// Search relevance regressions using paraphrase queries.
+// The configured ranking applies: lexical by default, semantic only with an explicit positive weight.
 // Queries are designed so that the key concept is expressed differently from the indexed terms.
 import { parseSummaryText } from '../_utils/parseResults.js';
 

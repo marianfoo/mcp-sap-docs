@@ -43,7 +43,7 @@ describe('lexical and semantic score fusion', () => {
     mocks.rows.push(row('third'));
     mocks.semantic.mockImplementation(async (_query: string, candidates: SearchResult[]) =>
       [candidates[1], candidates[2], candidates[0]].map((result, rank) => ({
-        ...result, sourceKind: 'semantic', finalScore: 0.7 / (61 + rank), bm25: 0,
+        ...result, sourceKind: 'semantic', finalScore: 0.7 / (61 + rank), bm25: 0, debug: { boost: 0.91 },
       })));
     const results = await search('query', { includeOnline: false, k: 3 });
     expect(results.map(result => result.id)).toEqual(['/cap/second', '/cap/first', '/cap/third']);
@@ -53,7 +53,7 @@ describe('lexical and semantic score fusion', () => {
   it('adds the semantic contribution so it can change the final search order', async () => {
     const lexical = await search('query', { includeOnline: false, k: 2 });
     mocks.semantic.mockImplementation(async (_query: string, candidates: SearchResult[]) => [
-      { ...candidates[1], sourceKind: 'semantic', finalScore: 0.7 / 61, bm25: 0 },
+      { ...candidates[1], sourceKind: 'semantic', finalScore: 0.7 / 61, bm25: 0, debug: { boost: 0.91 } },
     ]);
 
     const fused = await search('query', { includeOnline: false, k: 2 });
@@ -74,7 +74,7 @@ describe('lexical and semantic score fusion', () => {
   it('applies the document boost once to both rank contributions', async () => {
     const lexical = await search('first', { includeOnline: false, k: 2 });
     mocks.semantic.mockImplementation(async (_query: string, candidates: SearchResult[]) => [
-      { ...candidates[0], sourceKind: 'semantic', finalScore: 0.7 / 61, bm25: 0 },
+      { ...candidates[0], sourceKind: 'semantic', finalScore: 0.7 / 61, bm25: 0, debug: { boost: 0.91 } },
     ]);
     const fused = await search('first', { includeOnline: false, k: 2 });
     expect(fused[0].finalScore).toBeCloseTo((1 / 61 + 0.7 / 61) * 1.5, 12);
