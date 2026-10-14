@@ -154,7 +154,7 @@ const RRF_WEIGHTS = {
   sap_help: 0.9,       // Slightly lower for SAP Help
   sap_community: 0.6,  // Lower for community (can be noisy)
   software_heroes: 0.85, // Software-Heroes (high quality ABAP/RAP tutorials)
-  semantic: CONFIG.EMBEDDING_WEIGHT, // Embedding-based semantic results (default 0.7)
+  semantic: CONFIG.EMBEDDING_WEIGHT, // Embedding-based semantic results (opt-in; default 0)
 };
 
 /**
@@ -196,8 +196,7 @@ function canonicalUrl(u: string): string {
  */
 function dedupeKey(r: SearchResult): string {
   if (r.sourceKind === "offline" || r.sourceKind === "semantic") {
-    // Semantic results reference the same documents as offline results — use same key
-    // so RRF fusion accumulates both scores for the same document.
+    // Semantic results reference the same indexed documents as offline results.
     return `offline:${r.sourceId}:${r.id}`;
   }
   // For online results, use canonical URL
@@ -801,7 +800,15 @@ export async function search(
   const semanticResults = await buildSemanticResults(query, offlineResults, k);
   console.log(`🧠 [SEMANTIC] ${semanticResults.length} semantic results`);
 
-  const allResults = [...offlineResults, ...onlineResults, ...semanticResults];
+  // The semantic leg only re-ranks these offline candidates. Add its weighted
+  // RRF contribution once, applying the existing document boost to both legs.
+  // Taking the maximum during deduplication discarded the semantic score.
+  const semanticScores = new Map(semanticResults.map(result => [dedupeKey(result), result.finalScore]));
+  const fusedOfflineResults = offlineResults.map(result => ({
+    ...result,
+    finalScore: result.finalScore + (semanticScores.get(dedupeKey(result)) ?? 0) * (1 + (result.debug?.boost ?? 0))
+  }));
+  const allResults = [...fusedOfflineResults, ...onlineResults];
   
   // Sort by final score (higher = better)
   allResults.sort((a, b) => b.finalScore - a.finalScore);

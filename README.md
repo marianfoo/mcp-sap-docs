@@ -1,6 +1,6 @@
 # MCP SAP Docs (Upstream)
 
-An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to SAP documentation through a unified search and fetch interface. It combines a local full-text + semantic index over git-cloned SAP docs with optional live queries to SAP Help, SAP Community, and Software Heroes — all exposed as MCP tools.
+An MCP server that gives AI assistants (Claude, Cursor, ChatGPT, etc.) access to SAP documentation through a unified search and fetch interface. It combines local full-text search and optional semantic ranking over git-cloned SAP docs with optional live queries to SAP Help, SAP Community, and Software Heroes — all exposed as MCP tools.
 
 ## Install
 
@@ -77,7 +77,7 @@ No API key or login required — the server is public and read-only.
 
 | Tool | Description |
 |------|-------------|
-| `search` | Unified hybrid search (BM25 + semantic) across offline docs and optional online sources. Supports `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources` parameters. |
+| `search` | Unified search (BM25 with optional semantic ranking) across offline docs and optional online sources. Supports `query`, `k`, `includeOnline`, `includeSamples`, `abapFlavor`, `sources` parameters. |
 | `fetch` | Retrieve full document content by ID returned from `search`. |
 | `abap_feature_matrix` | Check ABAP feature availability across SAP releases (7.40–LATEST) using the [Software Heroes feature matrix](https://software-heroes.com/en/abap-feature-matrix). |
 | `sap_community_search` | Dedicated SAP Community search via the Khoros LiQL API — returns full content of top posts. Use when `search` results are insufficient for specific errors or workarounds. |
@@ -102,7 +102,7 @@ No API key or login required — the server is public and read-only.
 
 - Upstream source of truth: `mcp-sap-docs`
 - One-way sync target: `abap-mcp-server`
-- Search uses **Hybrid BM25 + Semantic (embedding)** fusion via Reciprocal Rank Fusion (RRF)
+- Search defaults to **BM25 keyword ranking**; optional semantic scores are combined via Reciprocal Rank Fusion (RRF)
 - Embeddings model: `Xenova/all-MiniLM-L6-v2` (~90 MB, cached in `dist/models/`)
 
 ## Variant Selection
@@ -139,7 +139,7 @@ MCP_VARIANT=abap npm run start:streamable
 
 Ranking and filtering highlights:
 
-- **Hybrid BM25 + Semantic (embedding) search** — keyword and meaning, fused via RRF
+- **BM25 search with optional semantic ranking** — keyword and meaning, fused via RRF
 - Reciprocal Rank Fusion (RRF) across offline and online sources
 - Source-level boosts from metadata
 - `includeSamples` can remove sample-heavy sources
@@ -148,16 +148,14 @@ Ranking and filtering highlights:
 
 ## Hybrid Search
 
-The offline search combines BM25 (FTS5 keyword matching) with semantic similarity
-(dense embeddings via `Xenova/all-MiniLM-L6-v2`). This allows natural-language and
-paraphrase queries to find relevant docs even when the exact keywords are missing.
+Offline search defaults to BM25 keyword ranking. Optional semantic ranking uses
+`Xenova/all-MiniLM-L6-v2` to reorder the lexical candidates; it does not search outside
+that candidate pool. Enable it explicitly with `EMBEDDING_WEIGHT=0.7` after building
+complete document and section embeddings and evaluating your own queries.
 
-Example: _"how to check if a user has permission"_ finds `AUTHORITY-CHECK` docs.
-
-Embeddings are pre-computed at build time and stored in `docs.sqlite`.
-The model (~90 MB) is cached in `dist/models/` (gitignored, in-project).
-
-See [docs/HYBRID-SEARCH.md](docs/HYBRID-SEARCH.md) for full details, size impact, and tuning.
+Embeddings are stored in `docs.sqlite`, with the model cached in `dist/models/`.
+Old or partial embedding artifacts fall back to lexical ranking with a rebuild warning.
+See [docs/HYBRID-SEARCH.md](docs/HYBRID-SEARCH.md) for setup, limitations and costs.
 
 ## Offline-Only Mode
 

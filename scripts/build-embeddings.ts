@@ -64,16 +64,17 @@ async function main() {
   console.log(`📖 Reading index from ${SRC}...`);
   const raw = JSON.parse(fs.readFileSync(SRC, "utf8")) as Record<string, LibraryBundle>;
 
-  // Filter: embed only markdown and jsdoc docs (not markdown-section or sample)
+  // Include sections so fusion does not favor whole pages merely because they
+  // have a vector. Code samples remain lexical-only.
   const docs: Doc[] = [];
   for (const lib of Object.values(raw)) {
     for (const d of lib.docs) {
-      if (d.type === "markdown" || d.type === "jsdoc") {
+      if (d.type === "markdown" || d.type === "jsdoc" || d.type === "markdown-section") {
         docs.push(d);
       }
     }
   }
-  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc only)`);
+  console.log(`📄 Documents to embed: ${docs.length} (markdown + jsdoc + markdown-section)`);
 
   // Configure transformers to store model in dist/models/ (project-local, gitignored)
   fs.mkdirSync(MODELS_DIR, { recursive: true });

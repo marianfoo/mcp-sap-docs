@@ -90,6 +90,28 @@ function embeddingsTableExists(): boolean {
   }
 }
 
+let coverageDb: ReturnType<typeof openDb> | null = null;
+let completeCoverage = false;
+
+/** Check the artifact once per database connection, never per query's candidates. */
+function hasCompleteDocumentCoverage(): boolean {
+  const db = openDb();
+  if (coverageDb !== db) {
+    const missing = db.prepare(`
+      SELECT 1 FROM docs
+      WHERE type IN ('markdown', 'jsdoc', 'markdown-section')
+        AND NOT EXISTS (SELECT 1 FROM embeddings WHERE doc_id = docs.id)
+      LIMIT 1
+    `).get();
+    completeCoverage = !missing;
+    coverageDb = db;
+    if (!completeCoverage) {
+      console.warn('⚠️  Incomplete document embeddings; using lexical search. Run build:embeddings and restart the server.');
+    }
+  }
+  return completeCoverage;
+}
+
 const SEMANTIC_RRF_K = 60;
 
 function rrf(rank: number): number {
@@ -107,6 +129,7 @@ function rrf(rank: number): number {
  *
  * Returns [] gracefully when:
  *  - Embeddings table absent (before first build:embeddings run)
+ *  - Incomplete document coverage (including older artifacts without sections)
  *  - Model not available
  *  - No candidates have stored embeddings
  */
@@ -124,6 +147,9 @@ export async function buildSemanticResults(
   }
 
   if (bm25Results.length === 0) return [];
+  // A partial artifact would boost vector-bearing pages over unembedded sections.
+  // Keep the lexical ranking consistently until the whole artifact is rebuilt.
+  if (!hasCompleteDocumentCoverage()) return [];
 
   const db = openDb();
 
