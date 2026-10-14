@@ -14,6 +14,7 @@ import {
 import type {
   RawObjectEntry,
   RawReleaseFile,
+  ObjectIdentity,
   SAPObject,
   DataStore,
   SystemType,
@@ -33,27 +34,40 @@ let releasedObjectsContext: ReleasedObjectsContext | undefined;
 // Raw JSON loading
 // ---------------------------------------------------------------------------
 
+function normalizeIdentity(
+  entry: Pick<RawObjectEntry, "objectType" | "objectKey" | "tadirObject" | "tadirObjName">
+): ObjectIdentity | null {
+  const objectType = entry.objectType?.trim();
+  const objectName = entry.objectKey?.trim();
+  const tadirObject = entry.tadirObject?.trim();
+  const tadirObjName = entry.tadirObjName?.trim();
+  const tadir = tadirObject && tadirObjName ? { tadirObject, tadirObjName } : {};
+
+  // Treat each identity as a pair; never combine an actual type with a container name.
+  if (objectType && objectName) return { objectType, objectName, ...tadir };
+  if (tadirObject && tadirObjName) return { objectType: tadirObject, objectName: tadirObjName, ...tadir };
+  return null;
+}
+
 function normalizeEntry(entry: RawObjectEntry, source: "released" | "classicApi"): SAPObject | null {
-  const objectType = (entry.tadirObject ?? entry.objectType ?? "").trim();
-  const objectName = (entry.tadirObjName ?? entry.objectKey ?? "").trim();
-  if (!objectType || !objectName) return null;
+  const identity = normalizeIdentity(entry);
+  if (!identity) return null;
 
   const level: CleanCoreLevel = STATE_TO_LEVEL[entry.state] ?? "D";
 
   const successor: SAPObject["successor"] = entry.successorClassification
     ? {
         classification: entry.successorClassification,
-        objects: entry.successors?.map((s) => ({
-          objectType: (s.tadirObject ?? s.objectType ?? "").trim(),
-          objectName: (s.tadirObjName ?? s.objectKey ?? "").trim(),
-        })).filter((s) => s.objectType && s.objectName),
+        objects: entry.successors?.flatMap((s) => {
+          const successorIdentity = normalizeIdentity(s);
+          return successorIdentity ? [successorIdentity] : [];
+        }),
         conceptName: entry.successorConceptName,
       }
     : undefined;
 
   return {
-    objectType,
-    objectName,
+    ...identity,
     softwareComponent: entry.softwareComponent ?? "",
     applicationComponent: entry.applicationComponent ?? "",
     state: entry.state,
@@ -81,10 +95,10 @@ async function loadLocalJson(filename: string): Promise<SAPObject[]> {
 // ---------------------------------------------------------------------------
 
 export function buildDataStore(objects: SAPObject[]): DataStore {
-  // Deduplicate: "released" wins over "classicApi" for the same key
+  // Deduplicate actual objects, not their containers. Released data wins over classic API data.
   const merged = new Map<string, SAPObject>();
   for (const obj of objects) {
-    const key = `${obj.objectType}:${obj.objectName}`;
+    const key = `${obj.objectType}:${obj.objectName}`.toUpperCase();
     const existing = merged.get(key);
     if (!existing || (existing.source === "classicApi" && obj.source === "released")) {
       merged.set(key, obj);
@@ -94,13 +108,27 @@ export function buildDataStore(objects: SAPObject[]): DataStore {
   const allObjects = Array.from(merged.values());
 
   const byType = new Map<string, SAPObject[]>();
+  const tadirMap = new Map<string, SAPObject>();
   const byLevel = new Map<CleanCoreLevel, SAPObject[]>();
   const byAppComponent = new Map<string, SAPObject[]>();
 
   for (const obj of allObjects) {
-    // byType
-    if (!byType.has(obj.objectType)) byType.set(obj.objectType, []);
-    byType.get(obj.objectType)!.push(obj);
+    // Both type filters return the actual object, once per filter.
+    const types = new Set([obj.objectType.toUpperCase()]);
+    if (obj.tadirObject && obj.tadirObjName) {
+      types.add(obj.tadirObject.toUpperCase());
+      const key = `${obj.tadirObject}:${obj.tadirObjName}`.toUpperCase();
+      const existing = tadirMap.get(key);
+      // A container can have several members. Preserve the first preferred record
+      // for legacy detail lookups; actual identities remain separately addressable.
+      if (!existing || (existing.source === "classicApi" && obj.source === "released")) {
+        tadirMap.set(key, obj);
+      }
+    }
+    for (const type of types) {
+      if (!byType.has(type)) byType.set(type, []);
+      byType.get(type)!.push(obj);
+    }
 
     // byLevel
     if (!byLevel.has(obj.cleanCoreLevel)) byLevel.set(obj.cleanCoreLevel, []);
@@ -114,7 +142,7 @@ export function buildDataStore(objects: SAPObject[]): DataStore {
     }
   }
 
-  return { objectsMap: merged, byType, byLevel, byAppComponent, allObjects };
+  return { objectsMap: merged, tadirMap, byType, byLevel, byAppComponent, allObjects };
 }
 
 // ---------------------------------------------------------------------------
@@ -173,8 +201,11 @@ function buildContextSummary(store: DataStore, pceVersions: string[]): string {
   }
 
   // Top 10 object types by count
-  const typeCounts: Array<[string, number]> = Array.from(store.byType.entries())
-    .map(([t, objs]) => [t, objs.length] as [string, number])
+  const countsByType = new Map<string, number>();
+  for (const obj of store.allObjects) {
+    countsByType.set(obj.objectType, (countsByType.get(obj.objectType) ?? 0) + 1);
+  }
+  const typeCounts = Array.from(countsByType.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
 

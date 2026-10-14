@@ -919,7 +919,7 @@ WORKFLOW:
 Search SAP released objects from the official SAP API Release State repository (SAP/abap-atc-cr-cv-s4hc).
 
 Use this tool when you need to:
-• Find which SAP objects (classes, interfaces, tables, CDS views, function groups, BAdIs, etc.) are available and released for a given topic or application area
+• Find which SAP objects (classes, interfaces, tables, CDS views, function modules, BAdIs, etc.) are available and released for a given topic or application area
 • Discover released APIs in a specific application component (e.g., MM-PUR, FI-GL, SD-SLS)
 • Browse what objects exist in a system type (S/4HANA Cloud Public, BTP ABAP, Private Cloud)
 • Filter by Clean Core compliance level: A=Released APIs only, B=includes Classic APIs, C=includes internal/stable, D=all objects
@@ -931,14 +931,17 @@ PARAMETERS:
 • query (optional): Object name or keyword to search (e.g. "CL_ABAP_REGEX", "purchase order", "MM")
 • system_type (optional, default: "public_cloud"): "public_cloud" | "btp" | "private_cloud" | "on_premise"
 • clean_core_level (optional, default: "A"): "A" | "B" | "C" | "D" — cumulative: B includes A+B, C includes A+B+C
-• object_type (optional): TADIR type filter, e.g. "CLAS", "INTF", "TABL", "DDLS"
+• object_type (optional): Actual or TADIR type, e.g. "FUNC", "BADI_DEF", "CDS_STOB", "CLAS", "DDLS", "FUGR"
 • app_component (optional): Application component prefix, e.g. "MM-PUR", "FI-GL"
 • state (optional): "released" | "deprecated" | "classicAPI" | "stable" | "notToBeReleased" | "noAPI"
 • limit (optional, default: 25, max: 100): Number of results per page
 • offset (optional, default: 0): Pagination offset
 
 RETURNS (JSON with):
-• objects: Array of SAP objects with objectType, objectName, state, cleanCoreLevel, applicationComponent, softwareComponent
+• objects: Array of SAP objects containing:
+  - objectType, objectName: Actual identity (TADIR identity for legacy records)
+  - tadirObject, tadirObjName: Original TADIR container when available; also searchable
+  - state, cleanCoreLevel, applicationComponent, softwareComponent
 • total: Total matching count
 • hasMore: Whether more results exist
 • nextOffset: Offset to use for next page
@@ -963,7 +966,7 @@ ${contextNote}`,
                   },
                   object_type: {
                     type: "string",
-                    description: "TADIR object type filter, e.g. CLAS, INTF, TABL, DDLS, FUGR, BDEF, SRVD."
+                    description: "Actual or TADIR object type filter, e.g. FUNC, BADI_DEF, CDS_STOB, CLAS, DDLS, FUGR."
                   },
                   app_component: {
                     type: "string",
@@ -996,7 +999,9 @@ ${contextNote}`,
             name: "sap_get_object_details",
             description: `GET SAP OBJECT DETAILS: sap_get_object_details(object_type="CLAS", object_name="CL_ABAP_REGEX")
 
-Get complete release state details for a specific SAP object by its TADIR type and name.
+Get complete release state details by actual object type and name, with TADIR fallback for compatibility.
+A TADIR container can contain multiple objects; use the actual type/name to select a specific member.
+A TADIR lookup returns one member. To list all members, use sap_search_objects with its TADIR type as object_type, name as query, and clean_core_level="D".
 
 Use this tool when you:
 • Know a specific SAP object name and need to verify if it is released/deprecated/internal
@@ -1010,14 +1015,16 @@ Clean Core levels: A=Released API (safe for cloud/BTP), B=Classic API (on-premis
 Optionally pass target_clean_core_level to receive an explicit compliance verdict for that object.
 
 PARAMETERS:
-• object_type (required): TADIR type, e.g. "CLAS", "TABL", "INTF", "DDLS", "FUGR"
+• object_type (required): Actual or TADIR type, e.g. "FUNC", "BADI_DEF", "CDS_STOB", "CLAS", "DDLS", "FUGR"
 • object_name (required): Exact object name, e.g. "CL_ABAP_REGEX", "EKKO", "IF_OS_TRANSACTION"
 • system_type (optional, default: "public_cloud"): "public_cloud" | "btp" | "private_cloud" | "on_premise"
 • target_clean_core_level (optional): "A" or "B" — receive a compliance verdict against this target
 
 RETURNS (JSON with):
 • found: boolean
-• objectType, objectName, state, cleanCoreLevel, cleanCoreLevelLabel
+• objectType, objectName: Actual identity (TADIR identity for legacy records)
+• tadirObject, tadirObjName: Original TADIR container identity when available
+• state, cleanCoreLevel, cleanCoreLevelLabel
 • applicationComponent, softwareComponent
 • successor: successor classification and recommended replacement objects
 • successorObjects: full details of successor objects (if available in the dataset)
@@ -1027,7 +1034,7 @@ RETURNS (JSON with):
               properties: {
                 object_type: {
                   type: "string",
-                  description: "TADIR object type, e.g. CLAS, TABL, INTF, DDLS, FUGR, BDEF."
+                  description: "Actual or TADIR object type, e.g. FUNC, BADI_DEF, CDS_STOB, CLAS, DDLS, FUGR."
                 },
                 object_name: {
                   type: "string",

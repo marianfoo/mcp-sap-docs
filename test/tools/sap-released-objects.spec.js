@@ -108,4 +108,39 @@ export default [
       return { passed: ok, message: ok ? "" : `Expected found=true, got: ${JSON.stringify(result)}` };
     },
   },
+  {
+    name: "sap_search_objects: finds actual function modules and their TADIR aliases (#91)",
+    validate: async () => {
+      if (!dataAvailable) return { skipped: true, message: SKIP_REASON };
+      const actual = await searchObjects({ query: "BAPI_COSTCENTER_GETDETAIL", object_type: "FUNC", clean_core_level: "D" });
+      const group = await searchObjects({ query: "0012", object_type: "FUGR", clean_core_level: "D", limit: 100 });
+      const ok = actual.objects.filter(o => o.objectName === "BAPI_COSTCENTER_GETDETAIL").length === 1 &&
+        actual.objects[0].objectName === "BAPI_COSTCENTER_GETDETAIL" &&
+        actual.objects[0].tadirObjName === "0012" && group.objects.some(o => o.objectName === "BAPI_COSTCENTER_GETDETAIL") &&
+        group.objects.some(o => o.objectName === "BAPI_COSTCENTER_GETLIST");
+      return { passed: ok, message: ok ? "" : `Actual/TADIR lookup failed: ${JSON.stringify({ actual, group })}` };
+    },
+  },
+  {
+    name: "sap_get_object_details: resolves actual BAPI identity and its CDS successor (#91)",
+    validate: async () => {
+      if (!dataAvailable) return { skipped: true, message: SKIP_REASON };
+      const detail = await getObjectDetails({ object_type: "FUNC", object_name: "BAPI_COSTCENTER_GETDETAIL" });
+      const cds = await getObjectDetails({ object_type: "DDLS", object_name: "I_COSTCENTER" });
+      const ok = detail.found && detail.objectType === "FUNC" && detail.tadirObject === "FUGR" &&
+        detail.successorObjects?.some(o => o.objectType === "CDS_STOB" && o.objectName === "I_COSTCENTER") &&
+        cds.found && cds.objectType === "CDS_STOB";
+      return { passed: Boolean(ok), message: ok ? "" : `Successor/alias lookup failed: ${JSON.stringify({ detail, cds })}` };
+    },
+  },
+  {
+    name: "sap_get_object_details: resolves BAdI successor within the same enhancement spot (#91)",
+    validate: async () => {
+      if (!dataAvailable) return { skipped: true, message: SKIP_REASON };
+      const detail = await getObjectDetails({ object_type: "BADI_DEF", object_name: "EDC_DETERMINE_RESULT_PROC_CUST" });
+      const ok = detail.found && detail.objectName === "EDC_DETERMINE_RESULT_PROC_CUST" &&
+        detail.successorObjects?.some(o => o.objectType === "BADI_DEF" && o.objectName === "EDC_MODIFY_CHECK_RESULT");
+      return { passed: Boolean(ok), message: ok ? "" : `BAdI lookup failed: ${JSON.stringify(detail)}` };
+    },
+  },
 ];
