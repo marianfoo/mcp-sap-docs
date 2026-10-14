@@ -18,7 +18,7 @@ allow compatible patched versions, but the lockfile still pinned older ones.
    so incomplete libraries are not silently published.
 2. Encode each source URL path segment separately, preserving the nested path
    in GitHub provenance links. Use section headings outside fenced code for
-   human-readable titles, short basenames for IDs, and skip skill frontmatter
+   human-readable titles with parent-document context, short basenames for IDs, and skip skill frontmatter
    without changing source line numbers.
 3. Refresh only `proxy-addr` (2.0.7 → 2.0.8) and the MCP SDK (1.26.0 → 1.32.1)
    in the lockfile. Keep root dependency ranges unchanged.
@@ -42,3 +42,12 @@ allow compatible patched versions, but the lockfile still pinned older ones.
 - Fresh corpus and FTS build: 39 libraries, 45,066 documents, including 212
   generated Open UX chunks. Local validation uses current Open UX sources and
   existing local copies of the other sources; PR CI refreshes all sources.
+
+## Review follow-up
+
+Claude Opus5.5 Max identified missing section titles and a code comment being
+used as a title in the upstream skill documents. Heading extraction now ignores
+fenced code, accepts all heading levels, and skips initial skill metadata.
+The first revision lost parent-document context in section titles; real Linux
+CI caught the resulting UX UI5 search regression. Section titles now include
+the parent title. The original broad-search assertion remains unchanged.

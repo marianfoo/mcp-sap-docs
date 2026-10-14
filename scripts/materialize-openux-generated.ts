@@ -222,14 +222,17 @@ function buildGithubLineUrl(commitSha: string, inputFile: string, chunk: Chunk):
   return `https://github.com/SAP/open-ux-tools/blob/${commitSha}/packages/fiori-docs-embeddings/data_local/${filePath}#L${chunk.startLine}-L${chunk.endLine}`;
 }
 
-function renderMaterializedMarkdown(source: OpenUxGeneratedSource, inputFile: string, chunk: Chunk, index: number, commitSha: string): { fileName: string; markdown: string } {
+function renderMaterializedMarkdown(source: OpenUxGeneratedSource, inputFile: string, chunk: Chunk, index: number, commitSha: string, documentTitle: string): { fileName: string; markdown: string } {
   const prose = withoutFencedCode(chunk.content);
   const inputName = path.posix.basename(inputFile).replace(/\.md$/i, "");
-  const title = extractTitle(prose, `${inputName} ${index + 1}`);
+  const chunkTitle = extractTitle(prose, `${inputName} ${index + 1}`);
+  const hasH1 = /^ {0,3}#[ \t]+/m.test(prose);
+  const isSection = !hasH1 && /^ {0,3}#{2,6}[ \t]+/m.test(prose) && !extractField(prose, "TITLE");
+  // Search results need the document context when a section is simply "Configuration".
+  const title = isSection && chunkTitle !== documentTitle ? `${documentTitle}: ${chunkTitle}` : chunkTitle;
   const description = extractDescription(chunk.content, title);
   const tags = extractTags(chunk.content, source.defaultTags);
   const sourceUrl = buildGithubLineUrl(commitSha, inputFile, chunk);
-  const hasH1 = /^ {0,3}#[ \t]+/m.test(prose);
   const baseName = slugify(inputName);
   const fileName = `${String(index + 1).padStart(3, "0")}-${baseName}-${slugify(title).slice(0, 80)}.md`;
 
@@ -291,9 +294,10 @@ export async function materializeOpenUxGeneratedSources(options: MaterializeOpti
       const inputPath = path.join(dataLocalDir, inputFile);
       const raw = await fs.readFile(inputPath, "utf8");
       const chunks = splitChunksWithLineRanges(raw);
+      const documentTitle = extractTitle(withoutFencedCode(chunks[0]?.content ?? ""), path.posix.basename(inputFile, ".md"));
 
       for (const [index, chunk] of chunks.entries()) {
-        const materialized = renderMaterializedMarkdown(source, inputFile, chunk, index, commitSha);
+        const materialized = renderMaterializedMarkdown(source, inputFile, chunk, index, commitSha, documentTitle);
         await fs.writeFile(path.join(targetDir, materialized.fileName), materialized.markdown, "utf8");
         filesWritten++;
         chunksWritten++;

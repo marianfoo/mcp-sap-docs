@@ -158,10 +158,10 @@ describe("Open UX generated source materializer", () => {
     const documents = await Promise.all(files.map((file) => readFile(path.join(outputRoot, "opa5", file), "utf8")));
     expect(documents[0]).toContain('title: "SAP Fiori OPA5 Development Skill"');
     expect(documents[0]).toContain("/SKILL.md#L6-L8");
-    expect(documents[1]).toContain('title: "Prerequisites"');
+    expect(documents[1]).toContain('title: "SAP Fiori OPA5 Development Skill: Prerequisites"');
     expect(documents[1]).toContain("/SKILL.md#L11-L12");
-    expect(documents[2]).toContain('title: "API Reference"');
-    expect(documents[2]).toContain("\n# API Reference\n");
+    expect(documents[2]).toContain('title: "SAP Fiori OPA5 Development Skill: API Reference"');
+    expect(documents[2]).toContain("\n# SAP Fiori OPA5 Development Skill: API Reference\n");
     expect(documents[2]).toContain("/SKILL.md#L14-L19");
     expect(documents[3]).toContain('title: "SKILL 4"');
     expect(documents.join("\n")).not.toContain("name: sap-fiori-opa5-test-development");
