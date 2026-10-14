@@ -419,20 +419,20 @@ const sourceUrlCases: UrlCase[] = [
   {
     libraryId: '/fiori-opa5-docu',
     relFile: '001-opa5.md',
-    content: `# OPA5 Integration Tests\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 2, 1012)}`,
-    expectedUrl: openUxLineUrl('opa5_docu.md', 2, 1012)
+    content: `# OPA5 Integration Tests\n\n**URL:** ${openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 2, 1012)}`,
+    expectedUrl: openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 2, 1012)
   },
   {
     libraryId: '/fiori-opa5-docu',
     relFile: '002-page-objects.md',
-    content: `# Page Object Configuration\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 20, 80)}`,
-    expectedUrl: openUxLineUrl('opa5_docu.md', 20, 80)
+    content: `# Page Object Configuration\n\n**URL:** ${openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 20, 80)}`,
+    expectedUrl: openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 20, 80)
   },
   {
     libraryId: '/fiori-opa5-docu',
     relFile: '003-api-usage.md',
-    content: `# API Usage\n\n**URL:** ${openUxLineUrl('opa5_docu.md', 8, 18)}`,
-    expectedUrl: openUxLineUrl('opa5_docu.md', 8, 18)
+    content: `# API Usage\n\n**URL:** ${openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 8, 18)}`,
+    expectedUrl: openUxLineUrl('skills_copy/sap-fiori-opa5-test-development/v4-instructions.md', 8, 18)
   },
   {
     libraryId: '/fiori-extension-instructions',

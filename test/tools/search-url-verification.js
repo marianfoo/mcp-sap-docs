@@ -223,6 +223,14 @@ export default [
     })
   },
   {
+    name: 'OPA5 generated source has a pinned nested Open UX URL',
+    validate: () => validateSourceFilteredUrl(
+      'fiori-opa5-docu',
+      'JourneyRunner Configuration',
+      /^https:\/\/github\.com\/SAP\/open-ux-tools\/blob\/[a-f0-9]{40}\/packages\/fiori-docs-embeddings\/data_local\/skills_copy\/sap-fiori-opa5-test-development\/[^/]+\.md#L\d+-L\d+$/
+    )
+  },
+  {
     name: 'Each new source returns at least one source-filtered result',
     async validate() {
       const checks = [

@@ -107,9 +107,27 @@ function extractField(content: string, field: string): string | null {
 function extractTitle(content: string, fallback: string): string {
   return (
     extractField(content, "TITLE") ||
-    content.match(/^#\s+(.+)$/m)?.[1]?.trim() ||
+    content.match(/^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/m)?.[1]?.trim() ||
     fallback
   );
+}
+
+function withoutFencedCode(content: string): string {
+  const prose: string[] = [];
+  let fence: string | null = null;
+  for (const line of content.split(/\r?\n/)) {
+    const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    if (marker) {
+      if (!fence) {
+        fence = marker[1];
+      } else if (marker[1][0] === fence[0] && marker[1].length >= fence.length && !marker[2].trim()) {
+        fence = null;
+      }
+    } else if (!fence) {
+      prose.push(line);
+    }
+  }
+  return prose.join("\n");
 }
 
 function extractDescription(content: string, title: string): string {
@@ -143,7 +161,16 @@ function splitChunksWithLineRanges(text: string): Chunk[] {
   const lines = text.split(/\r?\n/);
   const chunks: Chunk[] = [];
   let buffer: string[] = [];
-  let startLine = 1;
+  let firstLine = 0;
+  // Open UX converts SKILL.md's YAML delimiters to its chunk delimiter.
+  if (lines[0] === "---" || lines[0] === "--------------------------------") {
+    const end = lines.findIndex((line, index) => index > 0 && line === lines[0]);
+    const metadata = lines.slice(1, end).join("\n");
+    if (end > 0 && /^name:/m.test(metadata) && /^description:/m.test(metadata)) {
+      firstLine = end + 1;
+    }
+  }
+  let startLine = firstLine + 1;
 
   const flush = (endLine: number) => {
     let leading = 0;
@@ -165,7 +192,7 @@ function splitChunksWithLineRanges(text: string): Chunk[] {
     }
   };
 
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = firstLine; i < lines.length; i++) {
     if (lines[i].trim() === "--------------------------------") {
       flush(i);
       buffer = [];
@@ -196,12 +223,14 @@ function buildGithubLineUrl(commitSha: string, inputFile: string, chunk: Chunk):
 }
 
 function renderMaterializedMarkdown(source: OpenUxGeneratedSource, inputFile: string, chunk: Chunk, index: number, commitSha: string): { fileName: string; markdown: string } {
-  const title = extractTitle(chunk.content, `${inputFile} ${index + 1}`);
+  const prose = withoutFencedCode(chunk.content);
+  const inputName = path.posix.basename(inputFile).replace(/\.md$/i, "");
+  const title = extractTitle(prose, `${inputName} ${index + 1}`);
   const description = extractDescription(chunk.content, title);
   const tags = extractTags(chunk.content, source.defaultTags);
   const sourceUrl = buildGithubLineUrl(commitSha, inputFile, chunk);
-  const hasH1 = /^#\s+/m.test(chunk.content);
-  const baseName = slugify(inputFile.replace(/\.md$/i, ""));
+  const hasH1 = /^ {0,3}#[ \t]+/m.test(prose);
+  const baseName = slugify(inputName);
   const fileName = `${String(index + 1).padStart(3, "0")}-${baseName}-${slugify(title).slice(0, 80)}.md`;
 
   const frontmatter = [

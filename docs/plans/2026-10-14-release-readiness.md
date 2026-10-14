@@ -17,7 +17,9 @@ allow compatible patched versions, but the lockfile still pinned older ones.
    library ID and chunk format. Preserve failure for missing configured input,
    so incomplete libraries are not silently published.
 2. Encode each source URL path segment separately, preserving the nested path
-   in GitHub provenance links.
+   in GitHub provenance links. Use section headings outside fenced code for
+   human-readable titles, short basenames for IDs, and skip skill frontmatter
+   without changing source line numbers.
 3. Refresh only `proxy-addr` (2.0.7 → 2.0.8) and the MCP SDK (1.26.0 → 1.32.1)
    in the lockfile. Keep root dependency ranges unchanged.
 4. Merge this repair before release PR #87, then verify the refreshed release
@@ -35,8 +37,8 @@ allow compatible patched versions, but the lockfile still pinned older ones.
 - Production audit now passes the critical gate: zero critical, five high,
   seven moderate findings. Remaining findings need separate dependency work;
   this is not an audit-clean tree.
-- Full URL suite: 356 passing; Discovery Center: 11 passing; session/event/SSE
+- Full URL suite: 358 passing; Discovery Center: 11 passing; session/event/SSE
   tests: 11 passing.
-- Fresh corpus and FTS build: 39 libraries, 45,067 documents, including 213
+- Fresh corpus and FTS build: 39 libraries, 45,066 documents, including 212
   generated Open UX chunks. Local validation uses current Open UX sources and
   existing local copies of the other sources; PR CI refreshes all sources.

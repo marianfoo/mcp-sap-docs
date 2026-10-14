@@ -115,4 +115,56 @@ describe("Open UX generated source materializer", () => {
     })).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+
+  it.each(["---", "--------------------------------"])("uses section headings outside code and skips skill frontmatter (%s)", async (delimiter) => {
+    const root = await mkdtemp(path.join(tmpdir(), "openux-skill-"));
+    tempDirs.push(root);
+    const dataLocalDir = path.join(root, "data_local");
+    const outputRoot = path.join(root, "generated");
+    const inputFile = "skills_copy/opa5/SKILL.md";
+    await mkdir(path.dirname(path.join(dataLocalDir, inputFile)), { recursive: true });
+    // Mirrors upstream SKILL.md metadata/sections and the API guide's fenced bash comment.
+    await writeFile(path.join(dataLocalDir, inputFile), [
+      delimiter,
+      "name: sap-fiori-opa5-test-development",
+      "description: OPA5 integration test guidance",
+      delimiter,
+      "",
+      "# SAP Fiori OPA5 Development Skill",
+      "",
+      "A guide for integration tests.",
+      "--------------------------------",
+      "",
+      "## Prerequisites",
+      "An existing application is required.",
+      "--------------------------------",
+      "```bash",
+      "# Download the API JSON",
+      "```",
+      "",
+      "### API Reference",
+      "Read the API guide.",
+      "--------------------------------",
+      "A paragraph without a heading."
+    ].join("\n"));
+    const result = await materializeOpenUxGeneratedSources({
+      dataLocalDir, outputRoot,
+      commitSha: "0123456789abcdef0123456789abcdef01234567",
+      sources: [{ libraryId: "/fiori-opa5-docu", outputDir: "opa5", inputFiles: [inputFile], defaultTags: [] }]
+    });
+    expect(result.filesWritten).toBe(4);
+    const files = (await readdir(path.join(outputRoot, "opa5"))).sort();
+    expect(files.every((file) => !file.includes("skillscopy") && file.length < 90)).toBe(true);
+    const documents = await Promise.all(files.map((file) => readFile(path.join(outputRoot, "opa5", file), "utf8")));
+    expect(documents[0]).toContain('title: "SAP Fiori OPA5 Development Skill"');
+    expect(documents[0]).toContain("/SKILL.md#L6-L8");
+    expect(documents[1]).toContain('title: "Prerequisites"');
+    expect(documents[1]).toContain("/SKILL.md#L11-L12");
+    expect(documents[2]).toContain('title: "API Reference"');
+    expect(documents[2]).toContain("\n# API Reference\n");
+    expect(documents[2]).toContain("/SKILL.md#L14-L19");
+    expect(documents[3]).toContain('title: "SKILL 4"');
+    expect(documents.join("\n")).not.toContain("name: sap-fiori-opa5-test-development");
+  });
+
 });
