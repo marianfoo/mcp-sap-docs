@@ -80,16 +80,16 @@ describe("embeddings build artifact", () => {
       expect(norm).toBeLessThan(1.005);
     });
 
-    it("all doc_ids in embeddings exist in the docs FTS table", () => {
+    it("embedding IDs exactly match eligible document and section IDs", () => {
       // Compare sets once; avoid nondeterministic sampling and repeated FTS scans.
-      const ids = new Set((db!.prepare("SELECT id FROM docs").all() as { id: string }[]).map(row => row.id));
+      const ids = new Set((db!.prepare("SELECT id FROM docs WHERE type IN ('markdown', 'jsdoc', 'markdown-section')").all() as { id: string }[]).map(row => row.id));
       const rows = db!
         .prepare("SELECT doc_id FROM embeddings")
         .all() as { doc_id: string }[];
 
       expect(rows.length).toBeGreaterThan(0);
 
-      expect(rows.filter(row => !ids.has(row.doc_id))).toEqual([]);
+      expect(new Set(rows.map(row => row.doc_id))).toEqual(ids);
     });
   }
 });

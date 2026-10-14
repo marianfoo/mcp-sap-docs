@@ -1,4 +1,4 @@
-# Fix semantic score fusion without changing the default ranking
+# Fix semantic score fusion while preserving the tested lexical behavior
 
 ## Problem and root cause
 
@@ -20,8 +20,9 @@ MCP/stdio call reproduced this on a separately built ABAP corpus.
 3. Check complete document/section coverage once per database connection. Any missing
    eligible vector means consistent lexical fallback for every query, with one
    rebuild warning. Samples remain lexical-only.
-4. Make the effective existing default explicit: `EMBEDDING_WEIGHT=0`, without model
-   preloading. Positive weights remain an opt-in using the existing parameter.
+4. Default to lexical ranking: `EMBEDDING_WEIGHT=0`, without model preloading. Its
+   output matches the previous default on the tested queries. Positive weights remain
+   an opt-in using the existing parameter.
 5. Test scoring, boosts, filters, fallback, configuration, artifact contents and real
    MCP requests. Keep the unchanged full integration suite as the default gate.
 
@@ -50,10 +51,12 @@ scores/ranking, but it is not a general relevance improvement. Manual review fou
 A first additive-only fix also failed: it favored pages with vectors; adding section
 vectors improved aggregate metrics but caused three existing integration failures.
 Applying the existing boost to both legs reduced those to two at explicit weight 0.7
-(FAQ section identity and CAP source visibility when online results compete). A native
-ONNX shutdown error also occurred on those local macOS opt-in integration runs. These
-are limitations of opting into the corrected semantic mode, not passing gates. The
-lexical default is the supported regression-free path; no tests or golds were weakened.
+(FAQ section identity and CAP source visibility when online results compete). Those
+opt-in runs also hit a native ONNX shutdown error on macOS. A successful search followed
+by the existing runner's `process.exit(1)` reproduced the same abort in both unchanged
+baseline and fixed code. This is an existing forced-exit runtime issue; the two search
+quality failures remain separate limitations and are not passing gates. The
+lexical default passes the existing integration suite; no tests or golds were weakened.
 
 ## PR #71 decision
 
@@ -84,8 +87,9 @@ production latency claim follows from this benchmark.
 ## Release handoff
 
 Ship the upstream fix, sync it to the ABAP mirror and release both services. Default
-ranking is unchanged; deployments explicitly setting a positive weight must review the
-opt-in limitations. Before enabling semantic mode, rebuild the complete embeddings
+IDs and scores match the previous default on the 44-query suite and issue query; this
+is not a claim for every possible query. Deployments explicitly setting a positive
+weight must review the opt-in limitations. Before enabling semantic mode, rebuild the complete embeddings
 for each profile and restart with the new artifact. Old/partial artifacts deliberately
 stay lexical with a warning. Do not rebuild a live database in place.
 
