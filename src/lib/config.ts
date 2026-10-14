@@ -1,7 +1,9 @@
 import { getVariantConfig } from "./variant.js";
 
 const variant = getVariantConfig();
-const embeddingWeight = Number(process.env.EMBEDDING_WEIGHT || 0);
+const configuredEmbeddingWeight = Number(process.env.EMBEDDING_WEIGHT || 0);
+const embeddingWeight = Number.isFinite(configuredEmbeddingWeight) && configuredEmbeddingWeight > 0
+  ? configuredEmbeddingWeight : 0;
 
 // Central configuration for search system
 export const CONFIG = {
@@ -61,7 +63,7 @@ export const CONFIG = {
   // Hybrid Search (BM25 + Embeddings) Configuration
   // ---------------------------------------------------------------------------
 
-  // Semantic ranking is opt-in; preserve the existing effective lexical default.
+  // Semantic ranking is opt-in; use lexical ranking by default.
   // Set a positive weight (for example 0.7) after evaluating your search workload.
   EMBEDDING_WEIGHT: embeddingWeight,
 

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 
 describe('semantic ranking configuration', () => {
-  it.each([undefined, '0'])('keeps lexical ranking and avoids preloading for weight %s', async (weight) => {
+  it.each([undefined, '0', 'not-a-number', 'Infinity', '-1'])('keeps lexical ranking and avoids preloading for weight %s', async (weight) => {
     vi.stubEnv('EMBEDDING_WEIGHT', weight);
     vi.stubEnv('MCP_PRELOAD_EMBEDDINGS', 'true');
     vi.resetModules();

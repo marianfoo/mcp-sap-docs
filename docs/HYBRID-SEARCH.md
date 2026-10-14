@@ -60,7 +60,8 @@ semantic mode. Default lexical mode does not require embeddings.
 | `MODELS_DIR` | `dist/models` | Model cache directory |
 | `MCP_PRELOAD_EMBEDDINGS` | `true` | Preload when weight is positive; `false` loads on demand |
 
-At weight zero the model is neither preloaded nor needed by search.
+Only finite positive weights enable semantic ranking; invalid, infinite or negative
+values use zero. At zero the model is neither preloaded nor needed by search.
 
 ## Cost and verification
 
