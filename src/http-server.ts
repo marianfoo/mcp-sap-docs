@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname, join, resolve } from "path";
 import { execSync } from "child_process";
 import { searchLibraries } from "./lib/localDocs.js";
+import { openDb } from "./lib/searchDb.js";
 import { normalizeUnifiedSearchOptions, search, type UnifiedSearchOptions } from "./lib/search.js";
 import { CONFIG } from "./lib/config.js";
 import { getDocUrlConfig } from "./lib/metadata.js";
@@ -199,17 +200,19 @@ const server = createServer(async (req, res) => {
     const indexStat = existsSync(indexJson) ? statSync(indexJson) : null;
     const ftsStat = existsSync(ftsDb) ? statSync(ftsDb) : null;
 
-    // quick search smoke test
+    // Both variants contain ABAP docs. Probe FTS directly; legacy search can
+    // synchronously scan the entire corpus when a query has no candidates.
     let docsStatus = "unknown";
     try {
-      const testSearch = await searchLibraries("button");
-      docsStatus = testSearch.results.length > 0 ? "available" : "no_results";
+      const result = openDb().prepare("SELECT rowid FROM docs WHERE docs MATCH 'abap*' LIMIT 1").get();
+      docsStatus = result ? "available" : "no_results";
     } catch {
       docsStatus = "error";
     }
+    const searchAvailable = docsStatus === "available";
 
     const statusResponse = {
-      status: "healthy",
+      status: searchAvailable ? "healthy" : "unhealthy",
       service: packageInfo.name,
       version: packageInfo.version,
       timestamp: new Date().toISOString(),
@@ -217,7 +220,7 @@ const server = createServer(async (req, res) => {
       git: gitInfo,
       documentation: {
         status: docsStatus,
-        searchAvailable: true,
+        searchAvailable,
         communityAvailable: true,
         resources: {
           totalResources,
@@ -253,7 +256,7 @@ const server = createServer(async (req, res) => {
       },
     };
 
-    return json(res, 200, statusResponse);
+    return json(res, searchAvailable ? 200 : 503, statusResponse);
   }
 
   // Legacy SSE endpoint - redirect to MCP
