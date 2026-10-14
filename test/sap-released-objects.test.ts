@@ -57,9 +57,10 @@ const boundaryEntries: RawObjectEntry[] = [
 
 beforeAll(() => {
   const objectReleaseInfo = [
+    // First, so ALIAS_COLLISION owns the CLAS:CL_ABAP_REGEX alias.
+    ...boundaryEntries,
     ...loadFixture().objectReleaseInfo,
     ...identityFixture.objectReleaseInfo,
-    ...boundaryEntries,
   ];
   vi.mocked(readFile).mockImplementation(async (filename) => {
     if (String(filename).endsWith("objectClassifications_SAP.json")) {

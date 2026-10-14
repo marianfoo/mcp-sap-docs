@@ -938,8 +938,10 @@ PARAMETERS:
 • offset (optional, default: 0): Pagination offset
 
 RETURNS (JSON with):
-• objects: SAP objects with actual objectType/objectName (TADIR identity for legacy records), state, cleanCoreLevel, applicationComponent, softwareComponent
-• tadirObject, tadirObjName: Original TADIR container identity when available; searches also match this identity
+• objects: Array of SAP objects containing:
+  - objectType, objectName: Actual identity (TADIR identity for legacy records)
+  - tadirObject, tadirObjName: Original TADIR container when available; also searchable
+  - state, cleanCoreLevel, applicationComponent, softwareComponent
 • total: Total matching count
 • hasMore: Whether more results exist
 • nextOffset: Offset to use for next page
@@ -999,6 +1001,7 @@ ${contextNote}`,
 
 Get complete release state details by actual object type and name, with TADIR fallback for compatibility.
 A TADIR container can contain multiple objects; use the actual type/name to select a specific member.
+A TADIR lookup returns one member. To list all members, use sap_search_objects with its TADIR type as object_type, name as query, and clean_core_level="D".
 
 Use this tool when you:
 • Know a specific SAP object name and need to verify if it is released/deprecated/internal
