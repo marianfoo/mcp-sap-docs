@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
 import { afterEach, describe, expect, it } from "vitest";
-import { materializeOpenUxGeneratedSources, OpenUxGeneratedSource } from "../scripts/materialize-openux-generated.js";
+import { materializeOpenUxGeneratedSources, OPENUX_GENERATED_SOURCES, OpenUxGeneratedSource } from "../scripts/materialize-openux-generated.js";
 
 const tempDirs: string[] = [];
 
@@ -68,4 +68,51 @@ describe("Open UX generated source materializer", () => {
     expect(second).toContain('title: "Second Chunk"');
     expect(second).toContain("**URL:** https://github.com/SAP/open-ux-tools/blob/0123456789abcdef0123456789abcdef01234567/packages/fiori-docs-embeddings/data_local/sap_fe_test_api.md#L10-L12");
   });
+
+  it("materializes the replacement OPA5 skill documents with valid nested source URLs", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "openux-opa5-"));
+    tempDirs.push(root);
+    const dataLocalDir = path.join(root, "data_local");
+    const outputRoot = path.join(root, "generated");
+    const inputDir = "skills_copy/sap-fiori-opa5-test-development";
+    const inputFiles = [
+      "SKILL.md",
+      "fiori-elements-v2-test-library.md",
+      "v2-instructions.md",
+      "v4-custom-selectors.md",
+      "v4-instructions.md",
+      "v4-journeyrunner.md",
+      "v4-sap-fe-test-api-guide.md",
+      "v4-standard-patterns.md"
+    ];
+    await mkdir(path.join(dataLocalDir, inputDir), { recursive: true });
+    for (const file of inputFiles) {
+      await writeFile(path.join(dataLocalDir, inputDir, file), `# ${file}\n\nOPA5 guidance\n`);
+    }
+
+    const source = OPENUX_GENERATED_SOURCES.find((item) => item.libraryId === "/fiori-opa5-docu")!;
+    const commitSha = "0123456789abcdef0123456789abcdef01234567";
+    const result = await materializeOpenUxGeneratedSources({ dataLocalDir, outputRoot, commitSha, sources: [source] });
+    expect(result).toEqual({ filesWritten: 8, chunksWritten: 8 });
+
+    const files = await readdir(path.join(outputRoot, source.outputDir));
+    const documents = await Promise.all(files.map((file) => readFile(path.join(outputRoot, source.outputDir, file), "utf8")));
+    for (const inputFile of inputFiles) {
+      expect(documents.some((document) => document.includes(
+        `**URL:** https://github.com/SAP/open-ux-tools/blob/${commitSha}/packages/fiori-docs-embeddings/data_local/${inputDir}/${inputFile}#L1-L3`
+      ))).toBe(true);
+    }
+  });
+
+  it("fails when a configured input is missing instead of publishing an incomplete library", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "openux-missing-"));
+    tempDirs.push(root);
+    await expect(materializeOpenUxGeneratedSources({
+      dataLocalDir: root,
+      outputRoot: path.join(root, "generated"),
+      commitSha: "0123456789abcdef0123456789abcdef01234567",
+      sources: [{ libraryId: "/example", outputDir: "example", inputFiles: ["missing.md"], defaultTags: [] }]
+    })).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
 });

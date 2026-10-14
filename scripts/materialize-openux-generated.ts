@@ -56,7 +56,17 @@ export const OPENUX_GENERATED_SOURCES: OpenUxGeneratedSource[] = [
   {
     libraryId: "/fiori-opa5-docu",
     outputDir: "fiori-opa5-docu",
-    inputFiles: ["opa5_docu.md"],
+    // Upstream replaced opa5_docu.md with these skill documents in SAP/open-ux-tools#5000.
+    inputFiles: [
+      "SKILL.md",
+      "fiori-elements-v2-test-library.md",
+      "v2-instructions.md",
+      "v4-custom-selectors.md",
+      "v4-instructions.md",
+      "v4-journeyrunner.md",
+      "v4-sap-fe-test-api-guide.md",
+      "v4-standard-patterns.md"
+    ].map((file) => `skills_copy/sap-fiori-opa5-test-development/${file}`),
     defaultTags: ["opa5", "integration-tests", "fiori-elements", "sap.fe.test"]
   },
   {
@@ -181,7 +191,8 @@ function resolveOpenUxCommitSha(openUxRepoDir: string): string | null {
 }
 
 function buildGithubLineUrl(commitSha: string, inputFile: string, chunk: Chunk): string {
-  return `https://github.com/SAP/open-ux-tools/blob/${commitSha}/packages/fiori-docs-embeddings/data_local/${encodeURIComponent(inputFile)}#L${chunk.startLine}-L${chunk.endLine}`;
+  const filePath = inputFile.split("/").map(encodeURIComponent).join("/");
+  return `https://github.com/SAP/open-ux-tools/blob/${commitSha}/packages/fiori-docs-embeddings/data_local/${filePath}#L${chunk.startLine}-L${chunk.endLine}`;
 }
 
 function renderMaterializedMarkdown(source: OpenUxGeneratedSource, inputFile: string, chunk: Chunk, index: number, commitSha: string): { fileName: string; markdown: string } {
