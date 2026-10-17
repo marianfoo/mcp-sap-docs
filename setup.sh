@@ -118,6 +118,9 @@ get_sparse_paths() {
 
 # Collect submodules from .gitmodules
 printf '  → Ensuring variant submodules are present (shallow, single branch)...\n'
+if [ -n "${SKIP_NESTED_SUBMODULES:-}" ]; then
+  printf '  → Skipping nested submodule initialization (SKIP_NESTED_SUBMODULES=1)\n'
+fi
 while IFS= read -r line; do
   name=$(echo "$line" | awk '{print $1}' | sed -E 's/^submodule\.([^ ]*)\.path$/\1/')
   path=$(echo "$line" | awk '{print $2}')
@@ -198,14 +201,15 @@ while IFS= read -r line; do
       git -C "$path" gc --prune=now --quiet 2>/dev/null || true
     fi
   fi
-done < <(git config -f .gitmodules --get-regexp 'submodule\..*\.path')
 
-if [ -n "${SKIP_NESTED_SUBMODULES:-}" ]; then
-  printf '  → Skipping nested submodule initialization (SKIP_NESTED_SUBMODULES=1)\n'
-else
-  printf '  → Initializing nested submodules to pinned commits (shallow)...\n'
-  git submodule update --init --recursive --depth 1 || true
-fi
+  # Update children inside the selected source. Running this from the project
+  # root would reset every source to its older recorded commit and bypass variants.
+  if [ -z "${SKIP_NESTED_SUBMODULES:-}" ] && [ -e "$path/.git" ] && [ -f "$path/.gitmodules" ]; then
+    printf '      - initializing nested submodules to pinned commits (shallow)...\n'
+    git -C "$path" submodule sync --recursive
+    git -C "$path" submodule update --init --recursive --depth 1 || true
+  fi
+done < <(git config -f .gitmodules --get-regexp 'submodule\..*\.path')
 
 printf '  → Current submodule status (variant-active only):\n'
 # Filter status to only the submodules that this variant actually manages; skipped ones

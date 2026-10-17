@@ -9,19 +9,40 @@ permissions:
   contents: read
 
 jobs:
+  source-setup:
+    name: Source setup (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - run: npm ci
+    - name: Reproduce fresh and repeated source setup with real local Git repositories
+      run: node --test test/setup-submodules.test.mjs
+    - name: Verify the recorded Open UX pin and real generated documentation
+      shell: bash
+      run: |
+        git -c core.longpaths=true submodule update --init --depth 1 -- sources/open-ux-tools
+        npm run build:fts-only
+        node --test test/openux-pinned-source.test.mjs
+
   test:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
         
     - name: Install dependencies
