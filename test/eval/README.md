@@ -123,17 +123,19 @@ The accepted baseline records all 69 queries against the published v0.3.59 image
 (60,607 index entries, corpus SHA-256 recorded in `baseline.json`). Every original
 query and all 18 existing misses remain. The tutorial cohort has MRR 0.9.
 
-Two expected document paths needed maintenance for the current upstream content:
-the CAP association guide is now `guides/domain/index#associations`, and the UI5
-value-help pages `value-help-48e5fa7` and `value-help-fccb255` contain the
-`Common.ValueList` CDS examples. These exact paths were added after fetching and
-reviewing the documents; older expected paths remain valid too. No query was
-removed, and no broad source-wide match was added.
+Two queries received three exact additional expected paths. The CAP association
+guide is now `guides/domain/index#associations`. The UI5 value-help pages
+`value-help-48e5fa7` and `value-help-fccb255` contain relevant `Common.ValueList`
+CDS examples, so they were accepted after fetching and reviewing their content.
+The UI5 additions are new relevance judgments, not verified renames. Older
+expected paths are retained for older snapshots. No query was removed, and no
+broad source-wide match was added.
 
 Against the original expected paths, the released corpus scored MRR 0.5770 and
 hit@10 69.57%. With the verified current paths included, it scores MRR 0.5866 and
-hit@10 71.01%, retaining all earlier top-10 hits. This is an evaluation-label
-correction, not a search-engine improvement. The earlier local snapshot scored
+hit@10 71.01%, retaining all earlier top-10 hits under the amended labels. This
+changes what counts as relevant for two queries; it is not a like-for-like
+search-engine improvement. The earlier local snapshot scored
 MRR 0.5953 on 57,509 entries; source refreshes can change ranks independently of
 application code. See `docs/tutorial-ingestion-plan.md` for the implementation
 scope and observed limitations.

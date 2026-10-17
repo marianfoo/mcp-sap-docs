@@ -88,7 +88,7 @@ export default [
       "/sapui5/06_SAP_Fiori_Elements/value-help-48e5fa7",
       "/sapui5/06_SAP_Fiori_Elements/value-help-fccb255",
     ],
-    note: "weak under v0.3.45 — top hits are dynpro value help; tracks relevance-ranking signal",
+    note: "weak under v0.3.45 — top hits are dynpro value help. Two manually reviewed UI5 CDS examples were added as relevance judgments on 2026-10-18; original labels remain.",
   },
 
   // ── RAP ───────────────────────────────────────────────────────────────────
