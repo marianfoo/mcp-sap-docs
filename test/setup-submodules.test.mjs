@@ -113,6 +113,31 @@ test('setup upgrades an old pinned checkout and repeated setup follows the next 
   } finally { f.close(); }
 });
 
+test('setup switches an existing standalone checkout to its configured source URL', () => {
+  const f = fixture();
+  try {
+    f.setup({ SKIP_NESTED_SUBMODULES: '1' });
+    const checkout = path.join(f.root, 'sources/open-ux-tools');
+    assert.ok(existsSync(path.join(checkout, '.git/config')));
+
+    const fork = path.join(f.source, '..', 'replacement');
+    f.git(f.root, 'clone', pathToFileURL(f.source).href, fork);
+    f.write(fork, skill, '# Documentation from the configured fork\n');
+    const forkTip = f.commit(fork, 'Fork documentation');
+    const forkUrl = pathToFileURL(fork).href;
+    f.git(f.root, 'config', '-f', '.gitmodules', 'submodule.sources/open-ux-tools.url', forkUrl);
+
+    f.setup({ SKIP_NESTED_SUBMODULES: '1' });
+    assert.equal(f.git(checkout, 'remote', 'get-url', 'origin'), forkUrl);
+    assert.equal(f.git(checkout, 'rev-parse', 'HEAD'), forkTip);
+    assert.match(readFileSync(path.join(checkout, skill), 'utf8'), /configured fork/);
+
+    f.setup({ SKIP_NESTED_SUBMODULES: '1' });
+    assert.equal(f.git(checkout, 'rev-parse', 'HEAD'), forkTip);
+    assert.ok(!existsSync(path.join(f.root, 'sources/excluded/.git')));
+  } finally { f.close(); }
+});
+
 test('SKIP_NESTED_SUBMODULES leaves the selected source current without initializing nested repositories', () => {
   const f = fixture();
   try {

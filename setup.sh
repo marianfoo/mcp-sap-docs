@@ -176,6 +176,9 @@ while IFS= read -r line; do
     fi
   else
     printf '      - updating shallow to latest %s...\n' "$branch"
+    # Setup also creates standalone clones, which `git submodule sync` does not
+    # update. Follow the configured repository when its URL changes (e.g. a fork).
+    git -C "$path" remote set-url origin "$url"
     # Apply (or update) sparse checkout before fetch so blobs outside sparse paths
     # are never downloaded and existing ones are removed from the working tree
     if [ -n "$SPARSE_PATHS" ]; then
