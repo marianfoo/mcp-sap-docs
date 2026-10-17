@@ -51,6 +51,7 @@ export default [{
         const hit = response.results[0];
         assert.match(hit.url, /^https:\/\/github\.com\/.+\/blob\/main\/.+\.mdx?(?:#.*)?$/);
         const config = metadata.find(entry => entry.libraryId === `/${source}`);
+        assert.ok(config, `${source}: missing source metadata`);
         assert.ok(hit.url.startsWith(`${config.baseUrl}/`), `${source}: unexpected source URL`);
         const file = decodeURIComponent(hit.url.split('#')[0].slice(config.baseUrl.length + 1));
         assert.ok(existsSync(join('sources', config.sourcePath, file)), `${source}: URL has no checked-out file: ${hit.url}`);
