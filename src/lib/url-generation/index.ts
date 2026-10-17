@@ -87,6 +87,21 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/btp-cloud-platform': SapHelpLoioUrlGenerator,
   '/sap-artificial-intelligence': SapHelpLoioUrlGenerator,
 
+  // Additional documentation sources use their checked-in Markdown/MDX URLs.
+  '/btp-connectivity': GithubBlobUrlGenerator,
+  '/cloud-sdk-python': GithubBlobUrlGenerator,
+  '/cloud-sdk-ai-python': GithubBlobUrlGenerator,
+  '/odata-vocabularies': GithubBlobUrlGenerator,
+  '/btp-job-scheduling-service': GithubBlobUrlGenerator,
+  '/btp-cloud-logging': GithubBlobUrlGenerator,
+  '/btp-cloud-identity-services': GithubBlobUrlGenerator,
+  '/btp-cloud-identity-integration': GithubBlobUrlGenerator,
+  '/btp-integration-suite': GithubBlobUrlGenerator,
+  '/btp-event-mesh': GithubBlobUrlGenerator,
+  '/btp-business-application-studio': GithubBlobUrlGenerator,
+  '/btp-continuous-integration-and-delivery': GithubBlobUrlGenerator,
+  '/btp-cloud-transport-management': GithubBlobUrlGenerator,
+
   // SAP Architecture Center
   '/architecture-center': ArchitectureCenterUrlGenerator,
 };
