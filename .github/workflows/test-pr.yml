@@ -28,7 +28,7 @@ jobs:
     - name: Verify the recorded Open UX pin and real generated documentation
       shell: bash
       run: |
-        git submodule update --init --depth 1 -- sources/open-ux-tools
+        git -c core.longpaths=true submodule update --init --depth 1 -- sources/open-ux-tools
         npm run build:fts-only
         node --test test/openux-pinned-source.test.mjs
 
