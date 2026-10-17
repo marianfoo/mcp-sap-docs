@@ -38,10 +38,16 @@ export function truncateContent(
   }
   
   // Calculate how much content to preserve from start and end
-  // Keep 60% from the start (intro/main content) and 20% from end (conclusions)
-  // Reserve 20% for truncation notice and buffer
-  const startLength = Math.floor(maxLength * 0.6);
+  // Keep 20% from the end (conclusions) and hand the rest of the budget minus
+  // the notice to the start (intro/main content).
+  //
+  // The notice is roughly 300 characters. Reserving 20% of the budget for it
+  // left 15,000 characters unused at the default limit: a 75,000 character
+  // document was cut down to about 58,000 and lost 23% of its middle while a
+  // sixth of the budget went untouched.
+  const NOTICE_RESERVE = 400;
   const endLength = Math.floor(maxLength * 0.2);
+  const startLength = Math.max(0, maxLength - endLength - NOTICE_RESERVE);
   
   // Extract start portion
   let startPortion = content.substring(0, startLength);

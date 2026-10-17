@@ -68,34 +68,25 @@ describe("truncateContent", () => {
     expect(head).toMatch(/Paragraph \d+ x{100}\n\n$/);
   });
 
-  it("can exceed maxLength by the length of the notice", () => {
-    // Characterising a real defect: 60% + 20% plus the notice overshoots the
-    // limit for small budgets, and the reserved 20% is never used. For
-    // maxLength = 1000 the result is 1090 characters.
+  it("never exceeds maxLength, even without a natural break", () => {
+    // 60% + 20% plus the notice used to overshoot: maxLength = 1000 returned
+    // 1090 characters.
     const content = "y".repeat(50_000);
     const result = truncateContent(content, 1_000);
 
     expect(result.wasTruncated).toBe(true);
     expect(result.content).toContain("Content Truncated");
-    expect(result.truncatedLength).toBeGreaterThan(1_000);
-    expect(result.truncatedLength).toBeLessThan(1_500);
+    expect(result.truncatedLength).toBeLessThanOrEqual(1_000);
   });
 
-  it("stays within maxLength when the budget is large enough", () => {
-    const content = document(200, 100);
-    const result = truncateContent(content, 5_000);
-
-    expect(result.truncatedLength).toBeLessThanOrEqual(5_000);
-  });
-
-  it("uses only part of the budget today — characterising the current contract", () => {
-    // 60% from the start plus 20% from the end, and the remaining 20% stays
-    // unused. A post can therefore lose far more than maxLength implies.
+  it("uses the whole budget instead of leaving 20% untouched", () => {
+    // Before this change the head got 60% and the tail 20%; the remaining 20%
+    // was reserved for a ~300 character notice and never used.
     const content = document(200, 100);
     const result = truncateContent(content, 10_000);
 
-    expect(result.truncatedLength).toBeLessThan(9_000);
-    expect(result.truncatedLength).toBeGreaterThan(7_500);
+    expect(result.truncatedLength).toBeGreaterThan(9_000);
+    expect(result.truncatedLength).toBeLessThanOrEqual(10_000);
   });
 
   it("honours an explicit maxLength argument", () => {
