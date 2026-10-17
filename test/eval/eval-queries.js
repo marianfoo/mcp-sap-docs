@@ -14,7 +14,10 @@
 // `golds` lists from real ABAP/CDS/UI5 sessions — that's the human-in-the-loop
 // part of the eval harness. Add queries; don't silently delete (it inflates scores).
 
+import sourceExpansionQueries from "./source-expansion-queries.js";
+
 export default [
+  ...sourceExpansionQueries,
   // ── ABAP language: regex / strings / built-in classes ──────────────────────
   {
     id: "abap-regex-pcre",

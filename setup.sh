@@ -102,8 +102,8 @@ get_sparse_paths() {
     sources/ui5-tooling)                 printf 'docs' ;;
     sources/cloud-mta-build-tool)        printf 'docs' ;;
     sources/ui5-webcomponents)           printf 'docs' ;;
-    sources/cloud-sdk)                   printf 'docs-js docs-java' ;;
-    sources/cloud-sdk-ai)                printf 'docs-js docs-java' ;;
+    sources/cloud-sdk)                   printf 'docs-js docs-java docs-python' ;;
+    sources/cloud-sdk-ai)                printf 'docs-js docs-java docs-python' ;;
     sources/ui5-cc-spreadsheetimporter)  printf 'docs' ;;
     sources/dsag-abap-leitfaden)         printf 'docs' ;;
     sources/abap-docs)                   printf 'docs' ;;
@@ -112,6 +112,16 @@ get_sparse_paths() {
     sources/terraform-provider-btp)      printf 'docs' ;;
     sources/abap-atc-cr-cv-s4hc)         printf 'src' ;;
     sources/architecture-center)         printf 'docs' ;;
+    sources/btp-business-application-studio) printf 'docs' ;;
+    sources/btp-cloud-identity-services) printf 'docs' ;;
+    sources/btp-cloud-identity-services-system-integration-guide) printf 'docs' ;;
+    sources/btp-cloud-logging) printf 'docs' ;;
+    sources/btp-cloud-transport-management) printf 'docs' ;;
+    sources/btp-connectivity) printf 'docs' ;;
+    sources/btp-continuous-integration-and-delivery) printf 'docs' ;;
+    sources/btp-integration-suite) printf 'docs/ISuite_Integrations_APIs docs/ISuite_Event_Mesh' ;;
+    sources/btp-job-scheduling-service) printf 'docs' ;;
+    sources/odata-vocabularies) printf 'vocabularies' ;;
     *)                                   printf '' ;;
   esac
 }

@@ -46,3 +46,9 @@ describe("source-aware URL preference", () => {
     ).toBe("https://github.com/SAP-samples/fiori-tools-samples/blob/main/ui5-local.yaml?plain=1");
   });
 });
+
+it('does not use a tenant placeholder in documentation as a citation', () => {
+  expect(chooseSourceAwareUrl('URL: https://<tenant Id>.accounts.sapcloud.cn/admin',
+    'https://github.com/SAP-docs/btp-cloud-identity-services/blob/main/docs/guide.md', undefined, '/id'))
+    .toBe('https://github.com/SAP-docs/btp-cloud-identity-services/blob/main/docs/guide.md');
+});

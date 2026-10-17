@@ -18,7 +18,134 @@ const openUxSha = '0123456789abcdef0123456789abcdef01234567';
 const openUxLineUrl = (file: string, start: number, end: number) =>
   `https://github.com/SAP/open-ux-tools/blob/${openUxSha}/packages/fiori-docs-embeddings/data_local/${file}#L${start}-L${end}`;
 
+// Checked-in documents must keep their filename even when frontmatter has a site route.
+const expandedGithubSources: Array<[string, string, string[]]> = [
+  [
+    "/btp-connectivity",
+    "https://github.com/SAP-docs/btp-connectivity/blob/main/docs",
+    [
+      "1-connectivity-documentation/2017-connectivity-archive-a5667fc.md",
+      "1-connectivity-documentation/2018-connectivity-archive-ecd50bf.md",
+      "1-connectivity-documentation/2019-connectivity-archive-9ef116d.md"
+    ]
+  ],
+  [
+    "/cloud-sdk-python",
+    "https://github.com/SAP/cloud-sdk/blob/main/docs-python",
+    [
+      "features/agent-modules/agent-gateway.mdx",
+      "features/agent-modules/agent-memory.mdx",
+      "features/agent-modules/ai-core.mdx"
+    ]
+  ],
+  [
+    "/cloud-sdk-ai-python",
+    "https://github.com/SAP/ai-sdk/blob/main/docs-python",
+    [
+      "examples/ai-vs-ai.mdx",
+      "examples/async-examples.mdx",
+      "examples/batch-service.mdx"
+    ]
+  ],
+  [
+    "/odata-vocabularies",
+    "https://github.com/SAP/odata-vocabularies/blob/main/vocabularies",
+    [
+      "Analytics.md",
+      "Auditing.md",
+      "CodeList.md"
+    ]
+  ],
+  [
+    "/btp-job-scheduling-service",
+    "https://github.com/SAP-docs/btp-job-scheduling-service/blob/main/docs",
+    [
+      "10---What-s-New/2021-what-s-new-for-sap-job-scheduling-service-archive-78f6a4b.md",
+      "10---What-s-New/2022-what-s-new-for-sap-job-scheduling-service-archive-cd1964a.md",
+      "10---What-s-New/2023-what-s-new-for-sap-job-scheduling-service-archive-8ff6481.md"
+    ]
+  ],
+  [
+    "/btp-cloud-logging",
+    "https://github.com/SAP-docs/btp-cloud-logging/blob/main/docs",
+    [
+      "access-and-analyze-observability-data-dad5b01.md",
+      "accessibility-features-1c628e5.md",
+      "backup-and-restore-custom-contents-5b9bc66.md"
+    ]
+  ],
+  [
+    "/btp-cloud-identity-services",
+    "https://github.com/SAP-docs/btp-cloud-identity-services/blob/main/docs",
+    [
+      "Development/add-client-credentials-for-microservices-df8a4a5.md",
+      "Development/add-logon-overlays-in-customer-applications-5e98ecf.md",
+      "Development/api-authentication-44b0d28.md"
+    ]
+  ],
+  [
+    "/btp-cloud-identity-integration",
+    "https://github.com/SAP-docs/btp-cloud-identity-services-system-integration-guide/blob/main/docs",
+    [
+      "10-overview/system-integration-guide-for-sap-cloud-identity-services-27947df.md",
+      "20-scenario-requirements/scenario-requirements-ae915d6.md",
+      "30-scenario-recommendations/identity-lifecycle-with-an-identity-management-solution-c879f72.md"
+    ]
+  ],
+  [
+    "/btp-integration-suite",
+    "https://github.com/SAP-docs/btp-integration-suite/blob/main/docs/ISuite_Integrations_APIs",
+    [
+      "40-RemoteSystems/activating-a-new-sap-key-pair-on-the-tenant-ada2969.md",
+      "40-RemoteSystems/authentication-and-authorization-options-inbound-983f2a5.md",
+      "40-RemoteSystems/authentication-options-inbound-5495ee0.md"
+    ]
+  ],
+  [
+    "/btp-event-mesh",
+    "https://github.com/SAP-docs/btp-integration-suite/blob/main/docs/ISuite_Event_Mesh",
+    [
+      "accessibility-features-in-event-mesh-a1a5ce8.md",
+      "activating-event-mesh-bridge-3e814ae.md",
+      "auditing-and-logging-information-for-event-mesh-981d7eb.md"
+    ]
+  ],
+  [
+    "/btp-business-application-studio",
+    "https://github.com/SAP-docs/btp-business-application-studio/blob/main/docs",
+    [
+      "2023-what-s-new-for-sap-business-application-studio-29922e0.md",
+      "2024-what-s-new-for-sap-business-application-studio-699362d.md",
+      "access-sap-business-application-studio-from-vs-code-6b18cc8.md"
+    ]
+  ],
+  [
+    "/btp-continuous-integration-and-delivery",
+    "https://github.com/SAP-docs/btp-continuous-integration-and-delivery/blob/main/docs",
+    [
+      "cicd/accessibility-features-in-sap-continuous-integration-and-delivery-e1d3af4.md",
+      "cicd/accessing-the-service-9cec395.md",
+      "cicd/add-a-repository-fc55872.md"
+    ]
+  ],
+  [
+    "/btp-cloud-transport-management",
+    "https://github.com/SAP-docs/btp-cloud-transport-management/blob/main/docs",
+    [
+      "10-initial-setup/configuring-entitlements-to-sap-cloud-transport-management-13894be.md",
+      "10-initial-setup/creating-a-service-instance-and-a-service-key-f449560.md",
+      "10-initial-setup/initial-setup-66fd728.md"
+    ]
+  ]
+];
+
 const sourceUrlCases: UrlCase[] = [
+  ...expandedGithubSources.flatMap(([libraryId, baseUrl, files]) => files.map(relFile => ({
+    libraryId,
+    relFile,
+    content: '---\nid: site-route\nslug: /site-route\n---\n# Source guide',
+    expectedUrl: `${baseUrl}/${relFile}#source-guide`
+  }))),
   // SAPUI5
   {
     libraryId: '/sapui5',
@@ -1122,5 +1249,17 @@ describe('online source URL normalization', () => {
     expect(normalizeCommunityUrl(undefined, '987654')).toBe(
       'https://community.sap.com/t5/forums/messagepage/message-id/987654'
     );
+  });
+});
+
+describe('GitHub rendered heading anchors', () => {
+  const config = getDocUrlConfig('/cloud-sdk-python')!;
+  const url = (content: string) => generateDocumentationUrl('/cloud-sdk-python', 'guide.mdx', content, config);
+  it('ignores code comments and uses headings at any level', () => {
+    expect(url('```python\n# Not a heading\n```\n### LangChain Integration')).toBe(`${config.baseUrl}/guide.mdx#langchain-integration`);
+    expect(url('~~~sh\n# Also code\n~~~')).toBe(`${config.baseUrl}/guide.mdx`);
+  });
+  it('uses link labels and ignores frontmatter', () => {
+    expect(url('---\ntitle: Test\n# YAML comment\n---\n## [ReferenceFacet](UI.xml#L1052): <em>Facet</em>')).toBe(`${config.baseUrl}/guide.mdx#referencefacet-facet`);
   });
 });
