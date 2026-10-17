@@ -97,7 +97,7 @@ get_sparse_paths() {
     sources/openui5)                     printf 'src' ;;
     sources/wdi5)                        printf 'docs' ;;
     sources/btp-fiori-tools)             printf 'docs' ;;
-    sources/sap-tutorials)               printf 'tutorials/fiori-tools-mockserver-opa-testing' ;;
+    sources/sap-tutorials)               node -e 'const c=require("./config/tutorials.json"); console.log(["fiori-tools-mockserver-opa-testing",...Object.values(c.groups).flatMap(g=>g.tutorials)].map(id=>"tutorials/"+id).join(" "))' ;;
     sources/open-ux-tools)               printf 'packages/create packages/fiori-docs-embeddings/data_local' ;;
     sources/ui5-tooling)                 printf 'docs' ;;
     sources/cloud-mta-build-tool)        printf 'docs' ;;

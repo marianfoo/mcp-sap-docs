@@ -22,6 +22,8 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { CONFIG } from "../../dist/src/lib/config.js";
 import { startServerHttp, waitForStatus, stopServer, search } from "../_utils/httpClient.js";
 import EVAL_QUERIES from "./eval-queries.js";
 
@@ -160,6 +162,10 @@ async function main() {
     report = {
       gitCommit: gitCommit(),
       variant: evalVariant(),
+      // setup follows upstream source tips, so the app commit alone does not
+      // identify the evaluated corpus. Record both input data and ranking mode.
+      corpusSha256: createHash("sha256").update(readFileSync(join(__dirname, "..", "..", "dist", "data", "index.json"))).digest("hex"),
+      embeddingWeight: CONFIG.EMBEDDING_WEIGHT,
       searchOptions: EVAL_SEARCH_OPTIONS,
       agg: aggregate(rows),
       rows,
@@ -182,16 +188,18 @@ async function main() {
   const baselineOptionsMatch = prev
     && prev.variant === report.variant
     && prev.searchOptions?.includeOnline === EVAL_SEARCH_OPTIONS.includeOnline
-    && prev.searchOptions?.k === EVAL_SEARCH_OPTIONS.k;
+    && prev.searchOptions?.k === EVAL_SEARCH_OPTIONS.k
+    && (prev.embeddingWeight ?? 0) === report.embeddingWeight;
   if (prev && !baselineOptionsMatch) {
     console.warn(paint(
-      `⚠️ WARNING: Baseline profile (${prev.variant ?? "unknown"}, ${JSON.stringify(prev.searchOptions ?? { k: prev.k })}) does not match this run (${report.variant}, ${JSON.stringify(EVAL_SEARCH_OPTIONS)}). Results are not directly comparable.`,
+      `⚠️ WARNING: Baseline profile (${prev.variant ?? "unknown"}, ${JSON.stringify(prev.searchOptions ?? { k: prev.k })}, embedding weight ${prev.embeddingWeight ?? 0}) does not match this run (${report.variant}, ${JSON.stringify(EVAL_SEARCH_OPTIONS)}, embedding weight ${report.embeddingWeight}). Results are not directly comparable.`,
       "yellow"
     ));
   }
 
   // ── Per-query table ──
   console.log(paint(`\nRetrieval eval — ${report.rows.length} queries @ ${report.gitCommit}`, "bold"));
+  console.log(paint(`corpus ${report.corpusSha256.slice(0, 12)}, embedding weight ${report.embeddingWeight}`, "dim"));
   if (prev) console.log(paint(`(comparing against baseline @ ${prev.gitCommit})`, "dim"));
   console.log(paint("─".repeat(78), "dim"));
   console.log(paint("  rank  Δrank  query", "dim"));

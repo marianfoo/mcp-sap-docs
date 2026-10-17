@@ -5,6 +5,7 @@ import path, { join } from "path";
 import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
+import { materializeTutorials, TUTORIALS } from "./materialize-tutorials.js";
 import { extractVocabularyTerms } from "./odata-vocabulary-terms.js";
 
 interface DocEntry {
@@ -44,6 +45,15 @@ interface SourceConfig {
 }
 
 const SOURCES: SourceConfig[] = [
+  ...Object.entries(TUTORIALS.groups).map(([group, config]) => ({
+    repoName: 'sap-tutorials',
+    absDir: join('sources', 'tutorials-generated', group),
+    id: `/sap-tutorials-${group}`,
+    name: config.name,
+    description: `Curated official ${config.name}: practical steps, code, and prerequisites`,
+    filePattern: '*.md',
+    type: 'markdown' as const,
+  })),
   {
     repoName: "sapui5-docs",
     absDir: join("sources", "sapui5-docs", "docs"),
@@ -1068,6 +1078,9 @@ async function main() {
     await materializeOpenUxGeneratedSources();
   }
   console.log("Using MCP variant " + getVariantName() + " with " + ACTIVE_SOURCES.length + " active source bundles.");
+  if (ACTIVE_SOURCES.some(source => source.id.startsWith('/sap-tutorials-'))) {
+    await materializeTutorials();
+  }
   const all: Record<string, LibraryBundle> = {};
 
   for (const src of ACTIVE_SOURCES) {

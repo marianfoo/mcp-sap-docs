@@ -59,7 +59,17 @@ export default [{
         assert.ok(document.text.length > 100, `${source}: empty document`);
         assert.equal(document.url.split('#')[0], hit.url.split('#')[0], `${source}: search/fetch source URL mismatch`);
       }
-      return { passed: true, message: `${queries.length} sources searched and fetched over MCP stdio` };
+      for (const [query, expectedId] of [
+        ['OData UI LineItem annotation', '/odata-vocabularies/UI#LineItem'],
+        ['Common.ValueList', '/odata-vocabularies/Common#ValueList'],
+        ['UI.SelectionFields', '/odata-vocabularies/UI#SelectionFields'],
+      ]) {
+        const response = payload(await client.callTool({
+          name: 'search', arguments: { query, includeOnline: false, k: 10 },
+        }));
+        assert.ok(response.results.slice(0, 3).some(hit => hit.id === expectedId), `${query}: definition missing from top 3`);
+      }
+      return { passed: true, message: `${queries.length} sources searched/fetched; 3 unfiltered OData definitions found` };
     } finally {
       await client.close();
     }

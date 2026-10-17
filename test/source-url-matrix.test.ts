@@ -1147,6 +1147,63 @@ const sourceUrlCases: UrlCase[] = [
   }
 ];
 
+sourceUrlCases.push(...[
+  {
+    "libraryId": "/sap-tutorials-ai",
+    "relFile": "ai-core-orchestration-consumption-v2.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/ai-core-orchestration-consumption-v2\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/ai-core-orchestration-consumption-v2"
+  },
+  {
+    "libraryId": "/sap-tutorials-ai",
+    "relFile": "ai-core-orchestration-grounding-v2.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/ai-core-orchestration-grounding-v2\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/ai-core-orchestration-grounding-v2"
+  },
+  {
+    "libraryId": "/sap-tutorials-ai",
+    "relFile": "ai-core-genaihub-prompt-registry.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/ai-core-genaihub-prompt-registry\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/ai-core-genaihub-prompt-registry"
+  },
+  {
+    "libraryId": "/sap-tutorials-hana",
+    "relFile": "hana-cloud-sqlscript-anonymous.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/hana-cloud-sqlscript-anonymous\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/hana-cloud-sqlscript-anonymous"
+  },
+  {
+    "libraryId": "/sap-tutorials-hana",
+    "relFile": "hana-cloud-sqlscript-debugging.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/hana-cloud-sqlscript-debugging\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/hana-cloud-sqlscript-debugging"
+  },
+  {
+    "libraryId": "/sap-tutorials-hana",
+    "relFile": "hana-cloud-sqlscript-libraries.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/hana-cloud-sqlscript-libraries\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/hana-cloud-sqlscript-libraries"
+  },
+  {
+    "libraryId": "/sap-tutorials-integration",
+    "relFile": "btp-integration-suite-mcp-gateway.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/btp-integration-suite-mcp-gateway\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/btp-integration-suite-mcp-gateway"
+  },
+  {
+    "libraryId": "/sap-tutorials-integration",
+    "relFile": "btp-transport-management-cpi-01-use-case.md",
+    "content": "**URL:** https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/btp-transport-management-cpi-01-use-case/btp-transport-management-cpi-01-use-case.md\n# Tutorial",
+    "expectedUrl": "https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/btp-transport-management-cpi-01-use-case/btp-transport-management-cpi-01-use-case.md"
+  },
+  {
+    "libraryId": "/sap-tutorials-integration",
+    "relFile": "btp-transport-management-cpi-02-set-up-source-account.md",
+    "content": "**URL:** https://developers.sap.com/tutorials/btp-transport-management-cpi-02-set-up-source-account\n# Tutorial",
+    "expectedUrl": "https://developers.sap.com/tutorials/btp-transport-management-cpi-02-set-up-source-account"
+  }
+]);
+
 describe('source URL matrix', () => {
   it.each(sourceUrlCases)('$libraryId $relFile', ({ libraryId, relFile, content, expectedUrl }) => {
     const config = getDocUrlConfig(libraryId);

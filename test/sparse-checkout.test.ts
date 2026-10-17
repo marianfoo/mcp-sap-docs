@@ -226,3 +226,22 @@ describe("sparse checkout - excluded directories are absent", () => {
     }
   }
 });
+
+describe('curated tutorial checkout', () => {
+  it('contains every explicitly selected tutorial and no deferred AI masking tutorial', async () => {
+    const fs = await import('node:fs');
+    const config = JSON.parse(fs.readFileSync('config/tutorials.json', 'utf8'));
+    for (const group of Object.values(config.groups) as Array<{ tutorials: string[] }>) {
+      for (const id of group.tutorials) {
+        expect(existsSync(`sources/sap-tutorials/tutorials/${id}/${id}.md`), id).toBe(true);
+      }
+    }
+    if (getSparseList('sources/sap-tutorials').length) {
+      expect(existsSync('sources/sap-tutorials/tutorials/ai-core-orchestration-consumption-opt-v2')).toBe(false);
+    }
+    const setup = fs.readFileSync('setup.sh', 'utf8');
+    const docker = fs.readFileSync('Dockerfile', 'utf8');
+    expect(setup).toContain('require("./config/tutorials.json")');
+    expect(docker).toContain('require("./config/tutorials.json")');
+  });
+});

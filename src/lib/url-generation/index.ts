@@ -19,7 +19,7 @@ import { MkDocsUrlGenerator } from './mkdocs.js';
 import { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
 import { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
 import { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
-import { OpenUxGeneratedUrlGenerator } from './openux-generated.js';
+import { EmbeddedSourceUrlGenerator } from './embedded-source.js';
 
 export interface UrlGenerationOptions {
   libraryId: string;
@@ -64,12 +64,15 @@ const URL_GENERATORS: Record<string, new (libraryId: string, config: DocUrlConfi
   '/fiori-tools-samples': GithubBlobUrlGenerator,
   '/fiori-tools-opa-guide': GithubBlobUrlGenerator,
   '/sap-ux-create': GithubBlobUrlGenerator,
-  '/fiori-development-portal': OpenUxGeneratedUrlGenerator,
-  '/sap-fe-test-api': OpenUxGeneratedUrlGenerator,
-  '/fiori-tools-suite': OpenUxGeneratedUrlGenerator,
-  '/fiori-opa5-docu': OpenUxGeneratedUrlGenerator,
-  '/fiori-extension-instructions': OpenUxGeneratedUrlGenerator,
-  '/ux-ui5-tooling': OpenUxGeneratedUrlGenerator,
+  '/fiori-development-portal': EmbeddedSourceUrlGenerator,
+  '/sap-fe-test-api': EmbeddedSourceUrlGenerator,
+  '/fiori-tools-suite': EmbeddedSourceUrlGenerator,
+  '/fiori-opa5-docu': EmbeddedSourceUrlGenerator,
+  '/fiori-extension-instructions': EmbeddedSourceUrlGenerator,
+  '/ux-ui5-tooling': EmbeddedSourceUrlGenerator,
+  '/sap-tutorials-ai': EmbeddedSourceUrlGenerator,
+  '/sap-tutorials-hana': EmbeddedSourceUrlGenerator,
+  '/sap-tutorials-integration': EmbeddedSourceUrlGenerator,
   '/ui5-tooling': MkDocsUrlGenerator,
   '/cloud-mta-build-tool': MkDocsUrlGenerator,
   '/ui5-webcomponents': Ui5WebComponentsUrlGenerator,
@@ -177,7 +180,7 @@ export { MkDocsUrlGenerator } from './mkdocs.js';
 export { SapHelpLoioUrlGenerator } from './sap-help-loio.js';
 export { Ui5TypeScriptUrlGenerator } from './ui5-typescript.js';
 export { Ui5WebComponentsUrlGenerator } from './ui5-webcomponents.js';
-export { OpenUxGeneratedUrlGenerator } from './openux-generated.js';
+export { EmbeddedSourceUrlGenerator } from './embedded-source.js';
 
 // Re-export convenience functions for backward compatibility
 export { generateCloudSdkUrl, generateCloudSdkAiUrl, generateCloudSdkUrlForLibrary } from './cloud-sdk.js';
