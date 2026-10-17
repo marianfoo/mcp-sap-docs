@@ -3,9 +3,8 @@
     "ai": {
       "name": "SAP AI Core tutorials",
       "keywords": [
-        "ai",
-        "orchestration",
-        "generative ai",
+        "SAP AI Core",
+        "generative AI",
         "tutorial"
       ],
       "tutorials": [
@@ -20,9 +19,7 @@
     "hana": {
       "name": "SAP HANA Cloud tutorials",
       "keywords": [
-        "hana",
-        "sqlscript",
-        "cap",
+        "SAP HANA Cloud",
         "tutorial"
       ],
       "tutorials": [
@@ -48,9 +45,7 @@
     "integration": {
       "name": "SAP Integration Suite tutorials",
       "keywords": [
-        "integration suite",
-        "transport",
-        "mcp gateway",
+        "SAP Integration Suite",
         "tutorial"
       ],
       "tutorials": [

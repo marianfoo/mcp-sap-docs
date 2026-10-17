@@ -45,3 +45,10 @@ The 10 tutorial queries return the intended tutorial at ranks 1–2. Of the 59 p
 queries, 58 retain their rank; the existing natural-language inline-declaration
 query moves from rank 11 to 12. No existing hit in the top 10 is lost. The original
 18 lexical/paraphrase misses remain visible. No ranking weights are changed.
+
+Final relevance review removed topic-specific group tags: SQLScript tutorials
+must not inherit CAP tags, and transport tutorials must not inherit MCP Gateway
+tags. Only shared product names and `tutorial` are added to each group; individual
+IDs, titles and content supply the task terms. All 69 eval ranks stayed unchanged,
+and a scoped `MCP Gateway` search returns only the actual Gateway tutorial and
+its sections.

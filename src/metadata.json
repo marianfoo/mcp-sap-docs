@@ -9,12 +9,7 @@
       "type": "documentation",
       "lang": "en",
       "boost": 0.1,
-      "tags": [
-        "ai",
-        "orchestration",
-        "generative ai",
-        "tutorial"
-      ],
+      "tags": ["SAP AI Core", "generative AI", "tutorial"],
       "description": "SAP AI Core tutorials \u2014 curated walkthroughs with prerequisites and examples",
       "libraryId": "/sap-tutorials-ai",
       "sourcePath": "tutorials-generated/ai",
@@ -27,12 +22,7 @@
       "type": "documentation",
       "lang": "en",
       "boost": 0.1,
-      "tags": [
-        "hana",
-        "sqlscript",
-        "cap",
-        "tutorial"
-      ],
+      "tags": ["SAP HANA Cloud", "tutorial"],
       "description": "SAP HANA Cloud tutorials \u2014 curated walkthroughs with prerequisites and examples",
       "libraryId": "/sap-tutorials-hana",
       "sourcePath": "tutorials-generated/hana",
@@ -45,12 +35,7 @@
       "type": "documentation",
       "lang": "en",
       "boost": 0.1,
-      "tags": [
-        "integration suite",
-        "transport",
-        "mcp gateway",
-        "tutorial"
-      ],
+      "tags": ["SAP Integration Suite", "tutorial"],
       "description": "SAP Integration Suite tutorials \u2014 curated walkthroughs with prerequisites and examples",
       "libraryId": "/sap-tutorials-integration",
       "sourcePath": "tutorials-generated/integration",
