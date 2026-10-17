@@ -77,11 +77,17 @@ async function testCommunitySearch(options: TestOptions = defaultOptions): Promi
         console.log('-'.repeat(30));
         
         try {
-          const postContent = await getCommunityPostByUrl(results[0].url, options.userAgent);
-          
-          if (postContent) {
+          const post = await getCommunityPostByUrl(results[0].url, options.userAgent);
+
+          if (post) {
             console.log('✅ Successfully retrieved full post content via URL scraping:');
-            console.log(postContent.substring(0, 400) + '...\n');
+            console.log(post.content.substring(0, 400) + '...\n');
+            if (post.truncation) {
+              console.log(
+                `⚠️  truncated: ${post.truncation.omittedCharacters} of ` +
+                `${post.truncation.originalLength} characters omitted\n`
+              );
+            }
           } else {
             console.log('❌ Failed to retrieve full post content via URL scraping');
           }
@@ -245,18 +251,25 @@ async function testConvenienceFunction(options: TestOptions = defaultOptions): P
     // Display search results with post content
     for (let i = 0; i < result.search.length; i++) {
       const searchResult = result.search[i];
-      const postContent = result.posts[searchResult.postId || ''];
-      
+      const post = result.posts[searchResult.postId || ''];
+
       console.log(`${i + 1}. ${searchResult.title}`);
       console.log(`   Post ID: ${searchResult.postId}`);
       console.log(`   URL: ${searchResult.url}`);
       console.log(`   Author: ${searchResult.author || 'Unknown'}`);
       console.log(`   Likes: ${searchResult.likes || 0}`);
-      
-      if (postContent) {
+
+      if (post) {
         console.log('   ✅ Full content retrieved:');
-        const contentPreview = postContent.split('\n\n---\n\n')[1] || postContent;
+        const contentPreview = post.content.split('\n\n---\n\n')[1] || post.content;
         console.log(`   "${contentPreview.substring(0, 150)}..."`);
+        if (post.truncation) {
+          const { omittedCharacters, originalLength, truncatedLength } = post.truncation;
+          console.log(
+            `   ⚠️  truncated: ${originalLength} → ${truncatedLength} characters ` +
+            `(${omittedCharacters} omitted)`
+          );
+        }
       } else {
         console.log('   ❌ Full content not available');
       }

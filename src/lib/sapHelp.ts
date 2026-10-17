@@ -7,10 +7,20 @@ import {
   SapHelpMetadataResponse,
   SapHelpPageContentResponse
 } from "./types.js";
-import { truncateContent } from "./truncate.js";
+import { truncateContent, type TruncationInfo, type TruncationResult } from "./truncate.js";
 import { htmlToMarkdown } from "./htmlToMarkdown.js";
 
 const BASE = "https://help.sap.com";
+
+/**
+ * Turn a truncation result into the shape resolveSapHelpContent returns:
+ * `truncation` is omitted entirely when nothing was dropped, so callers can
+ * test for its presence.
+ */
+function truncateResult(result: TruncationResult): { content: string; truncation?: TruncationInfo } {
+  const { content, ...truncation } = result;
+  return truncation.wasTruncated ? { content, truncation } : { content };
+}
 
 // SAP Help search requests only the transtypes that `fetch` can actually render: fetch resolves the
 // `pagecontent` HTML fragment → htmlToMarkdown (resolveSapHelpContent), so PDF/"others" hits are
@@ -337,7 +347,7 @@ export async function getSapHelpContent(resultId: string): Promise<string> {
  */
 export async function getSapHelpDocument(
   resultId: string
-): Promise<{ text: string; citation: SapHelpCitation }> {
+): Promise<{ text: string; citation: SapHelpCitation; truncation?: TruncationInfo }> {
   // fetch retrieves the same release the caller searched: search encodes the version into the
   // id, parseSapHelpId pulls it back off. No suffix → latest (prior behaviour).
   const { helpId, version } = parseSapHelpId(resultId);
@@ -359,7 +369,11 @@ export async function getSapHelpDocument(
   // requestedVersion is known only here (the inner resolve sees `undefined` on the fallback
   // call, so it can't record what was originally asked for). Stamp it on the citation so the
   // caller can compare requested-vs-served and tell whether pinning held or fell back.
-  return { text: resolved.content, citation: { ...resolved.citation, requestedVersion: version } };
+  return {
+    text: resolved.content,
+    citation: { ...resolved.citation, requestedVersion: version },
+    ...(resolved.truncation ? { truncation: resolved.truncation } : {})
+  };
 }
 
 /**
@@ -373,7 +387,7 @@ export async function getSapHelpDocument(
 async function resolveSapHelpContent(
   helpId: string,
   version?: string
-): Promise<{ content: string; citation: SapHelpCitation } | null> {
+): Promise<{ content: string; citation: SapHelpCitation; truncation?: TruncationInfo } | null> {
   const reSearchVersion = version ?? "";        // "" = latest (prior behaviour)
   const metadataVersion = version ?? "LATEST";  // version-matched build, else latest
   try {
@@ -434,7 +448,7 @@ This SAP Help search result does not expose a LOIO page id through the search AP
         url: ensureAbsoluteUrl(hit.url),
         title: hit.title,
       };
-      return { content: truncateContent(fullContent).content, citation };
+      return { ...truncateResult(truncateContent(fullContent)), citation };
     }
 
     // Prepare metadata request parameters
@@ -516,7 +530,7 @@ ${cleanText}
       deliverableId: deliverable_id,
       buildNo,
     };
-    return { content: truncateContent(fullContent).content, citation };
+    return { ...truncateResult(truncateContent(fullContent)), citation };
   } catch {
     return null; // any error → allow fallback (caller throws if no path succeeds)
   }

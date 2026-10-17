@@ -1355,7 +1355,7 @@ RETURNS (JSON):
           // deliverable build) resolved during fetch — surface it as metadata instead of
           // the generic, hardcoded `source: 'abap-docs'` path used for offline docs.
           if (library_id.startsWith('sap-help-')) {
-            const { text, citation } = await getSapHelpDocument(library_id);
+            const { text, citation, truncation } = await getSapHelpDocument(library_id);
 
             if (!text) {
               logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
@@ -1378,7 +1378,11 @@ RETURNS (JSON):
                 language: citation.language,
                 deliverableId: citation.deliverableId,
                 buildNo: citation.buildNo,
-                contentLength: text.length
+                contentLength: text.length,
+                // Present only when the document was shortened. Consumers need
+                // this to know the text is a beginning and an ending, not the
+                // whole document — the prose notice alone is easy to miss.
+                ...(truncation ? { truncation } : {})
               }
             };
 
@@ -1390,7 +1394,8 @@ RETURNS (JSON):
             return createDocumentResponse(document);
           }
 
-          const text = await fetchLibraryDocumentation(library_id, topic);
+          const fetched = await fetchLibraryDocumentation(library_id, topic);
+          const text = fetched?.text;
 
           if (!text) {
             logger.logToolSuccess(name, timing.requestId, timing.startTime, 0);
@@ -1414,7 +1419,10 @@ RETURNS (JSON):
               source: 'abap-docs',
               library: library_id,
               topic: topic || undefined,
-              contentLength: text.length
+              contentLength: text.length,
+              // Community posts and SAP Help pages can be shortened; offline
+              // documents never are.
+              ...(fetched.truncation ? { truncation: fetched.truncation } : {})
             }
           };
           
@@ -2226,7 +2234,7 @@ Please provide more details about your specific issue, and I'll search for relev
             throw new Error("Missing docId in resource URI.");
           }
           const docId = decodeURIComponent(encodedId);
-          const text = await fetchLibraryDocumentation(docId);
+          const text = (await fetchLibraryDocumentation(docId))?.text;
           if (!text) {
             throw new Error(`Document not found: ${docId}`);
           }
@@ -2249,7 +2257,7 @@ Please provide more details about your specific issue, and I'll search for relev
           }
           const libraryId = libraryIdRaw.startsWith("/") ? libraryIdRaw : `/${libraryIdRaw}`;
           const topic = topicParts.length ? decodeURIComponent(topicParts.join("/")) : "";
-          const text = await fetchLibraryDocumentation(libraryId, topic);
+          const text = (await fetchLibraryDocumentation(libraryId, topic))?.text;
           if (!text) {
             throw new Error(`Library not found: ${libraryId}`);
           }

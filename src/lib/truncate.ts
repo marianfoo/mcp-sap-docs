@@ -8,7 +8,15 @@ export interface TruncationResult {
   wasTruncated: boolean;
   originalLength: number;
   truncatedLength: number;
+  /** Characters dropped from the middle; 0 when nothing was dropped. */
+  omittedCharacters: number;
 }
+
+/**
+ * Truncation facts without the content, for callers that surface the loss in a
+ * tool result instead of relying on the prose notice.
+ */
+export type TruncationInfo = Omit<TruncationResult, "content">;
 
 /**
  * Intelligently truncate content to a maximum length while preserving:
@@ -33,7 +41,8 @@ export function truncateContent(
       content,
       wasTruncated: false,
       originalLength,
-      truncatedLength: originalLength
+      truncatedLength: originalLength,
+      omittedCharacters: 0
     };
   }
   
@@ -112,7 +121,8 @@ The beginning and end of the document are preserved above and below this notice.
     content: truncatedContent,
     wasTruncated: true,
     originalLength,
-    truncatedLength: truncatedContent.length
+    truncatedLength: truncatedContent.length,
+    omittedCharacters: omittedChars
   };
 }
 
@@ -136,7 +146,8 @@ export function truncateContentSimple(
       content,
       wasTruncated: false,
       originalLength,
-      truncatedLength: originalLength
+      truncatedLength: originalLength,
+      omittedCharacters: 0
     };
   }
   
@@ -177,7 +188,8 @@ ${omittedChars.toLocaleString()} characters (${omittedPercent}%) have been omitt
     content: truncatedContent,
     wasTruncated: true,
     originalLength,
-    truncatedLength: truncatedContent.length
+    truncatedLength: truncatedContent.length,
+    omittedCharacters: omittedChars
   };
 }
 
