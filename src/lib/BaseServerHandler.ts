@@ -268,6 +268,7 @@ Additional SAP Docs sources (use these IDs with the sources filter):
 • btp-job-scheduling-service, btp-cloud-logging: Scheduled jobs and observability.
 • btp-business-application-studio: Dev spaces, development, and troubleshooting.
 • btp-continuous-integration-and-delivery, btp-cloud-transport-management: Pipelines and transports.
+• sap-tutorials-ai, sap-tutorials-hana, sap-tutorials-integration: Curated official tutorials with prerequisites, code, and published source links. Use these for worked examples; use the SDK/product sources for reference details.
 ` : ""}
 
 Sample-heavy OFFLINE sources (controlled by \`includeSamples\`; great for implementation, can dominate broad queries):

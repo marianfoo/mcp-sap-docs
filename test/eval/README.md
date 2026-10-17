@@ -106,3 +106,8 @@ preserved, so inspect the destination reference before using that overview as
 Python implementation guidance. Existing lexical paraphrase misses should stay
 in the report. Add failures from sanitized request logs rather than deleting
 hard queries or automatically increasing boosts for a larger library.
+
+`tutorial-queries.js` adds 10 product/task queries for the curated tutorials.
+There are now 69 queries in total. Tutorial discovery is also gated by the MCP
+integration suite (expected tutorial in the top 10), alongside fetch coverage for
+all 32 tutorials and byte-preservation checks for their code blocks.

@@ -53,7 +53,10 @@
     "/btp-event-mesh",
     "/btp-business-application-studio",
     "/btp-continuous-integration-and-delivery",
-    "/btp-cloud-transport-management"
+    "/btp-cloud-transport-management",
+    "/sap-tutorials-ai",
+    "/sap-tutorials-hana",
+    "/sap-tutorials-integration"
   ],
   "submodulePaths": [
     "sources/sapui5-docs",

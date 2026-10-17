@@ -47,6 +47,7 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
         sources/sapui5-docs)                 echo 'docs';; \
         sources/openui5)                     echo 'src';; \
         sources/wdi5)                        echo 'docs';; \
+        sources/sap-tutorials)               node -e 'const c=require("./config/tutorials.json"); console.log(["fiori-tools-mockserver-opa-testing",...Object.values(c.groups).flatMap(g=>g.tutorials)].map(id=>"tutorials/"+id).join(" "))';; \
         sources/ui5-tooling)                 echo 'docs';; \
         sources/cloud-mta-build-tool)        echo 'docs';; \
         sources/ui5-webcomponents)           echo 'docs';; \

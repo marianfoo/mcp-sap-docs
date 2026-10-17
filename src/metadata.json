@@ -1,9 +1,63 @@
 {
   "version": 1,
-  "updated_at": "2026-10-17",
+  "updated_at": "2026-10-18",
   "description": "Centralized configuration for SAP Docs MCP search system",
   
   "sources": [
+    {
+      "id": "sap-tutorials-ai",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "ai",
+        "orchestration",
+        "generative ai",
+        "tutorial"
+      ],
+      "description": "SAP AI Core tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-ai",
+      "sourcePath": "tutorials-generated/ai",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "sap-tutorials-hana",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "hana",
+        "sqlscript",
+        "cap",
+        "tutorial"
+      ],
+      "description": "SAP HANA Cloud tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-hana",
+      "sourcePath": "tutorials-generated/hana",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "sap-tutorials-integration",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "integration suite",
+        "transport",
+        "mcp gateway",
+        "tutorial"
+      ],
+      "description": "SAP Integration Suite tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-integration",
+      "sourcePath": "tutorials-generated/integration",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
     {
       "id": "sapui5",
       "type": "documentation",
@@ -947,6 +1001,9 @@
   },
 
   "libraryMappings": {
+    "sap-tutorials-integration": "sap-tutorials-integration",
+    "sap-tutorials-hana": "sap-tutorials-hana",
+    "sap-tutorials-ai": "sap-tutorials-ai",
     "sapui5": "sapui5",
     "cap": "cap",
     "cloud-sdk-js": "cloud-sdk-js",

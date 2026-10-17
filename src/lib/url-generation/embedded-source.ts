@@ -2,7 +2,7 @@ import { extractSourceUrlFromText } from '../sourceContent.js';
 import { BaseUrlGenerator, UrlGenerationContext } from './BaseUrlGenerator.js';
 import { FrontmatterData } from './utils.js';
 
-export class OpenUxGeneratedUrlGenerator extends BaseUrlGenerator {
+export class EmbeddedSourceUrlGenerator extends BaseUrlGenerator {
   protected generateSourceSpecificUrl(context: UrlGenerationContext & {
     frontmatter: FrontmatterData;
     section: string;

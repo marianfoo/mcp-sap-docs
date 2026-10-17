@@ -399,3 +399,23 @@ MCP_VARIANT=abap npm run build:fts
 
 [werkbank-badge]: assets/add-to-werkbank.svg
 [werkbank-install]: https://getwerkbank.com/install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
+
+### Curated SAP tutorials
+
+The SAP Docs profile includes 32 additional official tutorials in
+`sap-tutorials-ai`, `sap-tutorials-hana`, and `sap-tutorials-integration`:
+AI Core orchestration V2 and grounding, HANA Cloud SQLScript and CAP, Integration
+Suite MCP Gateway, and Cloud Transport Management. The existing Fiori OPA guide
+is still available separately.
+
+Use product and task terms, for example `SAP HANA Cloud SQLScript stored procedure
+tutorial` or `SAP Integration Suite MCP Gateway tutorial`. Use `sources` to narrow
+an ambiguous search; leave it unset for cross-source discovery. Tutorials provide
+worked examples and retain their prerequisites; product and SDK documentation
+remain the reference for detailed API behavior.
+
+The explicit selection is in [`config/tutorials.json`](config/tutorials.json).
+Fetched tutorials include readable option labels, absolute asset/prerequisite
+links, and their published page URL. The unpublished transport overview links to
+its official GitHub source. Source content and its original attribution are
+preserved; the original tutorial repository's license still applies.
