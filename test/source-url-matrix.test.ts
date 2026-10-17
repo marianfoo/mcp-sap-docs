@@ -1251,3 +1251,15 @@ describe('online source URL normalization', () => {
     );
   });
 });
+
+describe('GitHub rendered heading anchors', () => {
+  const config = getDocUrlConfig('/cloud-sdk-python')!;
+  const url = (content: string) => generateDocumentationUrl('/cloud-sdk-python', 'guide.mdx', content, config);
+  it('ignores code comments and uses headings at any level', () => {
+    expect(url('```python\n# Not a heading\n```\n### LangChain Integration')).toBe(`${config.baseUrl}/guide.mdx#langchain-integration`);
+    expect(url('~~~sh\n# Also code\n~~~')).toBe(`${config.baseUrl}/guide.mdx`);
+  });
+  it('uses link labels and ignores frontmatter', () => {
+    expect(url('---\ntitle: Test\n# YAML comment\n---\n## [ReferenceFacet](UI.xml#L1052): <em>Facet</em>')).toBe(`${config.baseUrl}/guide.mdx#referencefacet-facet`);
+  });
+});

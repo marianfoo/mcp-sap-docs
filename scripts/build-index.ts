@@ -5,6 +5,7 @@ import path, { join } from "path";
 import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
+import { extractVocabularyTerms } from "./odata-vocabulary-terms.js";
 
 interface DocEntry {
   id: string;              // "/sapui5/<rel-path>", "/cap/<rel-path>", "/openui5-api/<rel-path>", or "/openui5-samples/<rel-path>"
@@ -1179,6 +1180,21 @@ async function main() {
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
         
         id = `${src.id}/${rel.replace(/\.mdx?$/, "")}`;
+
+        if (src.id === '/odata-vocabularies') {
+          for (const term of extractVocabularyTerms(content, rel)) {
+            docs.push({
+              id: `${id}#${term.name}`,
+              title: term.title,
+              description: term.description,
+              keywords: term.keywords,
+              snippetCount: 0,
+              relFile: rel,
+              type: 'markdown-section',
+              parentDocument: id,
+            });
+          }
+        }
         
         // Extract individual sections as separate entries for all markdown docs
         if (content.includes('##')) {

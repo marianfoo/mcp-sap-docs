@@ -27,3 +27,11 @@ The implementation adds 13 source bundles from ten new repositories and two exis
 
 - SAP tutorials: recommend specific folders based on usefulness, maintenance, current product versions, overlap, and compatibility with the current parser.
 - Business Accelerator Hub: test API, event, CDS view, and other relevant content access; recommend a small useful scope and a simple retrieval approach based on actual responses.
+
+## Final URL and relevance review
+
+- Reproduced a broken GitHub fragment in the Python Agent Gateway guide: a Python comment inside a fenced block was mistaken for a heading. GitHub URLs now ignore frontmatter and fenced code, support heading levels 1–6, and use visible link text. The corrected `#langchain-integration` anchor was checked against GitHub's rendered HTML.
+- OData terms live in tables; the normal section description truncates most definitions. Index the `Terms` rows individually using the existing section type and full-document fetch. Preserve experimental notices and source content. No global ranking weights change.
+- `OData UI LineItem annotation`, `Common.ValueList`, and `UI.SelectionFields` now return their definitions first without a source filter. All 44 existing eval queries retained exactly the same ranks (MRR 0.466). The existing lexical/paraphrase weaknesses remain visible: 18 misses in the old set, not claimed as solved.
+- Add 15 permanent unfiltered discovery probes. Keep source-filtered MCP roundtrips as separate integration checks; they test availability, not global ranking quality.
+- Existing request logs already record sanitized queries, duration, result count, and failures. Use unsuccessful real queries to extend the eval set; avoid adding a new analytics service or tuning weights to source counts.

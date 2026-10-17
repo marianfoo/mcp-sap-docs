@@ -91,3 +91,18 @@ Defaults match the naming convention used in this repo.
 **Limitation:** presentation order is not swapped (local system always shown
 first), which can introduce positional bias in the LLM judge. Read win margins
 as directional, not definitive.
+
+## Growing source coverage
+
+`source-expansion-queries.js` adds 15 unfiltered probes for the Python SDKs,
+BTP services, and exact OData annotation terms. Keep these separate from the
+44 original queries when reporting changes: a larger query set changes the
+aggregate even when every original rank stays identical. Source-filtered smoke
+tests prove availability, but do not demonstrate unfiltered relevance.
+
+Review result contents as well as ID matches. For example, upstream Python SDK
+content currently contains a JavaScript heading in its overview; the source is
+preserved, so inspect the destination reference before using that overview as
+Python implementation guidance. Existing lexical paraphrase misses should stay
+in the report. Add failures from sanitized request logs rather than deleting
+hard queries or automatically increasing boosts for a larger library.
