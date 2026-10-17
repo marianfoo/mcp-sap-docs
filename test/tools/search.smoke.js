@@ -2,6 +2,7 @@
 import { startServerHttp, waitForStatus, stopServer, docsSearch } from '../_utils/httpClient.js';
 import { parseSummaryText } from '../_utils/parseResults.js';
 import assert from 'node:assert/strict';
+import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const QUERIES = [
@@ -26,7 +27,7 @@ const tests = QUERIES.map(({ q, expect }) => ({
 export default tests;
 
 // Imports supply cases to the shared runner; only the standalone command owns a server.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const child = startServerHttp();
   try {
     await waitForStatus();
