@@ -28,13 +28,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-2",
@@ -45,13 +45,13 @@
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-3",
@@ -62,13 +62,13 @@
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-4",
@@ -79,13 +79,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-5",
@@ -96,13 +96,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 15,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 15
     },
     {
       "id": "source-expansion-6",
@@ -113,13 +113,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 9,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 9
     },
     {
       "id": "source-expansion-7",
@@ -130,13 +130,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-8",
@@ -147,13 +147,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-9",
@@ -164,13 +164,13 @@
       ],
       "firstRelevantRank": 9,
       "rr": 0.1111111111111111,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-10",
@@ -181,13 +181,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-11",
@@ -198,13 +198,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-12",
@@ -215,13 +215,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-13",
@@ -232,13 +232,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-14",
@@ -249,13 +249,13 @@
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "source-expansion-15",
@@ -266,13 +266,13 @@
       ],
       "firstRelevantRank": 2,
       "rr": 0.5,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-ai-consumption",
@@ -283,13 +283,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-ai-grounding",
@@ -300,13 +300,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-prompt-registry",
@@ -317,13 +317,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-batch",
@@ -334,13 +334,13 @@
       ],
       "firstRelevantRank": 2,
       "rr": 0.5,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-sqlscript",
@@ -351,13 +351,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-debugging",
@@ -368,13 +368,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-cap-auth",
@@ -385,13 +385,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-cap-mta",
@@ -402,13 +402,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-mcp-gateway",
@@ -419,13 +419,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "tutorial-transport",
@@ -436,13 +436,13 @@
       ],
       "firstRelevantRank": 2,
       "rr": 0.5,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-regex-pcre",
@@ -453,13 +453,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-gzip",
@@ -470,13 +470,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-string-templates",
@@ -488,13 +488,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-authority-check",
@@ -506,13 +506,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-for-all-entries",
@@ -524,13 +524,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-loop-group-by",
@@ -542,13 +542,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-secondary-key",
@@ -560,13 +560,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-unit-test",
@@ -578,13 +578,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cds-define-view",
@@ -595,13 +595,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cds-value-help-annotation",
@@ -616,13 +616,13 @@
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "rap-determination",
@@ -633,13 +633,13 @@
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "rap-eml-modify",
@@ -651,13 +651,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "ui5-two-way-binding",
@@ -670,13 +670,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "ui5-growing-table",
@@ -688,13 +688,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "ui5-fiori-elements-lineitem",
@@ -706,13 +706,13 @@
       ],
       "firstRelevantRank": 4,
       "rr": 0.25,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "wdi5-locator",
@@ -724,13 +724,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cap-associations",
@@ -743,13 +743,13 @@
       ],
       "firstRelevantRank": 2,
       "rr": 0.5,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cap-expose-projection",
@@ -761,13 +761,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "btp-destination",
@@ -779,13 +779,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-gzip-lexical",
@@ -797,13 +797,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-authority-check-lexical",
@@ -815,13 +815,13 @@
       ],
       "firstRelevantRank": 7,
       "rr": 0.14285714285714285,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-for-all-entries-lexical",
@@ -833,13 +833,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "best-exceptions-vs-returncodes",
@@ -850,13 +850,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "best-composition-vs-inheritance",
@@ -867,13 +867,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "best-new-vs-create-object",
@@ -884,13 +884,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "best-package-architecture",
@@ -902,13 +902,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-read-table-vs-loop",
@@ -919,13 +919,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-line-exists",
@@ -936,13 +936,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-insert-vs-append",
@@ -953,13 +953,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-avoid-default-key",
@@ -970,13 +970,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-inline-declarations",
@@ -987,13 +987,13 @@
       ],
       "firstRelevantRank": 11,
       "rr": 0.09090909090909091,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-oo-vs-procedural",
@@ -1004,13 +1004,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-loop-where-vs-if",
@@ -1021,13 +1021,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-cap-event-handlers",
@@ -1038,13 +1038,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "cov-cap-view-parameters",
@@ -1055,13 +1055,13 @@
       ],
       "firstRelevantRank": 6,
       "rr": 0.16666666666666666,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-read-table",
@@ -1072,13 +1072,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-sort-itab",
@@ -1089,13 +1089,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-collect",
@@ -1106,13 +1106,13 @@
       ],
       "firstRelevantRank": 21,
       "rr": 0.047619047619047616,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-delete-duplicates",
@@ -1123,13 +1123,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-try-catch",
@@ -1140,13 +1140,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-rtti",
@@ -1157,13 +1157,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "para-asjson",
@@ -1174,13 +1174,13 @@
       ],
       "firstRelevantRank": null,
       "rr": 0,
-      "returned": 30,
       "hit": {
         "1": 0,
         "3": 0,
         "5": 0,
         "10": 0
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-raise-exception-class",
@@ -1192,13 +1192,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     },
     {
       "id": "abap-convert-date",
@@ -1209,13 +1209,13 @@
       ],
       "firstRelevantRank": 1,
       "rr": 1,
-      "returned": 30,
       "hit": {
         "1": 1,
         "3": 1,
         "5": 1,
         "10": 1
-      }
+      },
+      "returned": 30
     }
   ],
   "k": 30
