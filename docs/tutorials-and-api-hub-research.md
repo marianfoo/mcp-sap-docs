@@ -65,7 +65,9 @@ AI Core (`AI_CORE_API`) was also found through live search; it is a useful next 
 
 ### Recommended integration approach
 
-Add an **optional online search/fetch provider** if this functionality should be available directly inside MCP SAP Docs. A separate SAP API Hub MCP connection already exposes the useful search, metadata, resources, and spec operations in this environment; reuse that approach and avoid maintaining a second independent bulk catalog.
+The lowest-impact option is to use the existing **`sap-api-hub-mcp` alongside MCP SAP Docs**. It already implements search, metadata, resources, and specifications in [sap-mcp-servers/packages/api-hub](https://github.com/marianfoo/sap-mcp-servers/tree/main/packages/api-hub). This was the connection used for the live checks. It handles SAP login and cached session cookies; successful connected calls do not establish anonymous access.
+
+If one MCP SAP Docs endpoint is required, add an **optional online provider** that reuses that client and requires the user's Hub authentication. Keep the public documentation service usable without Hub credentials. An independent bulk catalog or a second login implementation would add maintenance with little additional value.
 
 Return compact search hits with artifact ID, kind, product/package, release/version, lifecycle state, and source URL. Fetch a selected artifact's normalized metadata and resource summary. Retrieve full OpenAPI/EDMX/event definitions explicitly when needed. Use a short cache keyed by artifact kind, ID, product/release where relevant, and requested format.
 
@@ -77,7 +79,7 @@ The Business Partner specification alone is almost two megabytes. Returning it f
 - The category response's top-level artifact total was zero while nested type aggregates were populated. Read and validate the type-level data; do not interpret zero as an empty catalog.
 - The default `Sales_Order` event response selected version 1.0.0 even though its version list included 1.0.1. Resolve an explicit product/release and record the effective version. “Default” cannot be assumed to mean newest.
 - Some normalized fields were empty while useful data existed elsewhere: the CDS view had 95 fields but empty capability/business-context lists, and the Integration Content summary listed no authentication methods. Missing metadata is unknown, not proof of no capability or no authentication.
-- Package responses include documentation and license links. Public retrieval succeeded for the sampled artifacts, but this does not establish blanket redistribution rights or anonymous access for every artifact. Check the selected package's terms before shipping offline copies. The S/4HANA Cloud package explicitly distinguishes Public Edition from other editions.
+- Package responses include documentation and license links. Read-only retrieval through the connected Hub MCP succeeded for the sampled artifacts, but this does not establish blanket redistribution rights or anonymous access. Check the selected package's terms before shipping offline copies. The S/4HANA Cloud package explicitly distinguishes Public Edition from other editions.
 
 ## Decision
 
