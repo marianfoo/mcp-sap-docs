@@ -1,7 +1,7 @@
 {
-  "gitCommit": "f5fe5c3",
+  "gitCommit": "54e7dbf",
   "variant": "sap-docs",
-  "corpusSha256": "da03b33f2d4e0c400b659e26bb3c86809449ff0b52fc77f59cda6ea8b90cf43a",
+  "corpusSha256": "dbfdb4e7afa17b9b651f8d347f003eab6df94cd4c3b0ccbd3464cea414838c4e",
   "embeddingWeight": 0,
   "searchOptions": {
     "includeOnline": false,
