@@ -9,7 +9,7 @@
       "type": "documentation",
       "lang": "en",
       "boost": 0.1,
-      "tags": ["SAP AI Core", "generative AI", "tutorial"],
+      "tags": ["SAP AI Core", "tutorial"],
       "description": "SAP AI Core tutorials \u2014 curated walkthroughs with prerequisites and examples",
       "libraryId": "/sap-tutorials-ai",
       "sourcePath": "tutorials-generated/ai",

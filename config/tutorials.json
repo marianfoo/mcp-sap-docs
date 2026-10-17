@@ -4,7 +4,6 @@
       "name": "SAP AI Core tutorials",
       "keywords": [
         "SAP AI Core",
-        "generative AI",
         "tutorial"
       ],
       "tutorials": [
@@ -63,5 +62,8 @@
   },
   "urlOverrides": {
     "btp-transport-management-cpi-01-use-case": "https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/btp-transport-management-cpi-01-use-case/btp-transport-management-cpi-01-use-case.md"
+  },
+  "assetOverrides": {
+    "ai-core-orchestration-consumption-v2/img/Bruno_Collection.json": "img/bruno_config.json"
   }
 }

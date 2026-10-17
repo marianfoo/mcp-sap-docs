@@ -52,3 +52,17 @@ tags. Only shared product names and `tutorial` are added to each group; individu
 IDs, titles and content supply the task terms. All 69 eval ranks stayed unchanged,
 and a scoped `MCP Gateway` search returns only the actual Gateway tutorial and
 its sections.
+
+## Claude review fixes
+
+- The preservation tests now prepare fresh output in a temporary directory, so
+  they exercise current code without depending on an earlier build.
+- Every generated GitHub/raw asset link is checked against Git's exact,
+  case-sensitive file tree. This caught the upstream `Bruno_Collection.json`
+  download typo. The same tutorial folder contains `img/bruno_config.json`, a
+  valid Bruno export with the documented V2 completion requests; a single
+  explicit asset override points to that verified HTTP-200 file.
+- Clear generated tutorial output before checking input availability, preventing
+  stale files from being indexed when the checkout is absent.
+- AI group tags now also contain only the shared product name and `tutorial`.
+  All 69 eval ranks are unchanged after these fixes.

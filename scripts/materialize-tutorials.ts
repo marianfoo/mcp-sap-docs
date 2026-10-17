@@ -6,6 +6,7 @@ import matter from 'gray-matter';
 type TutorialConfig = {
   groups: Record<string, { name: string; keywords: string[]; tutorials: string[] }>;
   urlOverrides: Record<string, string>;
+  assetOverrides: Record<string, string>;
 };
 
 export const TUTORIALS: TutorialConfig = JSON.parse(readFileSync('config/tutorials.json', 'utf8'));
@@ -34,6 +35,7 @@ export function normalizeTutorialMarkdown(content: string, id: string): string {
       .replace(/<!-- description -->\s*/g, '')
       .replace(/(!?\[[^\]]*\])\(([^\s)]+)\)/g, (original, label: string, target: string) => {
         if (/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(target)) return original;
+        target = TUTORIALS.assetOverrides[`${id}/${target}`] || target;
         // Bare tutorial IDs refer to other Developer Center tutorials.
         if (!label.startsWith('!') && /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(target)) {
           return `${label}(${tutorialUrl(target)})`;
@@ -51,10 +53,11 @@ export async function materializeTutorials(
   outputRoot = 'sources/tutorials-generated',
 ): Promise<void> {
   // Partial builds (e.g. the Open UX setup test) may not clone tutorials at all.
+  // Clear prior output even then, so a missing checkout cannot index stale files.
+  await fs.rm(outputRoot, { recursive: true, force: true });
   if (!existsSync(inputRoot)) return;
   for (const [group, config] of Object.entries(TUTORIALS.groups)) {
     const outputDir = path.join(outputRoot, group);
-    await fs.rm(outputDir, { recursive: true, force: true });
     await fs.mkdir(outputDir, { recursive: true });
     for (const id of config.tutorials) {
       // Missing allowlisted inputs fail the build, instead of silently dropping content.
