@@ -42,7 +42,6 @@ export function truncateContent(
   // Reserve 20% for truncation notice and buffer
   const startLength = Math.floor(maxLength * 0.6);
   const endLength = Math.floor(maxLength * 0.2);
-  const noticeLength = maxLength - startLength - endLength;
   
   // Extract start portion
   let startPortion = content.substring(0, startLength);
@@ -55,12 +54,14 @@ export function truncateContent(
     /\n---\n/g,       // Horizontal rules
     /\.\s+/g          // Sentence ends
   ];
-  
+
   for (const pattern of naturalBreakPatterns) {
     const matches = Array.from(startPortion.matchAll(pattern));
     if (matches.length > 0) {
       const lastMatch = matches[matches.length - 1];
-      if (lastMatch.index && lastMatch.index > startLength * 0.8) {
+      // Compare against undefined rather than relying on truthiness: a match at
+      // index 0 is a valid position, `0` would be treated as "no match".
+      if (lastMatch.index !== undefined && lastMatch.index > startLength * 0.8) {
         startPortion = startPortion.substring(0, lastMatch.index + lastMatch[0].length);
         break;
       }
