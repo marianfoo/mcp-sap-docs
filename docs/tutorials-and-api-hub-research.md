@@ -4,13 +4,14 @@ Research date: 2026-10-17. These are follow-up recommendations; the source expan
 
 ## SAP tutorials
 
-The tutorial repository contains 704 tutorial Markdown files. The current MCP configuration indexes one Fiori OPA testing tutorial. I inspected 45 additional candidate tutorials, their Markdown and code examples, and their latest file commits. A recent commit alone does not establish that every example is current.
+The tutorial repository contains 704 tutorial Markdown files. The current MCP configuration indexes one Fiori OPA testing tutorial. I inspected 46 additional candidate tutorials, their Markdown and code examples, and their latest file commits. A recent commit alone does not establish that every example is current.
 
-### Recommended first selection: 31 tutorials
+### Recommended first selection: 32 tutorials
 
 | Group | Exact selection | Why it is useful |
 |---|---|---|
 | AI Core: 6 | `ai-core-orchestration-consumption-v2`, `ai-core-orchestration-grounding-v2`, `ai-core-genaihub-prompt-registry`, `ai-core-genaihub-evaluation-with-grounding`, `ai-core-genaihub-inference-observability`, `ai-core-genaihub-batch-consumption` | Practical consumption, grounding, evaluation, prompt management, observability, and batch workflows. Complements the new Python SDK reference. |
+| Integration Suite MCP Gateway: 1 | `btp-integration-suite-mcp-gateway` | Turn a ServiceNow API into an MCP server, apply policies, publish it in Developer Hub, and test streamable HTTP with MCP Inspector. Directly relevant to this project's users and the new Integration Suite reference. |
 | HANA Cloud SQLScript: 10 | `hana-cloud-sqlscript-anonymous`, `-debugging`, `-libraries`, `-parallel`, `-scalar`, `-stored-proc`, `-table-operators`, `-table-user`, `-table-var`, `-usingindexbased` (all use the same `hana-cloud-sqlscript` prefix) | Procedures, functions, debugging, table variables, and SQLScript behavior. Fills a gap between general CAP/ABAP guidance and HANA implementation. |
 | CAP with HANA Cloud: 7 | `hana-cloud-cap-create-project`, `-create-database-cds`, `-calc-view`, `-stored-proc`, `-create-ui`, `-add-authentication`, `-deploy-mta` (same `hana-cloud-cap` prefix) | A coherent development path, including calculation views and exposing stored procedures through CAP. |
 | Integration Suite transport: 8 | `btp-transport-management-cpi-01-use-case` through `-08-cas-ui`, including source/target setup, connections, destination, enabling transport, and a test transport | Connects Integration Suite, Content Agent, destinations, and Cloud Transport Management in one worked scenario. |
@@ -18,6 +19,8 @@ The tutorial repository contains 704 tutorial Markdown files. The current MCP co
 Examples inspected: [orchestration V2 consumption](https://developers.sap.com/tutorials/ai-core-orchestration-consumption-v2), [orchestration V2 grounding](https://developers.sap.com/tutorials/ai-core-orchestration-grounding-v2), [SQLScript procedures](https://developers.sap.com/tutorials/hana-cloud-sqlscript-stored-proc), [CAP authentication](https://developers.sap.com/tutorials/hana-cloud-cap-add-authentication), [transport scenario](https://developers.sap.com/tutorials/btp-transport-management-cpi-01-use-case).
 
 Most selected HANA files were updated in August–October 2026. The transport chain has updates from June/August 2025 through October 2026. Selected AI tutorials have updates from October 2025 through August 2026. These are file commit dates, not evidence that the examples were executed against a tenant during this research.
+
+The [MCP Gateway tutorial](https://developers.sap.com/tutorials/btp-integration-suite-mcp-gateway.html) was updated on October 6, 2026. It requires Integration Cell and a ServiceNow trial. Preserve its edition prerequisites: the introduction names Premium or Enhanced Edition for productive use, while Step 1 names Enhanced Edition specifically. Verify the entitlement for the target tenant before execution. I reviewed the Markdown, OpenAPI operations, OAuth token commands, and MCP client steps; I did not provision these services or execute the tutorial.
 
 ### Second selection: 11 tutorials
 
@@ -83,4 +86,4 @@ The Business Partner specification alone is almost two megabytes. Returning it f
 
 ## Decision
 
-The best next tutorial expansion is the **31-file curated selection** above. For the Hub, the strongest addition is **targeted online API and CDS-view retrieval**, followed by events. The existing Markdown pipeline is sufficient for the tutorial work; Hub support merits a separate focused change with tests for version selection, missing metadata, large specifications, and API errors.
+The best next tutorial expansion is the **32-file curated selection** above. For the Hub, the strongest addition is **targeted online API and CDS-view retrieval**, followed by events. The existing Markdown pipeline is sufficient for the tutorial work; Hub support merits a separate focused change with tests for version selection, missing metadata, large specifications, and API errors.
