@@ -209,6 +209,16 @@ npm run setup
 npm run build
 ```
 
+`npm run setup` updates the selected variant's documentation sources to their
+configured branch tips and builds the index, including embeddings. Nested
+submodules stay at the commits recorded by those sources. To omit optional nested
+repositories (for example when their upstream URLs require SSH credentials), use
+`SKIP_NESTED_SUBMODULES=1 npm run setup` in Bash, including Git Bash on Windows.
+
+`npm run setup:submodules` instead checks out the repository's recorded source
+commits. It does not fetch the latest documentation or apply variant filtering.
+Run `npm run setup` when refreshing an existing installation.
+
 Start server modes:
 
 ```bash
