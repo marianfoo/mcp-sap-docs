@@ -35,14 +35,15 @@ harness measures directional improvement, not absolute recall.
 | `misses` | queries with no gold in the returned results |
 
 The report also prints a **bootstrap 95% CI on ΔMRR** and a **sign test on
-hit@3 flips**. At n = 44, most single-change deltas land within noise by design —
+hit@3 flips**. With small query sets, many single-change deltas land within noise —
 the harness is built to resist over-claiming. Treat MRR as directional and use
 per-query MISS→hit flips and the pairwise judgment for decisions.
 
 ## Query set structure
 
-[`eval-queries.js`](./eval-queries.js) contains 44 queries spanning ABAP, CDS,
-RAP, UI5/Fiori Elements, CAP, BTP, and wdi5. Three cohorts stress different
+[`eval-queries.js`](./eval-queries.js) contains 69 queries: the original 44 spanning
+ABAP, CDS, RAP, UI5/Fiori Elements, CAP, BTP, and wdi5, plus 25 source-expansion
+and tutorial probes. Three cohorts stress different
 recall levers:
 
 - **Lexical-gap** — phrased in user language with no keyword overlap against the
@@ -69,7 +70,7 @@ library id/path on each `⭐️ **<id>**` result line.
 `pairwise-eval-workflow.js` is a Claude Code workflow that runs an LLM-as-judge
 comparison between two systems head-to-head. It requires a connected MCP session.
 `pairwise-vanilla.json` contains pre-collected vanilla upstream results for all
-44 queries and is the reference side of the comparison.
+44 original queries and is the reference side of the comparison.
 
 Both workflow scripts accept an `args` object to configure which MCP server to
 call, so they work regardless of how your server is registered:
@@ -111,3 +112,14 @@ hard queries or automatically increasing boosts for a larger library.
 There are now 69 queries in total. Tutorial discovery is also gated by the MCP
 integration suite (expected tutorial in the top 10), alongside fetch coverage for
 all 32 tutorials and byte-preservation checks for their code blocks.
+
+Reports also record the index SHA-256 and effective embedding weight. Setup may
+follow newer upstream source tips without changing the application commit, so
+keep the corpus fingerprint with benchmark results. A lexical/semantic mode
+mismatch warns against direct baseline comparison. Review cohorts and per-query
+changes whenever the corpus or query set grows.
+
+The accepted expansion baseline records all 69 queries, including every original
+query and all 18 existing misses. On this corpus, the tutorial cohort has MRR 0.9;
+one prior rank moved from 11 to 12, with no prior top-10 hit lost. See
+`docs/tutorial-ingestion-plan.md` for the scope and observed limitations.
