@@ -8,13 +8,6 @@ import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
 import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, BestMatchHit, type CommunityPostContent } from "./communityBestMatch.js";
 import type { TruncationInfo } from "./truncate.js";
 
-/** Result of a document fetch: the text plus how it was affected on the way out. */
-export interface FetchResult {
-  text: string;
-  url?: string;
-  /** Present only when the document had to be shortened. */
-  truncation?: TruncationInfo;
-}
 
 import { 
   getDocUrlConfig, 
@@ -29,6 +22,14 @@ import {
 import { generateDocumentationUrl as generateUrl } from "./url-generation/index.js";
 import { getSapHelpDocument } from "./sapHelp.js";
 import { readSourceContentSync } from "./sourceContent.js";
+
+/** Result of a document fetch: the text plus how it was affected on the way out. */
+export interface FetchResult {
+  text: string;
+  url?: string;
+  /** Present only when the document had to be shortened. */
+  truncation?: TruncationInfo;
+}
 
 // Use the new URL generation system
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {

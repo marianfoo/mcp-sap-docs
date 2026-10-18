@@ -42,10 +42,16 @@ Unicode, exact limits, long paragraphs, headings and tail boundaries.
 
 - Main test command includes all new tests; targeted tests exercise actual
   Community-to-MCP dispatch, both response forms, resources, and SAP Help citations.
-- Local validation: 538 core tests and all 51 integration tests passed against
+- Local validation: 542 core tests and all 51 integration tests passed against
   the frozen release sources. The 69-query MCP HTTP comparison has identical
   ranks to #105. Real Community and offline fetches preserve text and citations.
 - One initial integration run mixed old local source files with the frozen index
   and failed a URL check; rerunning against the matching release sources passes.
-- Review with Claude Opus 5.5 Max, resolve findings, and rerun affected tests.
+- Claude Opus 5.5 Max found no code blockers in the implementation review.
+  Its documentation example and pipeline-coverage follow-ups were resolved.
+  Already-aligned paragraph cuts are retained; 39 focused tests pass.
+- The final unit suites run in the Git checkout (542 core, 34 SAP object and
+  11 Discovery Center tests). Integration runs use the matching frozen corpus.
+  Live SAP Help confirms truncation at 1,000 characters, retained citations and
+  the string-wrapper contract. The Community CLI smoke tests pass.
 - Keep release #106 held until the final PR head has passed review and CI.

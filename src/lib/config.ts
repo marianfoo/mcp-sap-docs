@@ -28,7 +28,7 @@ export const CONFIG = {
   EXCERPT_LENGTH_COMMUNITY: 1000, // Community search results excerpt length
   
   // Maximum content length for SAP Help and Community full content retrieval
-  // Keeps responses manageable (~18,750 tokens at the default). Self-hosted
+  // This is a character budget, not a token limit. Self-hosted
   // deployments can raise or lower it via MAX_CONTENT_LENGTH.
   MAX_CONTENT_LENGTH: maxContentLength,
 

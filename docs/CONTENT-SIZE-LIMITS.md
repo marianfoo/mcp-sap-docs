@@ -26,8 +26,8 @@ include this record in both the JSON text response and `structuredContent`:
 {
   "wasTruncated": true,
   "originalLength": 90000,
-  "truncatedLength": 74996,
-  "omittedCharacters": 15186
+  "truncatedLength": 75000,
+  "omittedCharacters": 15136
 }
 ```
 

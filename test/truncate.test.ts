@@ -27,7 +27,7 @@ describe("truncateContent", () => {
   });
 
   it("keeps the beginning and the end and drops the middle", () => {
-    const content = document(200, 100); // ~40,000 characters
+    const content = document(200, 100);
     const result = truncateContent(content, 5_000);
 
     expect(result.wasTruncated).toBe(true);
@@ -98,15 +98,6 @@ describe("truncateContent", () => {
     expect(loose.wasTruncated).toBe(true);
   });
 
-  it("handles a content without any natural break", () => {
-    const content = "y".repeat(50_000);
-    const result = truncateContent(content, 1_000);
-
-    expect(result.wasTruncated).toBe(true);
-    expect(result.content).toContain("Content Truncated");
-    expect(result.originalLength).toBe(50_000);
-  });
-
   it("does not truncate at exactly the limit", () => {
     const content = document(10, 100);
     const result = truncateContent(content, content.length);
@@ -136,7 +127,10 @@ describe("truncateContentSimple", () => {
   });
 });
 
-describe.each([truncateContent, truncateContentSimple])("%s budget and accounting", (truncate) => {
+describe.each([
+  ["head and tail", truncateContent],
+  ["head only", truncateContentSimple],
+] as const)("%s budget and accounting", (_name, truncate) => {
   it("honours every small positive budget, including the notice", () => {
     for (const content of ["x".repeat(10_000), "\n# Heading\n" + "x".repeat(10_000)]) {
       for (let limit = 1; limit <= 500; limit++) {
@@ -144,6 +138,9 @@ describe.each([truncateContent, truncateContentSimple])("%s budget and accountin
         expect(result.content.length, `limit ${limit}`).toBeLessThanOrEqual(limit);
         expect(result.truncatedLength).toBe(result.content.length);
         expect(result.omittedCharacters).toBeGreaterThan(0);
+        if (content.startsWith("x")) {
+          expect((result.content.match(/x/g) || []).length + result.omittedCharacters).toBe(content.length);
+        }
       }
     }
   });
@@ -163,6 +160,18 @@ describe.each([truncateContent, truncateContentSimple])("%s budget and accountin
 });
 
 describe("truncation boundaries", () => {
+  it("keeps a tail cut already at a paragraph start", () => {
+    const content = "x".repeat(9826) + "\n\nOne. " + "y".repeat(167);
+    const tail = truncateContent(content, 1000).content.split("\n---\n\n").at(-1)!;
+    expect(tail).toBe("One. " + "y".repeat(167));
+  });
+
+  it("keeps a head cut already at a line end", () => {
+    const content = "x".repeat(650) + ". " + "y".repeat(40) + "\n" + "z".repeat(9307);
+    const head = truncateContent(content, 1000).content.split("\n\n---\n\n")[0];
+    expect(head).toBe(content.slice(0, 692));
+  });
+
   it("starts the tail at a nearby paragraph instead of in its first word", () => {
     const content = Array.from({length: 200}, (_, i) => `Paragraph ${i} ` + "x".repeat(100)).join("\n\n");
     const result = truncateContent(content, 5_000);

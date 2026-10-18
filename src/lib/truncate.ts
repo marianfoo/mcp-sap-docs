@@ -22,6 +22,7 @@ function notice(original: number, omitted: number, keepEnd: boolean): string {
 // Prefer nearby paragraph/heading/sentence boundaries. Never discard thousands
 // of characters just to reach a paragraph in a large document.
 function nearbyBoundary(content: string, cut: number, window: number, fromEnd: boolean): number {
+  if (fromEnd ? content[cut - 1] === "\n" : content[cut] === "\n") return cut;
   // Inspect the original line, including a heading marker cut before its space.
   if (!fromEnd) {
     const lineStart = content.lastIndexOf("\n", cut - 1) + 1;
