@@ -81,6 +81,19 @@ const REQUIRED_SOURCE_DIRS: Array<{ label: string; dir: string }> = [
   { label: "abap-platform-reuse-services root", dir: "sources/abap-platform-reuse-services" },
   { label: "btp-cloud-platform docs",         dir: "sources/btp-cloud-platform/docs" },
   { label: "sap-artificial-intelligence docs", dir: "sources/sap-artificial-intelligence/docs" },
+  { label: "btp-connectivity", dir: "sources/btp-connectivity/docs" },
+  { label: "cloud-sdk-python", dir: "sources/cloud-sdk/docs-python" },
+  { label: "cloud-sdk-ai-python", dir: "sources/cloud-sdk-ai/docs-python" },
+  { label: "odata-vocabularies", dir: "sources/odata-vocabularies/vocabularies" },
+  { label: "btp-job-scheduling-service", dir: "sources/btp-job-scheduling-service/docs" },
+  { label: "btp-cloud-logging", dir: "sources/btp-cloud-logging/docs" },
+  { label: "btp-cloud-identity-services", dir: "sources/btp-cloud-identity-services/docs" },
+  { label: "btp-cloud-identity-integration", dir: "sources/btp-cloud-identity-services-system-integration-guide/docs" },
+  { label: "btp-integration-suite", dir: "sources/btp-integration-suite/docs/ISuite_Integrations_APIs" },
+  { label: "btp-event-mesh", dir: "sources/btp-integration-suite/docs/ISuite_Event_Mesh" },
+  { label: "btp-business-application-studio", dir: "sources/btp-business-application-studio/docs" },
+  { label: "btp-continuous-integration-and-delivery", dir: "sources/btp-continuous-integration-and-delivery/docs" },
+  { label: "btp-cloud-transport-management", dir: "sources/btp-cloud-transport-management/docs" },
   // sapReleasedObjects uses sources/abap-atc-cr-cv-s4hc/src
   { label: "abap-atc-cr-cv-s4hc src",         dir: "sources/abap-atc-cr-cv-s4hc/src" },
 ];
@@ -110,6 +123,17 @@ interface ExclusionCheck {
 
 const EXCLUSION_CHECKS: ExclusionCheck[] = [
   {
+    submodule: "sources/btp-integration-suite",
+    sparseDirs: ["docs/ISuite_Integrations_APIs", "docs/ISuite_Event_Mesh"],
+    excludedDirs: ["docs/ci", "docs/apim", "docs/ISuite"],
+  },
+  {
+    submodule: "sources/cloud-sdk-ai",
+    sparseDirs: ["docs-js", "docs-java", "docs-python"],
+    excludedDirs: ["docs-js_versioned_docs", "docs-java_versioned_docs"],
+  },
+
+  {
     submodule: "sources/openui5",
     sparseDirs: ["src"],
     // openui5 root has: grunt/ lib/ docs/ plus src/  — only src/ is needed
@@ -138,7 +162,7 @@ const EXCLUSION_CHECKS: ExclusionCheck[] = [
   },
   {
     submodule: "sources/cloud-sdk",
-    sparseDirs: ["docs-js", "docs-java"],
+    sparseDirs: ["docs-js", "docs-java", "docs-python"],
     // cloud-sdk root has: src/ static/ styles/ docs-js_versioned_docs/ etc.
     excludedDirs: ["src", "static", "docs-js_versioned_docs", "docs-java_versioned_docs"],
   },
@@ -201,4 +225,23 @@ describe("sparse checkout - excluded directories are absent", () => {
       });
     }
   }
+});
+
+describe('curated tutorial checkout', () => {
+  it('contains every explicitly selected tutorial and no deferred AI masking tutorial', async () => {
+    const fs = await import('node:fs');
+    const config = JSON.parse(fs.readFileSync('config/tutorials.json', 'utf8'));
+    for (const group of Object.values(config.groups) as Array<{ tutorials: string[] }>) {
+      for (const id of group.tutorials) {
+        expect(existsSync(`sources/sap-tutorials/tutorials/${id}/${id}.md`), id).toBe(true);
+      }
+    }
+    if (getSparseList('sources/sap-tutorials').length) {
+      expect(existsSync('sources/sap-tutorials/tutorials/ai-core-orchestration-consumption-opt-v2')).toBe(false);
+    }
+    const setup = fs.readFileSync('setup.sh', 'utf8');
+    const docker = fs.readFileSync('Dockerfile', 'utf8');
+    expect(setup).toContain('require("./config/tutorials.json")');
+    expect(docker).toContain('require("./config/tutorials.json")');
+  });
 });

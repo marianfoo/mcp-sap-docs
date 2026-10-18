@@ -1,9 +1,48 @@
 {
   "version": 1,
-  "updated_at": "2025-01-14",
+  "updated_at": "2026-10-18",
   "description": "Centralized configuration for SAP Docs MCP search system",
   
   "sources": [
+    {
+      "id": "sap-tutorials-ai",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["SAP AI Core", "tutorial"],
+      "description": "SAP AI Core tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-ai",
+      "sourcePath": "tutorials-generated/ai",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "sap-tutorials-hana",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["SAP HANA Cloud", "tutorial"],
+      "description": "SAP HANA Cloud tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-hana",
+      "sourcePath": "tutorials-generated/hana",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
+    {
+      "id": "sap-tutorials-integration",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": ["SAP Integration Suite", "tutorial"],
+      "description": "SAP Integration Suite tutorials \u2014 curated walkthroughs with prerequisites and examples",
+      "libraryId": "/sap-tutorials-integration",
+      "sourcePath": "tutorials-generated/integration",
+      "baseUrl": "https://developers.sap.com/tutorials",
+      "pathPattern": "/{file}",
+      "anchorStyle": "custom"
+    },
     {
       "id": "sapui5",
       "type": "documentation",
@@ -510,6 +549,261 @@
       "baseUrl": "https://github.com/SAP-samples/teched2025-DT260/blob/main",
       "pathPattern": "/{file}",
       "anchorStyle": "github"
+    },
+    {
+      "id": "btp-connectivity",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "connectivity",
+        "destination",
+        "cloud-connector",
+        "principal-propagation",
+        "rfc"
+      ],
+      "description": "Destinations, Cloud Connector, principal propagation, and HTTP/RFC connectivity",
+      "libraryId": "/btp-connectivity",
+      "sourcePath": "btp-connectivity/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-connectivity/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-python",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "sdk",
+        "python",
+        "btp",
+        "connectivity",
+        "agents"
+      ],
+      "description": "Python SDK for BTP connectivity, identity, agent services, and observability",
+      "libraryId": "/cloud-sdk-python",
+      "sourcePath": "cloud-sdk/docs-python",
+      "baseUrl": "https://github.com/SAP/cloud-sdk/blob/main/docs-python",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "cloud-sdk-ai-python",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "ai",
+        "sdk",
+        "python",
+        "orchestration",
+        "grounding",
+        "generative-ai"
+      ],
+      "description": "Python AI SDK: orchestration, grounding, prompt registry, streaming, and examples",
+      "libraryId": "/cloud-sdk-ai-python",
+      "sourcePath": "cloud-sdk-ai/docs-python",
+      "baseUrl": "https://github.com/SAP/ai-sdk/blob/main/docs-python",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "odata-vocabularies",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "odata",
+        "annotations",
+        "fiori-elements",
+        "cap",
+        "rap",
+        "ui",
+        "common"
+      ],
+      "description": "SAP OData annotation terms and types for Fiori elements, CAP, and RAP; some vocabularies are experimental",
+      "libraryId": "/odata-vocabularies",
+      "sourcePath": "odata-vocabularies/vocabularies",
+      "baseUrl": "https://github.com/SAP/odata-vocabularies/blob/main/vocabularies",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-job-scheduling-service",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "jobs",
+        "scheduler",
+        "scheduling"
+      ],
+      "description": "Job scheduling, application integration, authentication, and job execution",
+      "libraryId": "/btp-job-scheduling-service",
+      "sourcePath": "btp-job-scheduling-service/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-job-scheduling-service/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-cloud-logging",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "logging",
+        "observability",
+        "opentelemetry"
+      ],
+      "description": "Cloud Logging setup, log ingestion, observability, and troubleshooting",
+      "libraryId": "/btp-cloud-logging",
+      "sourcePath": "btp-cloud-logging/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-logging/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-cloud-identity-services",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "identity",
+        "ias",
+        "ips",
+        "authentication",
+        "provisioning",
+        "trust"
+      ],
+      "description": "Identity Authentication and Identity Provisioning: trust, authentication, provisioning, and administration",
+      "libraryId": "/btp-cloud-identity-services",
+      "sourcePath": "btp-cloud-identity-services/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-identity-services/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-cloud-identity-integration",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "identity",
+        "ias",
+        "ips",
+        "integration",
+        "trust"
+      ],
+      "description": "Cross-product integration guidance for SAP Cloud Identity Services",
+      "libraryId": "/btp-cloud-identity-integration",
+      "sourcePath": "btp-cloud-identity-services-system-integration-guide/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-identity-services-system-integration-guide/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-integration-suite",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "integration-suite",
+        "cloud-integration",
+        "cpi",
+        "iflow",
+        "groovy",
+        "adapters",
+        "api-management",
+        "apim",
+        "policies"
+      ],
+      "description": "SAP Integration Suite Integrations and APIs: integration flows, adapters, scripting, API Management, policies, and operations",
+      "libraryId": "/btp-integration-suite",
+      "sourcePath": "btp-integration-suite/docs/ISuite_Integrations_APIs",
+      "baseUrl": "https://github.com/SAP-docs/btp-integration-suite/blob/main/docs/ISuite_Integrations_APIs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-event-mesh",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "integration-suite",
+        "event-mesh",
+        "messaging",
+        "events",
+        "queues"
+      ],
+      "description": "Event Mesh messaging, queues, subscriptions, and event-driven integration",
+      "libraryId": "/btp-event-mesh",
+      "sourcePath": "btp-integration-suite/docs/ISuite_Event_Mesh",
+      "baseUrl": "https://github.com/SAP-docs/btp-integration-suite/blob/main/docs/ISuite_Event_Mesh",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-business-application-studio",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "bas",
+        "business-application-studio",
+        "dev-space",
+        "development"
+      ],
+      "description": "Dev spaces, application development, connectivity, configuration, and troubleshooting",
+      "libraryId": "/btp-business-application-studio",
+      "sourcePath": "btp-business-application-studio/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-business-application-studio/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-continuous-integration-and-delivery",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "ci-cd",
+        "pipeline",
+        "build",
+        "deployment"
+      ],
+      "description": "SAP-managed CI/CD service: pipelines, builds, tests, and deployments",
+      "libraryId": "/btp-continuous-integration-and-delivery",
+      "sourcePath": "btp-continuous-integration-and-delivery/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-continuous-integration-and-delivery/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
+    },
+    {
+      "id": "btp-cloud-transport-management",
+      "type": "documentation",
+      "lang": "en",
+      "boost": 0.1,
+      "tags": [
+        "btp",
+        "transport",
+        "tms",
+        "deployment",
+        "ci-cd"
+      ],
+      "description": "Transport nodes, routes, content transport, and pipeline integration",
+      "libraryId": "/btp-cloud-transport-management",
+      "sourcePath": "btp-cloud-transport-management/docs",
+      "baseUrl": "https://github.com/SAP-docs/btp-cloud-transport-management/blob/main/docs",
+      "pathPattern": "/{file}",
+      "anchorStyle": "github"
     }
   ],
   
@@ -692,6 +986,9 @@
   },
 
   "libraryMappings": {
+    "sap-tutorials-integration": "sap-tutorials-integration",
+    "sap-tutorials-hana": "sap-tutorials-hana",
+    "sap-tutorials-ai": "sap-tutorials-ai",
     "sapui5": "sapui5",
     "cap": "cap",
     "cloud-sdk-js": "cloud-sdk-js",
@@ -720,7 +1017,20 @@
     "btp-cloud-platform": "btp-cloud-platform",
     "sap-artificial-intelligence": "sap-artificial-intelligence",
     "terraform-provider-btp": "terraform-provider-btp",
-    "architecture-center": "architecture-center"
+    "architecture-center": "architecture-center",
+    "btp-connectivity": "btp-connectivity",
+    "cloud-sdk-python": "cloud-sdk-python",
+    "cloud-sdk-ai-python": "cloud-sdk-ai-python",
+    "odata-vocabularies": "odata-vocabularies",
+    "btp-job-scheduling-service": "btp-job-scheduling-service",
+    "btp-cloud-logging": "btp-cloud-logging",
+    "btp-cloud-identity-services": "btp-cloud-identity-services",
+    "btp-cloud-identity-integration": "btp-cloud-identity-integration",
+    "btp-integration-suite": "btp-integration-suite",
+    "btp-event-mesh": "btp-event-mesh",
+    "btp-business-application-studio": "btp-business-application-studio",
+    "btp-continuous-integration-and-delivery": "btp-continuous-integration-and-delivery",
+    "btp-cloud-transport-management": "btp-cloud-transport-management"
   },
 
   "contextEmojis": {

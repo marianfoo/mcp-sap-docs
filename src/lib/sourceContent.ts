@@ -54,8 +54,16 @@ export function extractSourceUrlFromText(text: string): string | null {
   return plainMatch ? normalizeExtractedUrl(plainMatch[1]) : null;
 }
 
-function normalizeExtractedUrl(url: string): string {
-  return url.replace(/[>,.;]+$/, "");
+function normalizeExtractedUrl(url: string): string | null {
+  const candidate = url.replace(/[>,.;]+$/, "");
+  try {
+    // Documentation may contain "URL: https://<tenant ...>" examples. Those
+    // must not replace the citation to the actual documentation file.
+    const parsed = new URL(candidate);
+    return ['https:', 'http:'].includes(parsed.protocol) ? candidate : null;
+  } catch {
+    return null;
+  }
 }
 
 function isAbsoluteHttpUrl(url?: string | null): boolean {

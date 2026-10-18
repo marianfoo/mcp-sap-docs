@@ -97,13 +97,13 @@ get_sparse_paths() {
     sources/openui5)                     printf 'src' ;;
     sources/wdi5)                        printf 'docs' ;;
     sources/btp-fiori-tools)             printf 'docs' ;;
-    sources/sap-tutorials)               printf 'tutorials/fiori-tools-mockserver-opa-testing' ;;
+    sources/sap-tutorials)               node -e 'const c=require("./config/tutorials.json"); console.log(["fiori-tools-mockserver-opa-testing",...Object.values(c.groups).flatMap(g=>g.tutorials)].map(id=>"tutorials/"+id).join(" "))' ;;
     sources/open-ux-tools)               printf 'packages/create packages/fiori-docs-embeddings/data_local' ;;
     sources/ui5-tooling)                 printf 'docs' ;;
     sources/cloud-mta-build-tool)        printf 'docs' ;;
     sources/ui5-webcomponents)           printf 'docs' ;;
-    sources/cloud-sdk)                   printf 'docs-js docs-java' ;;
-    sources/cloud-sdk-ai)                printf 'docs-js docs-java' ;;
+    sources/cloud-sdk)                   printf 'docs-js docs-java docs-python' ;;
+    sources/cloud-sdk-ai)                printf 'docs-js docs-java docs-python' ;;
     sources/ui5-cc-spreadsheetimporter)  printf 'docs' ;;
     sources/dsag-abap-leitfaden)         printf 'docs' ;;
     sources/abap-docs)                   printf 'docs' ;;
@@ -112,6 +112,16 @@ get_sparse_paths() {
     sources/terraform-provider-btp)      printf 'docs' ;;
     sources/abap-atc-cr-cv-s4hc)         printf 'src' ;;
     sources/architecture-center)         printf 'docs' ;;
+    sources/btp-business-application-studio) printf 'docs' ;;
+    sources/btp-cloud-identity-services) printf 'docs' ;;
+    sources/btp-cloud-identity-services-system-integration-guide) printf 'docs' ;;
+    sources/btp-cloud-logging) printf 'docs' ;;
+    sources/btp-cloud-transport-management) printf 'docs' ;;
+    sources/btp-connectivity) printf 'docs' ;;
+    sources/btp-continuous-integration-and-delivery) printf 'docs' ;;
+    sources/btp-integration-suite) printf 'docs/ISuite_Integrations_APIs docs/ISuite_Event_Mesh' ;;
+    sources/btp-job-scheduling-service) printf 'docs' ;;
+    sources/odata-vocabularies) printf 'vocabularies' ;;
     *)                                   printf '' ;;
   esac
 }
@@ -166,6 +176,9 @@ while IFS= read -r line; do
     fi
   else
     printf '      - updating shallow to latest %s...\n' "$branch"
+    # Setup also creates standalone clones, which `git submodule sync` does not
+    # update. Follow the configured repository when its URL changes (e.g. a fork).
+    git -C "$path" remote set-url origin "$url"
     # Apply (or update) sparse checkout before fetch so blobs outside sparse paths
     # are never downloaded and existing ones are removed from the working tree
     if [ -n "$SPARSE_PATHS" ]; then

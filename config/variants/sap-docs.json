@@ -40,7 +40,23 @@
     "/sap-artificial-intelligence",
     "/terraform-provider-btp",
     "/teched2025-dt260",
-    "/architecture-center"
+    "/architecture-center",
+    "/btp-connectivity",
+    "/cloud-sdk-python",
+    "/cloud-sdk-ai-python",
+    "/odata-vocabularies",
+    "/btp-job-scheduling-service",
+    "/btp-cloud-logging",
+    "/btp-cloud-identity-services",
+    "/btp-cloud-identity-integration",
+    "/btp-integration-suite",
+    "/btp-event-mesh",
+    "/btp-business-application-studio",
+    "/btp-continuous-integration-and-delivery",
+    "/btp-cloud-transport-management",
+    "/sap-tutorials-ai",
+    "/sap-tutorials-hana",
+    "/sap-tutorials-integration"
   ],
   "submodulePaths": [
     "sources/sapui5-docs",
@@ -72,7 +88,17 @@
     "sources/abap-atc-cr-cv-s4hc",
     "sources/terraform-provider-btp",
     "sources/teched2025-dt260",
-    "sources/architecture-center"
+    "sources/architecture-center",
+    "sources/btp-business-application-studio",
+    "sources/btp-cloud-identity-services",
+    "sources/btp-cloud-identity-services-system-integration-guide",
+    "sources/btp-cloud-logging",
+    "sources/btp-cloud-transport-management",
+    "sources/btp-connectivity",
+    "sources/btp-continuous-integration-and-delivery",
+    "sources/btp-integration-suite",
+    "sources/btp-job-scheduling-service",
+    "sources/odata-vocabularies"
   ],
   "tools": {
     "abapLint": false,

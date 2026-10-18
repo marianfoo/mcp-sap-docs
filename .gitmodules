@@ -118,3 +118,43 @@
 	path = sources/architecture-center
 	url = https://github.com/SAP/architecture-center.git
 	branch = dev
+[submodule "sources/btp-business-application-studio"]
+	path = sources/btp-business-application-studio
+	url = https://github.com/SAP-docs/btp-business-application-studio.git
+	branch = main
+[submodule "sources/btp-cloud-identity-services"]
+	path = sources/btp-cloud-identity-services
+	url = https://github.com/SAP-docs/btp-cloud-identity-services.git
+	branch = main
+[submodule "sources/btp-cloud-identity-services-system-integration-guide"]
+	path = sources/btp-cloud-identity-services-system-integration-guide
+	url = https://github.com/SAP-docs/btp-cloud-identity-services-system-integration-guide.git
+	branch = main
+[submodule "sources/btp-cloud-logging"]
+	path = sources/btp-cloud-logging
+	url = https://github.com/SAP-docs/btp-cloud-logging.git
+	branch = main
+[submodule "sources/btp-cloud-transport-management"]
+	path = sources/btp-cloud-transport-management
+	url = https://github.com/SAP-docs/btp-cloud-transport-management.git
+	branch = main
+[submodule "sources/btp-connectivity"]
+	path = sources/btp-connectivity
+	url = https://github.com/SAP-docs/btp-connectivity.git
+	branch = main
+[submodule "sources/btp-continuous-integration-and-delivery"]
+	path = sources/btp-continuous-integration-and-delivery
+	url = https://github.com/SAP-docs/btp-continuous-integration-and-delivery.git
+	branch = main
+[submodule "sources/btp-integration-suite"]
+	path = sources/btp-integration-suite
+	url = https://github.com/SAP-docs/btp-integration-suite.git
+	branch = main
+[submodule "sources/btp-job-scheduling-service"]
+	path = sources/btp-job-scheduling-service
+	url = https://github.com/SAP-docs/btp-job-scheduling-service.git
+	branch = main
+[submodule "sources/odata-vocabularies"]
+	path = sources/odata-vocabularies
+	url = https://github.com/SAP/odata-vocabularies.git
+	branch = main

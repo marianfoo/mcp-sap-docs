@@ -63,6 +63,25 @@ No API key or login required — the server is public and read-only.
 | `architecture-center` | SAP Architecture Center reference architectures and guidance |
 | `wdi5` | wdi5 (WebdriverIO + UI5) testing framework documentation |
 
+### Additional SAP Docs sources
+
+The `sap-docs` profile also indexes the following official documentation. These sources use the existing Markdown/MDX pipeline and link to their upstream files.
+
+| Source IDs | Coverage |
+|------------|----------|
+| `btp-connectivity` | Destinations, Cloud Connector, principal propagation, HTTP/RFC |
+| `cloud-sdk-python`, `cloud-sdk-ai-python` | Python BTP and AI SDK documentation and examples |
+| `odata-vocabularies` | OData annotation terms and types; experimental labels are retained |
+| `btp-job-scheduling-service`, `btp-cloud-logging` | Application jobs and observability |
+| `btp-cloud-identity-services`, `btp-cloud-identity-integration` | Identity Authentication, Identity Provisioning, and system integration |
+| `btp-integration-suite`, `btp-event-mesh` | Consolidated Integrations and APIs guide, plus Event Mesh |
+| `btp-business-application-studio` | Dev spaces, development, and troubleshooting |
+| `btp-continuous-integration-and-delivery`, `btp-cloud-transport-management` | Managed pipelines and cloud transports |
+
+Integration Suite indexes `docs/ISuite_Integrations_APIs` and `docs/ISuite_Event_Mesh`. Parallel Cloud Integration/API Management guide copies are excluded to avoid repeated content and mixed navigation terminology. Python SDK sources include current `docs-python` content; historical version folders are excluded.
+
+SAP-docs repositories carry CC-BY-4.0 notices; SAP Cloud SDK, AI SDK, and OData vocabularies carry Apache-2.0 notices. The source checkouts retain their upstream license files, and search/fetch results link to the original documents. See [source expansion plan](docs/source-expansion-plan.md) for validation and scope.
+
 ### Online sources (live queries, enabled by default)
 
 | Source | Description |
@@ -380,3 +399,23 @@ MCP_VARIANT=abap npm run build:fts
 
 [werkbank-badge]: assets/add-to-werkbank.svg
 [werkbank-install]: https://getwerkbank.com/install-mcp?name=sap-docs&config=eyJ0eXBlIjoic3RyZWFtYWJsZV9odHRwIiwidXJsIjoiaHR0cHM6Ly9tY3Atc2FwLWRvY3MubWFyaWFuemVpcy5kZS9tY3AiLCJkZXNjcmlwdGlvbiI6IlNBUCBkb2N1bWVudGF0aW9uLCBub3RlcyBhbmQgY29tbXVuaXR5IHNlYXJjaCJ9
+
+### Curated SAP tutorials
+
+The SAP Docs profile includes 32 additional official tutorials in
+`sap-tutorials-ai`, `sap-tutorials-hana`, and `sap-tutorials-integration`:
+AI Core orchestration V2 and grounding, HANA Cloud SQLScript and CAP, Integration
+Suite MCP Gateway, and Cloud Transport Management. The existing Fiori OPA guide
+is still available separately.
+
+Use product and task terms, for example `SAP HANA Cloud SQLScript stored procedure
+tutorial` or `SAP Integration Suite MCP Gateway tutorial`. Use `sources` to narrow
+an ambiguous search; leave it unset for cross-source discovery. Tutorials provide
+worked examples and retain their prerequisites; product and SDK documentation
+remain the reference for detailed API behavior.
+
+The explicit selection is in [`config/tutorials.json`](config/tutorials.json).
+Fetched tutorials include readable option labels, absolute asset/prerequisite
+links, and their published page URL. The unpublished transport overview links to
+its official GitHub source. Source content and its original attribution are
+preserved; the original tutorial repository's license still applies.

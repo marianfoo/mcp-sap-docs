@@ -5,6 +5,8 @@ import path, { join } from "path";
 import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
+import { materializeTutorials, TUTORIALS } from "./materialize-tutorials.js";
+import { extractVocabularyTerms } from "./odata-vocabulary-terms.js";
 
 interface DocEntry {
   id: string;              // "/sapui5/<rel-path>", "/cap/<rel-path>", "/openui5-api/<rel-path>", or "/openui5-samples/<rel-path>"
@@ -43,6 +45,15 @@ interface SourceConfig {
 }
 
 const SOURCES: SourceConfig[] = [
+  ...Object.entries(TUTORIALS.groups).map(([group, config]) => ({
+    repoName: 'sap-tutorials',
+    absDir: join('sources', 'tutorials-generated', group),
+    id: `/sap-tutorials-${group}`,
+    name: config.name,
+    description: `Curated official ${config.name}: practical steps, code, and prerequisites`,
+    filePattern: '*.md',
+    type: 'markdown' as const,
+  })),
   {
     repoName: "sapui5-docs",
     absDir: join("sources", "sapui5-docs", "docs"),
@@ -414,6 +425,123 @@ const SOURCES: SourceConfig[] = [
     name: "Terraform Provider for SAP BTP",
     description: "Terraform provider documentation for SAP BTP including resources, data sources, list resources, and functions",
     filePattern: "docs/**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-connectivity",
+    absDir: join("sources", "btp-connectivity", "docs"),
+    id: "/btp-connectivity",
+    name: "SAP BTP Connectivity",
+    description: "Destinations, Cloud Connector, principal propagation, and HTTP/RFC connectivity",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk",
+    absDir: join("sources", "cloud-sdk", "docs-python"),
+    id: "/cloud-sdk-python",
+    name: "SAP Cloud SDK for Python",
+    description: "Python SDK for BTP connectivity, identity, agent services, and observability",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "cloud-sdk-ai",
+    absDir: join("sources", "cloud-sdk-ai", "docs-python"),
+    id: "/cloud-sdk-ai-python",
+    name: "SAP Cloud SDK for AI (Python)",
+    description: "Python AI SDK: orchestration, grounding, prompt registry, streaming, and examples",
+    filePattern: "**/*.mdx",
+    type: "markdown" as const
+  },
+  {
+    repoName: "odata-vocabularies",
+    absDir: join("sources", "odata-vocabularies", "vocabularies"),
+    id: "/odata-vocabularies",
+    name: "SAP OData Vocabularies",
+    description: "SAP OData annotation terms and types for Fiori elements, CAP, and RAP; some vocabularies are experimental",
+    filePattern: "*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-job-scheduling-service",
+    absDir: join("sources", "btp-job-scheduling-service", "docs"),
+    id: "/btp-job-scheduling-service",
+    name: "SAP Job Scheduling Service",
+    description: "Job scheduling, application integration, authentication, and job execution",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-cloud-logging",
+    absDir: join("sources", "btp-cloud-logging", "docs"),
+    id: "/btp-cloud-logging",
+    name: "SAP Cloud Logging",
+    description: "Cloud Logging setup, log ingestion, observability, and troubleshooting",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-cloud-identity-services",
+    absDir: join("sources", "btp-cloud-identity-services", "docs"),
+    id: "/btp-cloud-identity-services",
+    name: "SAP Cloud Identity Services",
+    description: "Identity Authentication and Identity Provisioning: trust, authentication, provisioning, and administration",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-cloud-identity-services-system-integration-guide",
+    absDir: join("sources", "btp-cloud-identity-services-system-integration-guide", "docs"),
+    id: "/btp-cloud-identity-integration",
+    name: "SAP Cloud Identity Services System Integration",
+    description: "Cross-product integration guidance for SAP Cloud Identity Services",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-integration-suite",
+    absDir: join("sources", "btp-integration-suite", "docs", "ISuite_Integrations_APIs"),
+    id: "/btp-integration-suite",
+    name: "SAP Integration Suite - Integrations and APIs",
+    description: "Integration flows, adapters, scripting, API Management, security policies, and operations",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-integration-suite",
+    absDir: join("sources", "btp-integration-suite", "docs", "ISuite_Event_Mesh"),
+    id: "/btp-event-mesh",
+    name: "SAP Integration Suite - Event Mesh",
+    description: "Event Mesh messaging, queues, subscriptions, and event-driven integration",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-business-application-studio",
+    absDir: join("sources", "btp-business-application-studio", "docs"),
+    id: "/btp-business-application-studio",
+    name: "SAP Business Application Studio",
+    description: "Dev spaces, application development, connectivity, configuration, and troubleshooting",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-continuous-integration-and-delivery",
+    absDir: join("sources", "btp-continuous-integration-and-delivery", "docs"),
+    id: "/btp-continuous-integration-and-delivery",
+    name: "SAP Continuous Integration and Delivery",
+    description: "SAP-managed CI/CD service: pipelines, builds, tests, and deployments",
+    filePattern: "**/*.md",
+    type: "markdown" as const
+  },
+  {
+    repoName: "btp-cloud-transport-management",
+    absDir: join("sources", "btp-cloud-transport-management", "docs"),
+    id: "/btp-cloud-transport-management",
+    name: "SAP Cloud Transport Management",
+    description: "Transport nodes, routes, content transport, and pipeline integration",
+    filePattern: "**/*.md",
     type: "markdown" as const
   }
 ];
@@ -950,6 +1078,9 @@ async function main() {
     await materializeOpenUxGeneratedSources();
   }
   console.log("Using MCP variant " + getVariantName() + " with " + ACTIVE_SOURCES.length + " active source bundles.");
+  if (ACTIVE_SOURCES.some(source => source.id.startsWith('/sap-tutorials-'))) {
+    await materializeTutorials();
+  }
   const all: Record<string, LibraryBundle> = {};
 
   for (const src of ACTIVE_SOURCES) {
@@ -1062,6 +1193,21 @@ async function main() {
         snippetCount = (content.match(/```/g)?.length || 0) / 2;
         
         id = `${src.id}/${rel.replace(/\.mdx?$/, "")}`;
+
+        if (src.id === '/odata-vocabularies') {
+          for (const term of extractVocabularyTerms(content, rel)) {
+            docs.push({
+              id: `${id}#${term.name}`,
+              title: term.title,
+              description: term.description,
+              keywords: term.keywords,
+              snippetCount: 0,
+              relFile: rel,
+              type: 'markdown-section',
+              parentDocument: id,
+            });
+          }
+        }
         
         // Extract individual sections as separate entries for all markdown docs
         if (content.includes('##')) {

@@ -16,7 +16,8 @@ export default [
     name: 'AI SDK FAQ section',
     tool: 'search',
     query: 'cloud sdk ai frequently asked questions',
-    expectIncludes: ['/cloud-sdk-ai-java/faq.mdx']
+    // The full-document ID has no extension; section IDs retain .mdx.
+    expectIncludes: ['/cloud-sdk-ai-java/faq']
   }
 ];
 

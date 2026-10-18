@@ -1,0 +1,69 @@
+{
+  "groups": {
+    "ai": {
+      "name": "SAP AI Core tutorials",
+      "keywords": [
+        "SAP AI Core",
+        "tutorial"
+      ],
+      "tutorials": [
+        "ai-core-orchestration-consumption-v2",
+        "ai-core-orchestration-grounding-v2",
+        "ai-core-genaihub-prompt-registry",
+        "ai-core-genaihub-evaluation-with-grounding",
+        "ai-core-genaihub-inference-observability",
+        "ai-core-genaihub-batch-consumption"
+      ]
+    },
+    "hana": {
+      "name": "SAP HANA Cloud tutorials",
+      "keywords": [
+        "SAP HANA Cloud",
+        "tutorial"
+      ],
+      "tutorials": [
+        "hana-cloud-sqlscript-anonymous",
+        "hana-cloud-sqlscript-debugging",
+        "hana-cloud-sqlscript-libraries",
+        "hana-cloud-sqlscript-parallel",
+        "hana-cloud-sqlscript-scalar",
+        "hana-cloud-sqlscript-stored-proc",
+        "hana-cloud-sqlscript-table-operators",
+        "hana-cloud-sqlscript-table-user",
+        "hana-cloud-sqlscript-table-var",
+        "hana-cloud-sqlscript-usingindexbased",
+        "hana-cloud-cap-create-project",
+        "hana-cloud-cap-create-database-cds",
+        "hana-cloud-cap-calc-view",
+        "hana-cloud-cap-stored-proc",
+        "hana-cloud-cap-create-ui",
+        "hana-cloud-cap-add-authentication",
+        "hana-cloud-cap-deploy-mta"
+      ]
+    },
+    "integration": {
+      "name": "SAP Integration Suite tutorials",
+      "keywords": [
+        "SAP Integration Suite",
+        "tutorial"
+      ],
+      "tutorials": [
+        "btp-integration-suite-mcp-gateway",
+        "btp-transport-management-cpi-01-use-case",
+        "btp-transport-management-cpi-02-set-up-source-account",
+        "btp-transport-management-cpi-03-set-up-target-account",
+        "btp-transport-management-cpi-04-connect-source-and-target",
+        "btp-transport-management-cpi-05-create-ctms-destination",
+        "btp-transport-management-cpi-06-enable-the-transport",
+        "btp-transport-management-cpi-07-test-transport",
+        "btp-transport-management-cpi-08-cas-ui"
+      ]
+    }
+  },
+  "urlOverrides": {
+    "btp-transport-management-cpi-01-use-case": "https://github.com/sap-tutorials/Tutorials/blob/master/tutorials/btp-transport-management-cpi-01-use-case/btp-transport-management-cpi-01-use-case.md"
+  },
+  "assetOverrides": {
+    "ai-core-orchestration-consumption-v2/img/Bruno_Collection.json": "img/bruno_config.json"
+  }
+}

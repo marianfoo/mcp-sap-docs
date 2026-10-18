@@ -238,11 +238,11 @@ export class BaseServerHandler {
         tools: [
           {
             name: "search",
-            description: `SEARCH ABAP/RAP DOCUMENTATION: search(query="search terms")
+            description: `SEARCH ${getVariantName() === "sap-docs" ? "SAP" : "ABAP/RAP"} DOCUMENTATION: search(query="search terms")
 
 FUNCTION NAME: search
 
-Unified search for ABAP + RAP development documentation. It searches across curated OFFLINE sources (fast, deterministic) and can also include ONLINE sources (best-effort, 10s timeout per source) when enabled.
+Unified search for ${getVariantName() === "sap-docs" ? "SAP development documentation, including UI5, CAP, BTP services, Cloud SDK, AI, ABAP, and RAP" : "ABAP + RAP development documentation"}. It searches across curated OFFLINE sources (fast, deterministic) and can also include ONLINE sources (best-effort, 10s timeout per source) when enabled.
 
 Use this to discover the best document IDs, then call \`fetch(id=...)\` to retrieve full content.
 
@@ -258,6 +258,18 @@ Reference & guidance (not sample-heavy):
 • dsag-abap-leitfaden (offline): DSAG ABAP Leitfaden (German) with ABAP development guidelines and best practices.
 • btp-cloud-platform (offline): SAP Business Technology Platform documentation - concepts, getting started, development, extensions, administration, security.
 • sap-artificial-intelligence (offline): SAP AI Core and SAP AI Launchpad documentation.
+${getVariantName() === "sap-docs" ? `
+Additional SAP Docs sources (use these IDs with the sources filter):
+• btp-connectivity: Destinations, Cloud Connector, HTTP/RFC, and principal propagation.
+• cloud-sdk-python, cloud-sdk-ai-python: Python BTP and AI SDK reference and examples.
+• odata-vocabularies: SAP annotation terms and types for Fiori elements, CAP, and RAP.
+• btp-cloud-identity-services, btp-cloud-identity-integration: IAS/IPS, trust, and provisioning.
+• btp-integration-suite, btp-event-mesh: Integration flows, adapters, scripting, API Management, and events.
+• btp-job-scheduling-service, btp-cloud-logging: Scheduled jobs and observability.
+• btp-business-application-studio: Dev spaces, development, and troubleshooting.
+• btp-continuous-integration-and-delivery, btp-cloud-transport-management: Pipelines and transports.
+• sap-tutorials-ai, sap-tutorials-hana, sap-tutorials-integration: Curated official tutorials with prerequisites, code, and published source links. Use these for worked examples; use the SDK/product sources for reference details.
+` : ""}
 
 Sample-heavy OFFLINE sources (controlled by \`includeSamples\`; great for implementation, can dominate broad queries):
 • abap-cheat-sheets (offline, samples): Many practical ABAP/RAP snippets; quick “how-to” reference.
@@ -280,7 +292,7 @@ NOTE ABOUT \`abapFlavor\`:
   - CAP / UI5 / Fiori → leave "auto". The OFFLINE corpus is the authoritative source for these; note the online SAP Help leg is NOT scoped for them (no abapFlavor/product fit yet), so it may still contribute some off-topic or low-value SAP Help hits.
 
 PARAMETERS:
-• query (required): Search terms. Be specific and use technical ABAP/RAP terminology.
+• query (required): Search terms. Be specific and include the product and technical terminology.
 • k (optional, default=50): Number of results to return.
 • includeOnline (optional, default=true): Keep this ON for best answers. Only set to false if online search is blocked/slow/unreliable in your environment OR you explicitly want OFFLINE-only sources.
 • includeSamples (optional, default=true): Includes sample-heavy offline sources (repos, showcases, cheat sheets). If results are flooded by examples and you want more conceptual/reference docs, set to false. Turn it on when you want implementation/code.
@@ -319,7 +331,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
               properties: {
                 query: {
                   type: "string",
-                  description: "Search terms for ABAP/RAP documentation, in ENGLISH (corpus is primarily English). Be specific and use technical terms."
+                  description: "Search terms for SAP documentation, in ENGLISH (corpus is primarily English). Be specific and include the product and technical terms."
                 },
                 k: {
                   type: "number",
@@ -347,7 +359,7 @@ ESCALATION: If search returns no useful results (especially for specific error m
                 sources: {
                   type: "array",
                   items: { type: "string" },
-                  description: "Optional: specific source IDs to search. If not provided, searches all ABAP sources."
+                  description: "Optional: specific source IDs to search. If not provided, searches all sources configured for the active profile."
                 },
                 version: {
                   type: "string",

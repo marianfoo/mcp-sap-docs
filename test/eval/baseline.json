@@ -1,22 +1,449 @@
 {
-  "gitCommit": "13ba9a3",
+  "gitCommit": "8b066e8",
   "variant": "sap-docs",
+  "corpusSha256": "5b41a4d7571a20a09aa1d854bf3b422b6cb24c3769388eb89241587bcd576193",
+  "embeddingWeight": 0,
   "searchOptions": {
     "includeOnline": false,
     "k": 30
   },
   "agg": {
-    "queries": 44,
-    "mrr": 0.4455613830613831,
+    "queries": 69,
+    "mrr": 0.5866062279105757,
     "hitAtK": {
-      "1": 0.4090909090909091,
-      "3": 0.45454545454545453,
-      "5": 0.5,
-      "10": 0.5227272727272727
+      "1": 0.5217391304347826,
+      "3": 0.6521739130434783,
+      "5": 0.6666666666666666,
+      "10": 0.7101449275362319
     },
     "misses": 18
   },
   "rows": [
+    {
+      "id": "source-expansion-1",
+      "category": "source-expansion",
+      "query": "Cloud Connector principal propagation",
+      "golds": [
+        "principal-propagation"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-2",
+      "category": "source-expansion",
+      "query": "SAP Cloud SDK Python destination service",
+      "golds": [
+        "cloud-sdk-python/features/connectivity"
+      ],
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-3",
+      "category": "source-expansion",
+      "query": "SAP Cloud SDK for AI Python document grounding",
+      "golds": [
+        "cloud-sdk-ai-python/examples/document-grounding"
+      ],
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-4",
+      "category": "source-expansion",
+      "query": "OData UI LineItem annotation",
+      "golds": [
+        "/odata-vocabularies/UI#LineItem"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-5",
+      "category": "source-expansion",
+      "query": "Common.ValueList",
+      "golds": [
+        "/odata-vocabularies/Common#ValueList"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 15
+    },
+    {
+      "id": "source-expansion-6",
+      "category": "source-expansion",
+      "query": "UI.SelectionFields",
+      "golds": [
+        "/odata-vocabularies/UI#SelectionFields"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 9
+    },
+    {
+      "id": "source-expansion-7",
+      "category": "source-expansion",
+      "query": "SAP Job Scheduling Service authentication",
+      "golds": [
+        "/btp-job-scheduling-service/index"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-8",
+      "category": "source-expansion",
+      "query": "SAP Cloud Logging ingest observability data",
+      "golds": [
+        "/btp-cloud-logging/ingest-observability-data"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-9",
+      "category": "source-expansion",
+      "query": "SAP Cloud Identity Services provisioning",
+      "golds": [
+        "/btp-cloud-identity-services/"
+      ],
+      "firstRelevantRank": 9,
+      "rr": 0.1111111111111111,
+      "hit": {
+        "1": 0,
+        "3": 0,
+        "5": 0,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-10",
+      "category": "source-expansion",
+      "query": "SAP Cloud Identity Services system integration single sign on",
+      "golds": [
+        "/btp-cloud-identity-integration/30-scenario-recommendations/single-sign-on"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-11",
+      "category": "source-expansion",
+      "query": "Integration Suite CSRF token handling",
+      "golds": [
+        "/btp-integration-suite/csrf-token-handling"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-12",
+      "category": "source-expansion",
+      "query": "Event Mesh queue subscriptions",
+      "golds": [
+        "event-mesh"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-13",
+      "category": "source-expansion",
+      "query": "Business Application Studio dev spaces",
+      "golds": [
+        "/btp-business-application-studio/dev-spaces"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-14",
+      "category": "source-expansion",
+      "query": "SAP Continuous Integration and Delivery pipeline",
+      "golds": [
+        "/btp-continuous-integration-and-delivery/"
+      ],
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "source-expansion-15",
+      "category": "source-expansion",
+      "query": "Cloud Transport Management transport nodes",
+      "golds": [
+        "/btp-cloud-transport-management/"
+      ],
+      "firstRelevantRank": 2,
+      "rr": 0.5,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-ai-consumption",
+      "category": "tutorials",
+      "query": "SAP AI Core orchestration V2 consumption tutorial",
+      "golds": [
+        "ai-core-orchestration-consumption-v2"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-ai-grounding",
+      "category": "tutorials",
+      "query": "SAP AI Core orchestration V2 grounding tutorial",
+      "golds": [
+        "ai-core-orchestration-grounding-v2"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-prompt-registry",
+      "category": "tutorials",
+      "query": "SAP AI Core prompt registry tutorial",
+      "golds": [
+        "ai-core-genaihub-prompt-registry"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-batch",
+      "category": "tutorials",
+      "query": "SAP AI Core batch inference tutorial",
+      "golds": [
+        "ai-core-genaihub-batch-consumption"
+      ],
+      "firstRelevantRank": 2,
+      "rr": 0.5,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-sqlscript",
+      "category": "tutorials",
+      "query": "SAP HANA Cloud SQLScript stored procedure tutorial",
+      "golds": [
+        "hana-cloud-sqlscript-stored-proc"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-debugging",
+      "category": "tutorials",
+      "query": "SAP HANA Cloud SQLScript debugging tutorial",
+      "golds": [
+        "hana-cloud-sqlscript-debugging"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-cap-auth",
+      "category": "tutorials",
+      "query": "SAP HANA Cloud CAP add authentication tutorial",
+      "golds": [
+        "hana-cloud-cap-add-authentication"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-cap-mta",
+      "category": "tutorials",
+      "query": "SAP HANA Cloud CAP deploy MTA tutorial",
+      "golds": [
+        "hana-cloud-cap-deploy-mta"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-mcp-gateway",
+      "category": "tutorials",
+      "query": "SAP Integration Suite MCP Gateway tutorial",
+      "golds": [
+        "btp-integration-suite-mcp-gateway"
+      ],
+      "firstRelevantRank": 1,
+      "rr": 1,
+      "hit": {
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
+    {
+      "id": "tutorial-transport",
+      "category": "tutorials",
+      "query": "Cloud Transport Management Integration Suite test transport tutorial",
+      "golds": [
+        "btp-transport-management-cpi-07-test-transport"
+      ],
+      "firstRelevantRank": 2,
+      "rr": 0.5,
+      "hit": {
+        "1": 0,
+        "3": 1,
+        "5": 1,
+        "10": 1
+      },
+      "returned": 30
+    },
     {
       "id": "abap-regex-pcre",
       "category": "abap-regex",
@@ -183,7 +610,9 @@
       "golds": [
         "ABENCDS_F1_DEFINE_ANNOTATION_TYPE",
         "field-help",
-        "valueHelp"
+        "valueHelp",
+        "/sapui5/06_SAP_Fiori_Elements/value-help-48e5fa7",
+        "/sapui5/06_SAP_Fiori_Elements/value-help-fccb255"
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
@@ -202,11 +631,11 @@
       "golds": [
         "ABENBDL_DETERMINATIONS"
       ],
-      "firstRelevantRank": 4,
-      "rr": 0.25,
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
       "hit": {
         "1": 0,
-        "3": 0,
+        "3": 1,
         "5": 1,
         "10": 1
       },
@@ -275,11 +704,11 @@
         "06_SAP_Fiori_Elements",
         "LineItem"
       ],
-      "firstRelevantRank": 2,
-      "rr": 0.5,
+      "firstRelevantRank": 4,
+      "rr": 0.25,
       "hit": {
         "1": 0,
-        "3": 1,
+        "3": 0,
         "5": 1,
         "10": 1
       },
@@ -309,12 +738,13 @@
       "query": "define entity associations in CAP",
       "golds": [
         "/cap/guides/domain-modeling#associations",
-        "/cap/cds/cdl"
+        "/cap/cds/cdl",
+        "/cap/guides/domain/index#associations"
       ],
-      "firstRelevantRank": 1,
-      "rr": 1,
+      "firstRelevantRank": 2,
+      "rr": 0.5,
       "hit": {
-        "1": 1,
+        "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
@@ -383,8 +813,8 @@
         "ABAPAUTHORITY-CHECK",
         "ABENBC_AUTHORITY_CHECK"
       ],
-      "firstRelevantRank": 9,
-      "rr": 0.1111111111111111,
+      "firstRelevantRank": 7,
+      "rr": 0.14285714285714285,
       "hit": {
         "1": 0,
         "3": 0,
@@ -470,13 +900,13 @@
         "architecture_and_structure",
         "package-strategy"
       ],
-      "firstRelevantRank": null,
-      "rr": 0,
+      "firstRelevantRank": 1,
+      "rr": 1,
       "hit": {
-        "1": 0,
-        "3": 0,
-        "5": 0,
-        "10": 0
+        "1": 1,
+        "3": 1,
+        "5": 1,
+        "10": 1
       },
       "returned": 30
     },
@@ -555,8 +985,8 @@
       "golds": [
         "prefer-inline-to-up-front-declarations"
       ],
-      "firstRelevantRank": 13,
-      "rr": 0.07692307692307693,
+      "firstRelevantRank": 11,
+      "rr": 0.09090909090909091,
       "hit": {
         "1": 0,
         "3": 0,
@@ -572,8 +1002,8 @@
       "golds": [
         "prefer-object-orientation-to-procedural-programming"
       ],
-      "firstRelevantRank": 28,
-      "rr": 0.03571428571428571,
+      "firstRelevantRank": null,
+      "rr": 0,
       "hit": {
         "1": 0,
         "3": 0,
@@ -623,12 +1053,12 @@
       "golds": [
         "cdl#views-with-parameters"
       ],
-      "firstRelevantRank": 4,
-      "rr": 0.25,
+      "firstRelevantRank": 6,
+      "rr": 0.16666666666666666,
       "hit": {
         "1": 0,
         "3": 0,
-        "5": 1,
+        "5": 0,
         "10": 1
       },
       "returned": 30

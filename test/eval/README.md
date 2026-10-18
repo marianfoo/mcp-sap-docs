@@ -35,14 +35,15 @@ harness measures directional improvement, not absolute recall.
 | `misses` | queries with no gold in the returned results |
 
 The report also prints a **bootstrap 95% CI on ΔMRR** and a **sign test on
-hit@3 flips**. At n = 44, most single-change deltas land within noise by design —
+hit@3 flips**. With small query sets, many single-change deltas land within noise —
 the harness is built to resist over-claiming. Treat MRR as directional and use
 per-query MISS→hit flips and the pairwise judgment for decisions.
 
 ## Query set structure
 
-[`eval-queries.js`](./eval-queries.js) contains 44 queries spanning ABAP, CDS,
-RAP, UI5/Fiori Elements, CAP, BTP, and wdi5. Three cohorts stress different
+[`eval-queries.js`](./eval-queries.js) contains 69 queries: the original 44 spanning
+ABAP, CDS, RAP, UI5/Fiori Elements, CAP, BTP, and wdi5, plus 25 source-expansion
+and tutorial probes. Three cohorts stress different
 recall levers:
 
 - **Lexical-gap** — phrased in user language with no keyword overlap against the
@@ -69,7 +70,7 @@ library id/path on each `⭐️ **<id>**` result line.
 `pairwise-eval-workflow.js` is a Claude Code workflow that runs an LLM-as-judge
 comparison between two systems head-to-head. It requires a connected MCP session.
 `pairwise-vanilla.json` contains pre-collected vanilla upstream results for all
-44 queries and is the reference side of the comparison.
+44 original queries and is the reference side of the comparison.
 
 Both workflow scripts accept an `args` object to configure which MCP server to
 call, so they work regardless of how your server is registered:
@@ -91,3 +92,50 @@ Defaults match the naming convention used in this repo.
 **Limitation:** presentation order is not swapped (local system always shown
 first), which can introduce positional bias in the LLM judge. Read win margins
 as directional, not definitive.
+
+## Growing source coverage
+
+`source-expansion-queries.js` adds 15 unfiltered probes for the Python SDKs,
+BTP services, and exact OData annotation terms. Keep these separate from the
+44 original queries when reporting changes: a larger query set changes the
+aggregate even when every original rank stays identical. Source-filtered smoke
+tests prove availability, but do not demonstrate unfiltered relevance.
+
+Review result contents as well as ID matches. For example, upstream Python SDK
+content currently contains a JavaScript heading in its overview; the source is
+preserved, so inspect the destination reference before using that overview as
+Python implementation guidance. Existing lexical paraphrase misses should stay
+in the report. Add failures from sanitized request logs rather than deleting
+hard queries or automatically increasing boosts for a larger library.
+
+`tutorial-queries.js` adds 10 product/task queries for the curated tutorials.
+There are now 69 queries in total. Tutorial discovery is also gated by the MCP
+integration suite (expected tutorial in the top 10), alongside fetch coverage for
+all 32 tutorials and byte-preservation checks for their code blocks.
+
+Reports also record the index SHA-256 and effective embedding weight. Setup may
+follow newer upstream source tips without changing the application commit, so
+keep the corpus fingerprint with benchmark results. A lexical/semantic mode
+mismatch warns against direct baseline comparison. Review cohorts and per-query
+changes whenever the corpus or query set grows.
+
+The accepted baseline records all 69 queries against the published v0.3.59 image
+(60,607 index entries, corpus SHA-256 recorded in `baseline.json`). Every original
+query and all 18 existing misses remain. The tutorial cohort has MRR 0.9.
+
+Two queries received three exact additional expected paths. The CAP association
+guide is now `guides/domain/index#associations`. The UI5 value-help pages
+`value-help-48e5fa7` and `value-help-fccb255` contain relevant `Common.ValueList`
+CDS examples, so they were accepted after fetching and reviewing their content.
+The UI5 additions are new relevance judgments, not verified renames. Older
+expected paths are retained for older snapshots. No query was removed, and no
+broad source-wide match was added.
+
+Against the original expected paths, the released corpus scored MRR 0.5770 and
+hit@10 69.57%. With the three added paths included, it scores MRR 0.5866 and
+hit@10 71.01%, retaining all earlier top-10 hits under the amended labels. This
+changes what counts as relevant for two queries; it is not a like-for-like
+search-engine improvement. The earlier local snapshot scored
+MRR 0.5953 on 57,509 entries; source refreshes can change ranks independently of
+application code. See `docs/tutorial-ingestion-plan.md` for the implementation
+scope and observed limitations.

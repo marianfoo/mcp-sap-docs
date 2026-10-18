@@ -47,11 +47,12 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
         sources/sapui5-docs)                 echo 'docs';; \
         sources/openui5)                     echo 'src';; \
         sources/wdi5)                        echo 'docs';; \
+        sources/sap-tutorials)               node -e 'const c=require("./config/tutorials.json"); console.log(["fiori-tools-mockserver-opa-testing",...Object.values(c.groups).flatMap(g=>g.tutorials)].map(id=>"tutorials/"+id).join(" "))';; \
         sources/ui5-tooling)                 echo 'docs';; \
         sources/cloud-mta-build-tool)        echo 'docs';; \
         sources/ui5-webcomponents)           echo 'docs';; \
-        sources/cloud-sdk)                   echo 'docs-js docs-java';; \
-        sources/cloud-sdk-ai)                echo 'docs-js docs-java';; \
+        sources/cloud-sdk)                   echo 'docs-js docs-java docs-python';; \
+        sources/cloud-sdk-ai)                echo 'docs-js docs-java docs-python';; \
         sources/ui5-cc-spreadsheetimporter)  echo 'docs';; \
         sources/dsag-abap-leitfaden)         echo 'docs';; \
         sources/abap-docs)                   echo 'docs';; \
@@ -60,6 +61,16 @@ RUN printf '%s\n' "${MCP_VARIANT}" > .mcp-variant && \
         sources/terraform-provider-btp)      echo 'docs';; \
         sources/abap-atc-cr-cv-s4hc)         echo 'src';; \
         sources/architecture-center)         echo 'docs';; \
+        sources/btp-business-application-studio) echo 'docs';; \
+        sources/btp-cloud-identity-services) echo 'docs';; \
+        sources/btp-cloud-identity-services-system-integration-guide) echo 'docs';; \
+        sources/btp-cloud-logging) echo 'docs';; \
+        sources/btp-cloud-transport-management) echo 'docs';; \
+        sources/btp-connectivity) echo 'docs';; \
+        sources/btp-continuous-integration-and-delivery) echo 'docs';; \
+        sources/btp-integration-suite) echo 'docs/ISuite_Integrations_APIs docs/ISuite_Event_Mesh';; \
+        sources/btp-job-scheduling-service) echo 'docs';; \
+        sources/odata-vocabularies) echo 'vocabularies';; \
         *)                                   echo '';; \
       esac)"; \
       if [ -n "$sparse" ]; then \
