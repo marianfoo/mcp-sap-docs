@@ -5,7 +5,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
-import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, BestMatchHit } from "./communityBestMatch.js";
+import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, BestMatchHit, type CommunityPostContent } from "./communityBestMatch.js";
+import type { TruncationInfo } from "./truncate.js";
+
 
 import { 
   getDocUrlConfig, 
@@ -18,8 +20,16 @@ import {
   type DocUrlConfig 
 } from "./metadata.js";
 import { generateDocumentationUrl as generateUrl } from "./url-generation/index.js";
-import { getSapHelpContent } from "./sapHelp.js";
+import { getSapHelpDocument } from "./sapHelp.js";
 import { readSourceContentSync } from "./sourceContent.js";
+
+/** Result of a document fetch: the text plus how it was affected on the way out. */
+export interface FetchResult {
+  text: string;
+  url?: string;
+  /** Present only when the document had to be shortened. */
+  truncation?: TruncationInfo;
+}
 
 // Use the new URL generation system
 function generateDocumentationUrl(libraryId: string, relFile: string, content: string): string | null {
@@ -113,19 +123,21 @@ async function searchSAPCommunity(query: string): Promise<SearchResult[]> {
 }
 
 // Get full content of a community post using LiQL API
-async function getCommunityPost(postId: string): Promise<string | null> {
+async function getCommunityPost(postId: string): Promise<FetchResult | null> {
   try {
+    let post: CommunityPostContent | null;
     // Handle both postId formats: "community-postId" and "community-url-encodedUrl"
     if (postId.startsWith('community-url-')) {
       // Extract URL from encoded format and retrieve via LiQL API
       const encodedUrl = postId.replace('community-url-', '');
       const postUrl = decodeURIComponent(encodedUrl);
-      return await getCommunityPostByUrl(postUrl, 'SAP-Docs-MCP/1.0');
+      post = await getCommunityPostByUrl(postUrl, 'SAP-Docs-MCP/1.0');
     } else {
       // For standard post IDs, use the efficient LiQL API
       const numericId = postId.replace('community-', '');
-      return await getCommunityPostById(numericId, 'SAP-Docs-MCP/1.0');
+      post = await getCommunityPostById(numericId, 'SAP-Docs-MCP/1.0');
     }
+    return post ? { text: post.content, url: post.url, truncation: post.truncation } : null;
   } catch (error) {
     console.warn('Failed to get community post:', error);
     return null;
@@ -1426,7 +1438,7 @@ export async function searchLibraries(query: string, fileContent?: string): Prom
 export async function fetchLibraryDocumentation(
   libraryIdOrDocId: string,
   topic = ""
-): Promise<string | null> {
+): Promise<FetchResult | null> {
   // Check if this is a community post ID
   if (libraryIdOrDocId.startsWith('community-')) {
     return await getCommunityPost(libraryIdOrDocId);
@@ -1434,7 +1446,8 @@ export async function fetchLibraryDocumentation(
 
   // Check if this is a SAP Help result ID
   if (libraryIdOrDocId.startsWith('sap-help-')) {
-    return await getSapHelpContent(libraryIdOrDocId);
+    const document = await getSapHelpDocument(libraryIdOrDocId);
+    return { text: document.text, truncation: document.truncation };
   }
 
   const index = await loadIndex();
@@ -1456,18 +1469,18 @@ export async function fetchLibraryDocumentation(
         
         // For JavaScript API files, format the content for better readability
         if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return formatJSDocContent(content, doc.relFile, doc.title || '');
+          return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
         }
         // For sample files, format them appropriately
         else if (lib.id === '/openui5-samples') {
-          return formatSampleContent(content, doc.relFile, doc.title || '');
+          return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
         }
         // For documented libraries, add URL context
         else if (getDocUrlConfig(lib.id)) {
           const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
           const libName = lib.id.replace('/', '').toUpperCase();
           
-          return `**Source:** ${libName} Documentation
+          return { text: `**Source:** ${libName} Documentation
 **URL:** ${documentationUrl || 'Documentation URL not available'}
 **File:** ${doc.relFile}
 
@@ -1477,9 +1490,9 @@ ${content}
 
 ---
 
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
         } else {
-          return content;
+          return { text: content };
         }
       }
     }
@@ -1504,18 +1517,18 @@ ${content}
           
           // For JavaScript API files, format the content for better readability
           if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-            return formatJSDocContent(content, doc.relFile, doc.title || '');
+            return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
           }
           // For sample files, format them appropriately
           else if (lib.id === '/openui5-samples') {
-            return formatSampleContent(content, doc.relFile, doc.title || '');
+            return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
           }
           // For documented libraries, add URL context
           else if (getDocUrlConfig(lib.id)) {
             const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
             const libName = lib.id.replace('/', '').toUpperCase();
             
-            return `**Source:** ${libName} Documentation
+            return { text: `**Source:** ${libName} Documentation
 **URL:** ${documentationUrl || 'Documentation URL not available'}
 **File:** ${doc.relFile}
 
@@ -1525,9 +1538,9 @@ ${content}
 
 ---
 
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
           } else {
-            return content;
+            return { text: content };
           }
         }
       }
@@ -1545,7 +1558,7 @@ ${content}
           )
         : baseLib.docs;
 
-      if (!targets.length) return `No topic "${topic}" found inside ${baseId}.`;
+      if (!targets.length) return { text: `No topic "${topic}" found inside ${baseId}.` };
 
       const parts: string[] = [];
       for (const doc of targets) {
@@ -1588,7 +1601,7 @@ ${content}
           parts.push(content);
         }
       }
-      return parts.join("\n\n---\n\n");
+      return { text: parts.join("\n\n---\n\n") };
     }
   }
   
@@ -1613,14 +1626,14 @@ ${content}
         
         // Format the content appropriately based on library type
         if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return formatJSDocContent(content, doc.relFile, doc.title || '');
+          return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
         } else if (lib.id === '/openui5-samples') {
-          return formatSampleContent(content, doc.relFile, doc.title || '');
+          return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
         } else if (getDocUrlConfig(lib.id)) {
           const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
           const libName = lib.id.replace('/', '').toUpperCase();
           
-          return `**Source:** ${libName} Documentation
+          return { text: `**Source:** ${libName} Documentation
 **URL:** ${documentationUrl || 'Documentation URL not available'}
 **File:** ${doc.relFile}
 
@@ -1630,9 +1643,9 @@ ${content}
 
 ---
 
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
+*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
         } else {
-          return content;
+          return { text: content };
         }
       }
     }
@@ -1683,15 +1696,15 @@ ${content}
           parts.push(content);
         }
       }
-      return parts.join("\n\n---\n\n");
+      return { text: parts.join("\n\n---\n\n") };
     }
     
-    return `No topic "${topic}" found inside ${libraryIdOrDocId}.`;
+    return { text: `No topic "${topic}" found inside ${libraryIdOrDocId}.` };
   }
   
   // No topic provided, return all library documents
   const targets = lib.docs;
-  if (!targets.length) return `No documents found inside ${libraryIdOrDocId}.`;
+  if (!targets.length) return { text: `No documents found inside ${libraryIdOrDocId}.` };
 
   const parts: string[] = [];
   for (const doc of targets) {
@@ -1734,7 +1747,7 @@ ${content}
       parts.push(content);
     }
   }
-  return parts.join("\n\n---\n\n");
+  return { text: parts.join("\n\n---\n\n") };
 }
 
 // Resource support for MCP

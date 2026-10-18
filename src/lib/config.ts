@@ -5,6 +5,12 @@ const configuredEmbeddingWeight = Number(process.env.EMBEDDING_WEIGHT || 0);
 const embeddingWeight = Number.isFinite(configuredEmbeddingWeight) && configuredEmbeddingWeight > 0
   ? configuredEmbeddingWeight : 0;
 
+// Invalid limits fall back to the default rather than breaking content fetches.
+const DEFAULT_MAX_CONTENT_LENGTH = 75000;
+const configuredMaxContentLength = Number(process.env.MAX_CONTENT_LENGTH);
+const maxContentLength = Number.isSafeInteger(configuredMaxContentLength) && configuredMaxContentLength > 0
+  ? configuredMaxContentLength : DEFAULT_MAX_CONTENT_LENGTH;
+
 // Central configuration for search system
 export const CONFIG = {
   // Default number of results to return (50 is optimal for comprehensive coverage)
@@ -22,8 +28,9 @@ export const CONFIG = {
   EXCERPT_LENGTH_COMMUNITY: 1000, // Community search results excerpt length
   
   // Maximum content length for SAP Help and Community full content retrieval
-  // Limits help prevent token overflow and keep responses manageable (~18,750 tokens)
-  MAX_CONTENT_LENGTH: 75000,  // 75,000 characters
+  // This is a character budget, not a token limit. Self-hosted
+  // deployments can raise or lower it via MAX_CONTENT_LENGTH.
+  MAX_CONTENT_LENGTH: maxContentLength,
 
   // ---------------------------------------------------------------------------
   // Software Heroes API Configuration

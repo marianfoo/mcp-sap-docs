@@ -3,7 +3,16 @@
 // The previous HTML-scraping approach was blocked by AWS WAF bot detection.
 
 import { CONFIG } from "./config.js";
-import { truncateContent } from "./truncate.js";
+import { truncateContent, type TruncationInfo } from "./truncate.js";
+
+/** A retrieved post together with what happened to it on the way out. */
+export interface CommunityPostContent {
+  content: string;
+  /** Kept separately so a small text limit cannot remove the citation. */
+  url: string;
+  /** Present only when the post had to be shortened. */
+  truncation?: TruncationInfo;
+}
 
 export interface BestMatchHit {
   title: string;
@@ -199,7 +208,7 @@ export async function searchAndGetTopPosts(
   query: string, 
   topN: number = 3,
   opts: Options = {}
-): Promise<{ search: BestMatchHit[], posts: { [id: string]: string } }> {
+): Promise<{ search: BestMatchHit[], posts: { [id: string]: CommunityPostContent } }> {
   // First, search for posts
   const searchResults = await searchCommunityBestMatch(query, { ...opts, limit: Math.max(topN, opts.limit || 20) });
   
@@ -219,8 +228,8 @@ export async function searchAndGetTopPosts(
 }
 
 // Batch retrieve multiple posts using LiQL API
-export async function getCommunityPostsByIds(postIds: string[], userAgent?: string): Promise<{ [id: string]: string }> {
-  const results: { [id: string]: string } = {};
+export async function getCommunityPostsByIds(postIds: string[], userAgent?: string): Promise<{ [id: string]: CommunityPostContent }> {
+  const results: { [id: string]: CommunityPostContent } = {};
   
   if (postIds.length === 0) {
     return results;
@@ -274,9 +283,12 @@ ${post.body || post.search_snippet}
 
 *This content is from the SAP Community and represents community knowledge and experiences.*`;
 
-      // Apply intelligent truncation if content is too large
+      // Apply intelligent truncation if content is too large. The truncation facts
+      // travel with the content so the tool can report the loss instead of
+      // leaving the consumer to parse the prose notice.
       const truncationResult = truncateContent(fullContent);
-      results[post.id] = truncationResult.content;
+      const { content, ...truncation } = truncationResult;
+      results[post.id] = truncation.wasTruncated ? { content, url: postUrl, truncation } : { content, url: postUrl };
     }
 
     return results;
@@ -287,13 +299,13 @@ ${post.body || post.search_snippet}
 }
 
 // Single post retrieval using LiQL API
-export async function getCommunityPostById(postId: string, userAgent?: string): Promise<string | null> {
+export async function getCommunityPostById(postId: string, userAgent?: string): Promise<CommunityPostContent | null> {
   const results = await getCommunityPostsByIds([postId], userAgent);
   return results[postId] || null;
 }
 
 // Retrieve a community post by its URL, extracting the post ID and using the LiQL API
-export async function getCommunityPostByUrl(postUrl: string, userAgent?: string): Promise<string | null> {
+export async function getCommunityPostByUrl(postUrl: string, userAgent?: string): Promise<CommunityPostContent | null> {
   const postId = extractPostId(postUrl);
   if (!postId) {
     console.warn(`[SAP Community] Could not extract post ID from URL: ${postUrl}`);
