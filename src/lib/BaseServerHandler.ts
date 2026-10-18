@@ -1426,7 +1426,7 @@ RETURNS (JSON):
             id: library_id,
             title: library_id.replace(/^\//, '').replace(/\//g, ' > ') + (topic ? ` (${topic})` : ''),
             text: text,
-            url: fetchedSourceUrl || docUrl || `#${library_id}`,
+            url: fetched.url || fetchedSourceUrl || docUrl || `#${library_id}`,
             metadata: {
               source: 'abap-docs',
               library: library_id,

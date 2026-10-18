@@ -5,13 +5,10 @@ const configuredEmbeddingWeight = Number(process.env.EMBEDDING_WEIGHT || 0);
 const embeddingWeight = Number.isFinite(configuredEmbeddingWeight) && configuredEmbeddingWeight > 0
   ? configuredEmbeddingWeight : 0;
 
-// A non-numeric, zero or non-integer MAX_CONTENT_LENGTH must fall back to the
-// default: truncateContent() compares content.length against this value, so NaN
-// would turn every fetch into an empty response and a fractional value would
-// truncate everything away.
+// Invalid limits fall back to the default rather than breaking content fetches.
 const DEFAULT_MAX_CONTENT_LENGTH = 75000;
 const configuredMaxContentLength = Number(process.env.MAX_CONTENT_LENGTH);
-const maxContentLength = Number.isInteger(configuredMaxContentLength) && configuredMaxContentLength > 0
+const maxContentLength = Number.isSafeInteger(configuredMaxContentLength) && configuredMaxContentLength > 0
   ? configuredMaxContentLength : DEFAULT_MAX_CONTENT_LENGTH;
 
 // Central configuration for search system

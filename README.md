@@ -165,6 +165,12 @@ Ranking and filtering highlights:
 - `abapFlavor` (`standard` / `cloud` / `auto`) filters official ABAP docs libraries while keeping non-ABAP sources
 - `sources` can restrict offline libraries explicitly
 
+## Fetch content limits
+
+SAP Help and Community fetches default to 75,000 characters. Shortened results
+include `metadata.truncation` with exact loss counts. Self-hosted servers can set
+`MAX_CONTENT_LENGTH` before startup; see [content size limits](docs/CONTENT-SIZE-LIMITS.md).
+
 ## Hybrid Search
 
 Offline search defaults to BM25 keyword ranking. Optional semantic ranking uses

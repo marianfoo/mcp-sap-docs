@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
 // MAX_CONTENT_LENGTH is read once at module load, so every case needs a fresh
-// import. The guard matters: truncateContent() compares content.length against
-// this number, and a NaN or a fractional value would return empty documents.
+// import. Invalid configuration must not break document retrieval.
 
 const ORIGINAL = process.env.MAX_CONTENT_LENGTH;
 
@@ -37,7 +36,7 @@ describe("CONFIG.MAX_CONTENT_LENGTH", () => {
   });
 
   it("falls back to the default for values that would break truncation", async () => {
-    for (const bad of ["", "abc", "0", "-5", "12.5", "1e3,5"]) {
+    for (const bad of ["", "abc", "0", "-5", "12.5", "1e3,5", "Infinity", "9007199254740992"]) {
       expect(await loadConfig(bad)).toBe(75_000);
     }
   });

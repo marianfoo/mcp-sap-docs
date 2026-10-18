@@ -136,3 +136,54 @@ describe("truncateContentSimple", () => {
     expect(result.content).toBe(content);
   });
 });
+
+describe.each([truncateContent, truncateContentSimple])("%s budget and accounting", (truncate) => {
+  it("honours every small positive budget, including the notice", () => {
+    for (const content of ["x".repeat(10_000), "\n# Heading\n" + "x".repeat(10_000)]) {
+      for (let limit = 1; limit <= 500; limit++) {
+        const result = truncate(content, limit);
+        expect(result.content.length, `limit ${limit}`).toBeLessThanOrEqual(limit);
+        expect(result.truncatedLength).toBe(result.content.length);
+        expect(result.omittedCharacters).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("does not split a Unicode surrogate pair at either cut", () => {
+    for (let limit = 1; limit <= 600; limit++) {
+      const result = truncate("😀".repeat(1_000), limit);
+      expect(result.content).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u);
+    }
+  });
+
+  it("rejects invalid explicit limits", () => {
+    for (const limit of [0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => truncate("text", limit)).toThrow(RangeError);
+    }
+  });
+});
+
+describe("truncation boundaries", () => {
+  it("starts the tail at a nearby paragraph instead of in its first word", () => {
+    const content = Array.from({length: 200}, (_, i) => `Paragraph ${i} ` + "x".repeat(100)).join("\n\n");
+    const result = truncateContent(content, 5_000);
+    const tail = result.content.split("\n---\n\n").at(-1)!;
+    expect(tail).toMatch(/^Paragraph \d+ /);
+    expect(result.omittedCharacters).toBe(content.length - (result.content.split("\n\n---\n\n")[0].length + tail.length));
+  });
+
+  it("keeps almost all the budget when paragraphs are very long", () => {
+    const content = ("x".repeat(12_000) + "\n\n").repeat(10);
+    const result = truncateContent(content, 75_000);
+    expect(result.truncatedLength).toBeGreaterThan(74_500);
+  });
+
+  it("does not leave a partial nearby heading at the end of the head", () => {
+    const heading = "## " + "Heading".repeat(10);
+    const content = "x".repeat(300) + "\n" + heading + "\n" + "y".repeat(3_000);
+    for (let limit = 500; limit < 900; limit++) {
+      const head = truncateContent(content, limit).content.split("\n\n---\n\n")[0];
+      if (head.includes("##")) expect(head).toContain(heading);
+    }
+  });
+});

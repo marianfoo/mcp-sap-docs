@@ -11,6 +11,7 @@ import type { TruncationInfo } from "./truncate.js";
 /** Result of a document fetch: the text plus how it was affected on the way out. */
 export interface FetchResult {
   text: string;
+  url?: string;
   /** Present only when the document had to be shortened. */
   truncation?: TruncationInfo;
 }
@@ -135,7 +136,7 @@ async function getCommunityPost(postId: string): Promise<FetchResult | null> {
       const numericId = postId.replace('community-', '');
       post = await getCommunityPostById(numericId, 'SAP-Docs-MCP/1.0');
     }
-    return post ? { text: post.content, truncation: post.truncation } : null;
+    return post ? { text: post.content, url: post.url, truncation: post.truncation } : null;
   } catch (error) {
     console.warn('Failed to get community post:', error);
     return null;

@@ -8,6 +8,8 @@ import { truncateContent, type TruncationInfo } from "./truncate.js";
 /** A retrieved post together with what happened to it on the way out. */
 export interface CommunityPostContent {
   content: string;
+  /** Kept separately so a small text limit cannot remove the citation. */
+  url: string;
   /** Present only when the post had to be shortened. */
   truncation?: TruncationInfo;
 }
@@ -286,7 +288,7 @@ ${post.body || post.search_snippet}
       // leaving the consumer to parse the prose notice.
       const truncationResult = truncateContent(fullContent);
       const { content, ...truncation } = truncationResult;
-      results[post.id] = truncation.wasTruncated ? { content, truncation } : { content };
+      results[post.id] = truncation.wasTruncated ? { content, url: postUrl, truncation } : { content, url: postUrl };
     }
 
     return results;
