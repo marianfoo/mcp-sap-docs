@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
+import { FTS_SCHEMA } from "../src/lib/searchSchema.js";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 
 type Doc = {
@@ -73,20 +74,7 @@ function main() {
 
   // FTS5 schema: columns you want to search get indexed; metadata can be UNINDEXED
   // We keep this simple - FTS is just for fast candidate filtering
-  db.exec(`
-    CREATE VIRTUAL TABLE docs USING fts5(
-      libraryId,                  -- indexed for filtering
-      type,                       -- markdown/jsdoc/sample (indexed for filtering)
-      title,                      -- strong signal for search
-      description,                -- weaker signal for search
-      keywords,                   -- control tags and properties
-      controlName,                -- e.g., Wizard, Button
-      namespace,                  -- e.g., sap.m, sap.f
-      id UNINDEXED,               -- metadata (full path id)
-      relFile UNINDEXED,          -- metadata
-      snippetCount UNINDEXED      -- metadata
-    );
-  `);
+  db.exec(FTS_SCHEMA);
 
   console.log(`📝 Inserting documents into FTS5 index...`);
   const ins = db.prepare(`

@@ -59,6 +59,8 @@ export interface UnifiedSearchOptions {
 }
 
 const MAX_SEARCH_RESULTS = 100;
+// Bound offline work independently of the requested response length (API maximum: 100).
+const OFFLINE_CANDIDATE_LIMIT = 200;
 const MAX_SOURCE_FILTERS = 100;
 const MAX_OPTION_STRING_LENGTH = 200;
 const SEARCH_OPTION_KEYS = new Set<keyof UnifiedSearchOptions>([
@@ -208,14 +210,28 @@ function dedupeKey(r: SearchResult): string {
  * Returns true if user is looking for code examples/samples
  */
 function hasImplementationIntent(query: string): boolean {
-  return /\b(example|sample|code|implementation|how\s*to|bdef|handler|behavior\s+implementation|snippet|tutorial)\b/i.test(query);
+  return /\b(examples?|samples?|code|implementations?|bdefs?|handlers?|behavior\s+implementation|snippets?)\b/i.test(query);
 }
 
 /**
  * Detect clean code / best practice intent from query
  */
-function hasCleanCodeIntent(query: string): boolean {
-  return /\b(clean\s*code|naming\s*convention|best\s*practice|style\s*guide|coding\s*standard)\b/i.test(query);
+export function hasCleanCodeIntent(query: string): boolean {
+  // This source contains ABAP guidance. An explicit different language or
+  // framework should not acquire an ABAP style-guide boost.
+  if (!/\babap\b/i.test(query) && (
+    /\b(javascript|typescript|java|python)\b/i.test(query) ||
+    detectQueryContexts(query).some(context => ['ui5', 'wdi5', 'cap', 'fiori', 'fiori elements', 'ui5 tooling', 'ui5 web components'].includes(context))
+  )) {
+    return false;
+  }
+  if (/\b(clean\s*(?:code|abap)|naming\s*conventions?|best\s*practices?|style\s*guides?|coding\s*standards?)\b/i.test(query)) {
+    return true;
+  }
+  // Preference wording only implies coding guidance when a programming topic
+  // is present. A recommended BTP region or UI theme is not a style-guide query.
+  return /\b(recommend(?:ed|ations?)?|prefer(?:red)?|better|cleaner|should)\b/i.test(query) &&
+    /\b(methods?|class(?:es)?|variables?|loops?|inline)\b|\binternal\s+tables?\b/i.test(query);
 }
 
 /**
@@ -247,6 +263,7 @@ function hasAnnotationQuery(query: string): boolean {
  */
 export function detectQueryContexts(query: string): string[] {
   const contexts = new Set<string>();
+  const isAbapContext = /\b(abap|itab)\b|\binternal\s+tables?\b/i.test(query);
 
   // wdi5-related test automation queries. This has to run before generic
   // UI5/Fiori handling because wdi5 queries frequently mention UI5 controls.
@@ -254,9 +271,9 @@ export function detectQueryContexts(query: string): string[] {
     contexts.add('wdi5');
   }
 
-  // UI5 controls, API symbols, samples, and Demo Kit concepts. Include common
-  // control names from user prompts that otherwise look too generic for SAP Help.
-  if (/\b(ui5|sapui5|openui5|sap\.m|sap\.ui|sap\.f|control|demokit|sample|wizard|button|table|dialog|input|opa5|recordreplay)\b/i.test(query)) {
+  // Specific frontend terms imply UI5. Generic words such as input, table,
+  // control and sample also occur in backend queries and must not select a domain.
+  if (/\b(ui5|sapui5|openui5|sap\.m|sap\.ui|sap\.f|demokit|opa5|recordreplay|wdi5|wdio|wizard|button|dialog)\b/i.test(query)) {
     contexts.add('ui5');
   }
 
@@ -264,7 +281,7 @@ export function detectQueryContexts(query: string): string[] {
     contexts.add('ui5 web components');
   }
 
-  if (/\b(ui5\s+tooling|ui5\s+cli|ui5\.yaml|builder|middleware)\b/i.test(query)) {
+  if (/\b(ui5\s+tooling|fiori\s+tools|ui5\s+cli|ui5\.yaml|builder|middleware)\b/i.test(query)) {
     contexts.add('ui5 tooling');
   }
 
@@ -288,7 +305,7 @@ export function detectQueryContexts(query: string): string[] {
     contexts.add('fiori elements');
   }
   // ABAP general
-  if (/\babap\b/i.test(query)) {
+  if (isAbapContext) {
     contexts.add('abap');
   }
   if (/\b(abap\s+cloud|btp|steampunk)\b/i.test(query)) {
@@ -469,7 +486,11 @@ export async function search(
   } = options;
 
   // Load metadata for boosts and query expansion
-  loadMetadata();
+  const metadata = loadMetadata();
+  const sampleSources = new Set([
+    ...SAMPLE_SOURCES,
+    ...(metadata.sources ?? []).filter(source => source.type === 'samples').map(source => source.id),
+  ]);
   const sourceBoosts = getSourceBoosts();
   const allContextBoosts = getAllContextBoosts();
   
@@ -497,6 +518,7 @@ export async function search(
   
   // Detect implementation intent for sample boosting
   const wantsImplementation = hasImplementationIntent(query);
+  const wantsCleanCode = hasCleanCodeIntent(query);
 
   const sourceFilters = sources?.length
     ? new Set(sources.map(normalizeSourceFilter).filter(Boolean))
@@ -504,16 +526,16 @@ export async function search(
   const ftsFilters = sourceFilters
     ? { libraries: [...sourceFilters].map(sourceId => `/${sourceId}`) }
     : {};
-  const minimumVariantCandidates = Math.max(k * 2, 50);
 
-  for (const r of lookupExactDocs(query, ftsFilters, Math.min(k, 10))) {
+  for (const r of lookupExactDocs(query, ftsFilters, 10)) {
     seen.set(r.id, r);
   }
   
-  // Search offline FTS database with all query variants (union approach)
+  // Search the original query first. Synonym variants only fill a sparse pool;
+  // they must not replace original candidates or depend on response length.
   for (const variant of queryVariants) {
     try {
-      const rows = searchFTS(variant, ftsFilters, k * 2); // Get more candidates for filtering
+      const rows = searchFTS(variant, ftsFilters, OFFLINE_CANDIDATE_LIMIT);
       for (const r of rows) {
         if (!seen.has(r.id)) {
           seen.set(r.id, r);
@@ -523,7 +545,7 @@ export async function search(
       console.warn(`FTS query failed for variant "${variant}":`, error);
       continue;
     }
-    if (seen.size >= minimumVariantCandidates) break; // enough candidates
+    if (seen.size >= OFFLINE_CANDIDATE_LIMIT) break; // enough candidates
   }
   
   let rows = Array.from(seen.values());
@@ -540,7 +562,7 @@ export async function search(
   if (!includeSamples) {
     rows = rows.filter(r => {
       const sourceId = extractSourceId(r.libraryId || r.id);
-      return !SAMPLE_SOURCES.includes(sourceId);
+      return !sampleSources.has(sourceId);
     });
   }
   
@@ -582,11 +604,10 @@ export async function search(
   
   // CRITICAL: Take more candidates BEFORE merging with online results
   // This prevents relevant offline docs from being hidden by the early slice
-  const candidateCount = Math.max(k * 5, 50);
   
   // Convert offline results to consistent format with source boosts
   // Each result gets a rank-based RRF score plus boost multipliers
-  const offlineResults: SearchResult[] = rows.slice(0, candidateCount).map((r, index) => {
+  const offlineResults: SearchResult[] = rows.slice(0, OFFLINE_CANDIDATE_LIMIT).map((r, index) => {
     const sourceId = extractSourceId(r.libraryId || r.id);
     let boost = sourceBoosts[sourceId] || 0;
     
@@ -609,14 +630,14 @@ export async function search(
       if (ctxBoosts) {
         // Check if this source's libraryId matches any boosted library
         const libraryId = r.libraryId || `/${sourceId}`;
-        if (ctxBoosts[libraryId]) {
+        if (ctxBoosts[libraryId] && (!sampleSources.has(sourceId) || wantsImplementation)) {
           boost += ctxBoosts[libraryId];
         }
       }
     }
     
     // Intent-based sample boosting
-    if (wantsImplementation && SAMPLE_SOURCES.includes(sourceId)) {
+    if (wantsImplementation && sampleSources.has(sourceId)) {
       boost += 1.5; // Significant boost for samples when user wants implementation
     }
     
@@ -634,15 +655,14 @@ export async function search(
       boost += 0.5 * titleMatchCount;
     }
 
-    // Technical UI5/wdi5 prompts can contain words such as "selection" or
-    // "table" that strongly match ABAP keyword docs, even when the query is
-    // clearly about frontend test automation. Penalize ABAP keyword docs unless
-    // ABAP was explicitly requested.
-    const isUi5OrWdi5Query = queryContexts.includes('ui5') || queryContexts.includes('wdi5');
+    // Explicit UI5, wdi5 and CAP queries should not be dominated by ABAP
+    // keyword pages matching generic words such as table, input or selection.
+    // Preserve mixed-domain requests that explicitly ask for ABAP.
+    const isOtherTechnologyQuery = queryContexts.some(context => ['ui5', 'wdi5', 'cap'].includes(context));
     if (queryContexts.includes('wdi5') && sourceId === 'wdi5') {
       boost += 5.0;
     }
-    if (isUi5OrWdi5Query && !isExplicitAbapQuery && sourceId.startsWith('abap-docs-')) {
+    if (isOtherTechnologyQuery && !isExplicitAbapQuery && sourceId.startsWith('abap-docs-')) {
       boost -= 0.9;
     }
     
@@ -653,7 +673,7 @@ export async function search(
     }
     
     // Clean code intent: boost style guides significantly
-    if (hasCleanCodeIntent(query) && sourceId === 'sap-styleguides') {
+    if (wantsCleanCode && sourceId === 'sap-styleguides') {
       boost += 3.0;
     }
     

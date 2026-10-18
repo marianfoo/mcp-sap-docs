@@ -3,20 +3,24 @@ import type { SearchResult } from '../src/lib/search.js';
 
 const mocks = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
+  sources: [] as { id: string; type: string }[],
+  contexts: {} as Record<string, Record<string, number>>,
+  variants: null as string[] | null,
+  variantRows: {} as Record<string, Record<string, unknown>[]>,
   semantic: vi.fn(),
   help: vi.fn(),
 }));
 
 vi.mock('../src/lib/searchDb.js', () => ({
   lookupExactDocs: () => [],
-  searchFTS: () => mocks.rows,
+  searchFTS: (query: string, _filters: unknown, limit: number) => (mocks.variantRows[query] ?? mocks.rows).slice(0, limit),
 }));
 vi.mock('../src/lib/metadata.js', () => ({
-  loadMetadata: () => ({}),
+  loadMetadata: () => ({ sources: mocks.sources }),
   getSourceBoosts: () => ({}),
-  getAllContextBoosts: () => ({}),
+  getAllContextBoosts: () => mocks.contexts,
   getContextBoosts: () => ({}),
-  expandQueryTerms: (query: string) => [query],
+  expandQueryTerms: (query: string) => mocks.variants ?? [query],
 }));
 vi.mock('../src/lib/embeddingSearch.js', () => ({ buildSemanticResults: mocks.semantic }));
 vi.mock('../src/lib/sapHelp.js', () => ({ searchSapHelp: mocks.help, ABAP_HELP_PRODUCTS: {} }));
@@ -34,6 +38,10 @@ function row(id: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.rows = [row('first'), row('second')];
+  mocks.sources = [];
+  mocks.contexts = {};
+  mocks.variants = null;
+  mocks.variantRows = {};
   mocks.semantic.mockResolvedValue([]);
   mocks.help.mockResolvedValue({ results: [] });
 });
@@ -80,6 +88,53 @@ describe('lexical and semantic score fusion', () => {
     expect(fused[0].finalScore).toBeCloseTo((1 / 61 + 0.7 / 61) * 1.5, 12);
     expect(fused[0].debug?.boost).toBe(lexical[0].debug?.boost);
     expect(fused[0].text).toBe(lexical[0].text);
+  });
+
+  it('recognizes new sample sources from metadata and boosts them only for sample requests', async () => {
+    mocks.sources = [{ id: 'new-samples', type: 'samples' }];
+    mocks.contexts = { ui5: { '/new-samples': 0.9 } };
+    mocks.rows = [{ ...row('neutral'), id: '/new-samples/file', libraryId: '/new-samples' }];
+    for (const query of ['UI5 deployment configuration', 'UI5 deployment tutorial', 'UI5 deployment tutorials', 'how to deploy UI5']) {
+      const result = await search(query, { includeOnline: false });
+      expect(result[0].debug?.boost).toBe(0);
+    }
+    for (const query of ['UI5 deployment sample', 'UI5 deployment samples', 'UI5 examples', 'UI5 handlers', 'UI5 snippets', 'UI5 implementations']) {
+      const examples = await search(query, { includeOnline: false });
+      expect(examples[0].debug?.boost).toBeCloseTo(2.4);
+    }
+    expect(await search('UI5 deployment sample', { includeOnline: false, includeSamples: false })).toEqual([]);
+  });
+
+  it('applies the CAP penalty only to CAP, not to a bare CDS query', async () => {
+    mocks.rows = [{ ...row('neutral'), id: '/abap-docs-standard/neutral', libraryId: '/abap-docs-standard' }];
+    const cds = await search('CDS view input parameters', { includeOnline: false });
+    const cap = await search('CAP view input parameters', { includeOnline: false });
+    expect(cds[0].debug?.boost).toBe(0.5);
+    expect(cap[0].debug?.boost).toBeCloseTo(-0.4);
+  });
+
+  it('uses synonym variants to fill a sparse pool, without replacing a full original pool', async () => {
+    mocks.variants = ['query', 'expanded'];
+    mocks.variantRows = {
+      query: Array.from({ length: 200 }, (_, i) => row(`document-${i}`)),
+      expanded: [row('synonym-only')],
+    };
+    await search('query', { includeOnline: false, k: 10 });
+    expect(mocks.semantic.mock.calls[0][1].map((result: SearchResult) => result.id)).not.toContain('/cap/synonym-only');
+    mocks.variantRows.query = mocks.variantRows.query.slice(0, 20);
+    const sparse = await search('query', { includeOnline: false, k: 30 });
+    expect(sparse.map(result => result.id)).toContain('/cap/synonym-only');
+  });
+
+  it('keeps the default top ten independent of the requested result count', async () => {
+    mocks.rows = Array.from({ length: 120 }, (_, i) => row(`document-${i}`));
+    mocks.rows[80] = {
+      ...row('abap needle'), id: '/abap-docs-standard/needle', libraryId: '/abap-docs-standard',
+    };
+    const ten = await search('ABAP needle', { includeOnline: false, k: 10 });
+    const thirty = await search('ABAP needle', { includeOnline: false, k: 30 });
+    expect(ten.map(result => result.id)).toEqual(thirty.slice(0, 10).map(result => result.id));
+    expect(ten[0].id).toBe('/abap-docs-standard/needle');
   });
 
   it('does not accumulate repeated URLs from one online source', async () => {
