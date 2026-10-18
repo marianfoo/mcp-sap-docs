@@ -109,7 +109,7 @@ describe('query meaning', () => {
     for (const query of ['clean code', 'Clean ABAP', 'coding standard', 'should I declare variables here', 'better to use classes', 'recommended ABAP method design', 'ABAP naming conventions', 'coding standards', 'style guides']) {
       expect(hasCleanCodeIntent(query)).toBe(true);
     }
-    for (const query of ['recommended BTP region', 'better UI5 theme', 'should I use this destination', 'ABAP method syntax', 'recommended TypeScript class design', 'better CAP service method', 'Python clean code', 'recommended ABAP environment on BTP', 'Which function module should I call to create a sales order?', 'Which method should I call to refresh a sap.m.Table binding?', 'Which HTTP status code should my CAP handler return?']) {
+    for (const query of ['recommended BTP region', 'better UI5 theme', 'should I use this destination', 'ABAP method syntax', 'recommended TypeScript class design', 'better CAP service method', 'Python clean code', 'Fiori elements best practices', 'Fiori tools naming conventions', 'recommended ABAP environment on BTP', 'Which function module should I call to create a sales order?', 'Which method should I call to refresh a sap.m.Table binding?', 'Which HTTP status code should my CAP handler return?']) {
       expect(hasCleanCodeIntent(query)).toBe(false);
     }
   });

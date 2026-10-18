@@ -441,5 +441,20 @@
       "baselineRank": 1,
       "candidateRank": 1
     }
-  ]
+  ],
+  "localLatency": {
+    "method": "Three passes over 69 queries, k=30 then k=10; timing quantiles from passes two and three. Same frozen corpus. Local results vary with load and cache state, not a production guarantee.",
+    "baseline": {
+      "p50Ms": 14.595500000001266,
+      "p95Ms": 37.05533299999934,
+      "p50At10Ms": 24.485458000000108,
+      "p95At10Ms": 97.07679199999984
+    },
+    "candidate": {
+      "p50Ms": 10.986750000000029,
+      "p95Ms": 35.27516699999978,
+      "p50At10Ms": 10.814749999999549,
+      "p95At10Ms": 34.73920799999996
+    }
+  }
 }

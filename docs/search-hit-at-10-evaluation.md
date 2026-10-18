@@ -51,10 +51,45 @@ as the index. An initial local run paired the release index with older checkouts
 which produced a missing-frontmatter fallback URL. Repeating with the source files
 extracted from the same release resolved that setup error without a URL-code change.
 
-The existing core suite passes **502 tests**; the full integration suite passes
-**51 tests** after the sample/source fixes, including actual MCP search/fetch for
-new sources and all 32 curated tutorials. Final review refinements are rechecked
-before merge.
+The final core suite passes **503 tests**. The full integration suite passes
+**51 tests**, including actual MCP search/fetch for new sources and all 32 curated
+tutorials. The final HTTP evaluation reproduces every per-query rank in the report.
+
+## Latency and review
+
+The final local timing comparison used the same frozen release artifacts and
+compiled code for each revision. Each ran the 69 queries three times, requesting
+`k=30` then `k=10` for each query. The first pass warmed the process; the table uses
+the remaining 138 measurements per request size.
+
+| Request | Baseline p50 / p95 | Candidate p50 / p95 |
+|---|---:|---:|
+| `k=10` | 24.5 / 97.1 ms | 10.8 / 34.7 ms |
+| `k=30` | 14.6 / 37.1 ms | 11.0 / 35.3 ms |
+
+These are local measurements, not a production performance guarantee. Earlier
+runs varied substantially (one `k=30` pair was 8/18 ms versus 16/54 ms). The fixed
+pool increases per-query candidate work; the baseline can instead execute more
+synonym searches at `k=10` than at `k=30`. System load, cache state and query mix
+matter. The bounded 200-row pool was acceptable in these tests; monitor production
+latency rather than claiming a general speedup.
+
+Claude Opus 5.5 with Max effort reviewed the patch and evidence in two completed
+reviews. Its conditional-go requirements were resolved as follows:
+
+- Verified that bare `CDS` does not select CAP, with a ranking regression test.
+- Retained the library-name weight after an ablation improved MRR.
+- Narrowed coding-preference detection, covered plurals and excluded frontend
+  guidance from the ABAP style-guide boost.
+- Used the production SQLite schema in tests and strengthened phrase, Unicode,
+  query-safety and candidate-limit fixtures.
+- Chose the simpler synonym behavior: variants fill a sparse original-query pool.
+  Corrected the comment, documented the limitation and tested both pool sizes.
+- Reran the complete suites and unchanged evaluation after the final corrections.
+
+The final implementation review found no remaining merge blocker. The patch adds
+no query-specific result exceptions. The smaller gain and rank-one trade-offs are
+explicitly retained in this report.
 
 ## Experiments that were not shipped
 
@@ -90,7 +125,12 @@ formula. It adds no model, service, dependency or query-specific gold-path rule.
    Some broad ABAP golds also accept obsolete/reference variants, while other narrow
    golds reject useful cheat-sheet answers. Curate those transparently in a separate
    evaluation revision, comparing both versions with the revised labels.
-4. **Exact symbols and domains:** AUTHORITY-CHECK now returns results, but its main
+4. **Synonym recall:** variants only fill a pool when the original query returns
+   fewer than 200 candidates. This is deliberate and tested. The former `k=10`
+   path sometimes mixed variants while `k=30` did not. A fair per-variant quota
+   needs a separate relevance/latency study; simply removing the early break
+   would still discard appended variants at the final limit.
+5. **Exact symbols and domains:** AUTHORITY-CHECK now returns results, but its main
    statement can still rank below DISABLE. Cloud SDK language targeting and OData
    vocabulary targeting also need better precision. The diagnostic probes record
    these limitations; they are not represented as solved.

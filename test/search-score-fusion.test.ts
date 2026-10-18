@@ -5,20 +5,22 @@ const mocks = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
   sources: [] as { id: string; type: string }[],
   contexts: {} as Record<string, Record<string, number>>,
+  variants: null as string[] | null,
+  variantRows: {} as Record<string, Record<string, unknown>[]>,
   semantic: vi.fn(),
   help: vi.fn(),
 }));
 
 vi.mock('../src/lib/searchDb.js', () => ({
   lookupExactDocs: () => [],
-  searchFTS: (_query: string, _filters: unknown, limit: number) => mocks.rows.slice(0, limit),
+  searchFTS: (query: string, _filters: unknown, limit: number) => (mocks.variantRows[query] ?? mocks.rows).slice(0, limit),
 }));
 vi.mock('../src/lib/metadata.js', () => ({
   loadMetadata: () => ({ sources: mocks.sources }),
   getSourceBoosts: () => ({}),
   getAllContextBoosts: () => mocks.contexts,
   getContextBoosts: () => ({}),
-  expandQueryTerms: (query: string) => [query],
+  expandQueryTerms: (query: string) => mocks.variants ?? [query],
 }));
 vi.mock('../src/lib/embeddingSearch.js', () => ({ buildSemanticResults: mocks.semantic }));
 vi.mock('../src/lib/sapHelp.js', () => ({ searchSapHelp: mocks.help, ABAP_HELP_PRODUCTS: {} }));
@@ -38,6 +40,8 @@ beforeEach(() => {
   mocks.rows = [row('first'), row('second')];
   mocks.sources = [];
   mocks.contexts = {};
+  mocks.variants = null;
+  mocks.variantRows = {};
   mocks.semantic.mockResolvedValue([]);
   mocks.help.mockResolvedValue({ results: [] });
 });
@@ -90,12 +94,14 @@ describe('lexical and semantic score fusion', () => {
     mocks.sources = [{ id: 'new-samples', type: 'samples' }];
     mocks.contexts = { ui5: { '/new-samples': 0.9 } };
     mocks.rows = [{ ...row('neutral'), id: '/new-samples/file', libraryId: '/new-samples' }];
-    for (const query of ['UI5 deployment configuration', 'UI5 deployment tutorial', 'how to deploy UI5']) {
+    for (const query of ['UI5 deployment configuration', 'UI5 deployment tutorial', 'UI5 deployment tutorials', 'how to deploy UI5']) {
       const result = await search(query, { includeOnline: false });
       expect(result[0].debug?.boost).toBe(0);
     }
-    const examples = await search('UI5 deployment sample', { includeOnline: false });
-    expect(examples[0].debug?.boost).toBeCloseTo(2.4);
+    for (const query of ['UI5 deployment sample', 'UI5 deployment samples', 'UI5 examples', 'UI5 handlers', 'UI5 snippets', 'UI5 implementations']) {
+      const examples = await search(query, { includeOnline: false });
+      expect(examples[0].debug?.boost).toBeCloseTo(2.4);
+    }
     expect(await search('UI5 deployment sample', { includeOnline: false, includeSamples: false })).toEqual([]);
   });
 
@@ -105,6 +111,19 @@ describe('lexical and semantic score fusion', () => {
     const cap = await search('CAP view input parameters', { includeOnline: false });
     expect(cds[0].debug?.boost).toBe(0.5);
     expect(cap[0].debug?.boost).toBeCloseTo(-0.4);
+  });
+
+  it('uses synonym variants to fill a sparse pool, without replacing a full original pool', async () => {
+    mocks.variants = ['query', 'expanded'];
+    mocks.variantRows = {
+      query: Array.from({ length: 200 }, (_, i) => row(`document-${i}`)),
+      expanded: [row('synonym-only')],
+    };
+    await search('query', { includeOnline: false, k: 10 });
+    expect(mocks.semantic.mock.calls[0][1].map((result: SearchResult) => result.id)).not.toContain('/cap/synonym-only');
+    mocks.variantRows.query = mocks.variantRows.query.slice(0, 20);
+    const sparse = await search('query', { includeOnline: false, k: 30 });
+    expect(sparse.map(result => result.id)).toContain('/cap/synonym-only');
   });
 
   it('keeps the default top ten independent of the requested result count', async () => {

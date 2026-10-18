@@ -210,7 +210,7 @@ function dedupeKey(r: SearchResult): string {
  * Returns true if user is looking for code examples/samples
  */
 function hasImplementationIntent(query: string): boolean {
-  return /\b(example|sample|code|implementation|bdef|handler|behavior\s+implementation|snippet)\b/i.test(query);
+  return /\b(examples?|samples?|code|implementations?|bdefs?|handlers?|behavior\s+implementation|snippets?)\b/i.test(query);
 }
 
 /**
@@ -221,7 +221,7 @@ export function hasCleanCodeIntent(query: string): boolean {
   // framework should not acquire an ABAP style-guide boost.
   if (!/\babap\b/i.test(query) && (
     /\b(javascript|typescript|java|python)\b/i.test(query) ||
-    detectQueryContexts(query).some(context => ['ui5', 'wdi5', 'cap'].includes(context))
+    detectQueryContexts(query).some(context => ['ui5', 'wdi5', 'cap', 'fiori', 'fiori elements', 'ui5 tooling', 'ui5 web components'].includes(context))
   )) {
     return false;
   }
@@ -531,7 +531,8 @@ export async function search(
     seen.set(r.id, r);
   }
   
-  // Search offline FTS database with all query variants (union approach)
+  // Search the original query first. Synonym variants only fill a sparse pool;
+  // they must not replace original candidates or depend on response length.
   for (const variant of queryVariants) {
     try {
       const rows = searchFTS(variant, ftsFilters, OFFLINE_CANDIDATE_LIMIT);
