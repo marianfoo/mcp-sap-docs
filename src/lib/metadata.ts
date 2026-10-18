@@ -114,14 +114,15 @@ export function expandQueryTerms(q: string): string[] {
   if (!q) return [];
   
   const terms = new Set<string>();
-  const low = q.toLowerCase();
   terms.add(q);
   
   // Apply synonyms and acronyms
   for (const [from, toList] of Object.entries(SYNONYM_MAP)) {
-    if (low.includes(from)) {
+    const literal = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}_])${literal}(?![\\p{L}\\p{N}_])`, 'giu');
+    if (pattern.test(q)) {
       for (const t of toList) {
-        terms.add(q.replace(new RegExp(from, "ig"), t));
+        terms.add(q.replace(pattern, t));
       }
     }
   }

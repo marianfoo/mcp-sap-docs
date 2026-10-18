@@ -57,30 +57,15 @@ export function toMatchQuery(userQuery: string): string {
     "how","what","why","when","where","which","who","whom","does","do","is","are"
   ]);
   
-  const cleanTerms = terms.map(t => {
-    if (t.startsWith('"') && t.endsWith('"')) return t; // phrase query
-    
-    // For terms with dots (like sap.m.Button), quote them as phrases
-    if (t.includes('.')) {
-      return `"${t}"`;
-    }
-    
-    // Handle annotation qualifiers with # (like #SpecificationWidthColumnChart)
-    if (t.startsWith('#') && t.length > 1) {
-      // Keep the # and treat as exact phrase for better matching
-      return `"${t}"`;
-    }
-    
-    // Handle compound terms with # (like UI.Chart#Something)
-    if (t.includes('#') && !t.startsWith('#')) {
-      // Split on # and treat as phrase to preserve structure
-      return `"${t}"`;
-    }
-    
-    // Sanitize and add prefix matching for simple terms
-    const clean = t.replace(/[^\w]/g, "").toLowerCase();
-    if (!clean || stopwords.has(clean)) return "";
-    return `${clean}*`;
+  const cleanTerms = terms.map(term => {
+    // Match SQLite's word boundaries instead of joining punctuation-separated
+    // identifiers: AUTHORITY-CHECK must search for "authority check", not
+    // "authoritycheck". Quoting also keeps user text out of the FTS grammar.
+    const words = term.toLowerCase().match(/[\p{L}\p{N}\p{M}]+/gu) ?? [];
+    const quoted = term.startsWith('"') && term.endsWith('"');
+    if (!words.length || (!quoted && words.length === 1 && stopwords.has(words[0]))) return "";
+    const exactPhrase = quoted || /[.#]/.test(term);
+    return `"${words.join(' ')}"${exactPhrase ? '' : '*'}`;
   }).filter(Boolean);
   
   // Use OR logic for better recall in BM25-only mode (configurable)
@@ -165,13 +150,12 @@ export function searchFTS(userQuery: string, filters: Filters = {}, limit = 20):
     params.push(...filters.types);
   }
 
-  // BM25 weights: title, description, keywords, controlName, namespace
-  // Higher weight = more important (title and controlName are most important)
+  // Positional weights: libraryId, type, title, description, keywords, controlName, namespace.
   const sql = `
     SELECT
       id, libraryId, type, title, description, relFile, snippetCount,
       highlight(docs, 2, '<mark>', '</mark>') AS highlight,
-      bm25(docs, 1.0, 8.0, 2.0, 4.0, 6.0, 3.0) AS bm25Score
+      bm25(docs, 1.0, 0.0, 8.0, 2.0, 4.0, 6.0, 3.0) AS bm25Score
     FROM docs
     WHERE ${conditions.join(" AND ")}
     ORDER BY bm25Score
