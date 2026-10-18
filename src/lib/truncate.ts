@@ -16,7 +16,7 @@ export interface TruncationResult {
 export type TruncationInfo = Omit<TruncationResult, "content">;
 
 function notice(original: number, omitted: number, keepEnd: boolean): string {
-  return `\n\n---\n\n⚠️ **Content Truncated**\n\n${omitted} characters (${Math.round(omitted / original * 100)}%) omitted from the ${keepEnd ? "middle" : "end"} of this ${original}-character document. Open the source URL for the complete content.\n\n---\n\n`;
+  return `\n\n---\n\n⚠️ **Content Truncated**\n\n${omitted} of ${original} characters omitted from the ${keepEnd ? "middle" : "end"}. Open the source URL for the complete content.\n\n---\n\n`;
 }
 
 // Prefer nearby paragraph/heading/sentence boundaries. Never discard thousands

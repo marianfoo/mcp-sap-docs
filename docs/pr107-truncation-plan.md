@@ -31,8 +31,8 @@ The new tests also needed inclusion in the CI command.
 
 Frozen live Community post `14505163`, retrieved on 2026-10-18: 75,318 formatted
 characters. Released output: 58,573 characters. Original PR output: 72,652,
-with 2,954 source characters omitted. Reviewed fix: 74,996 characters,
-with 485 source characters omitted. The limit remains 75,000.
+with 2,954 source characters omitted. Reviewed fix: 74,998 characters,
+with 454 source characters omitted. The limit remains 75,000.
 
 Original PR with an explicit limit of 100 returned 309 characters. The new
 regressions sweep all positive limits through 500 and exercise both helpers,

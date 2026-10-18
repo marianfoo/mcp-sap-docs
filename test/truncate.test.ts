@@ -49,11 +49,10 @@ describe("truncateContent", () => {
     const notice = result.content.match(/\n\n---\n\n⚠️ \*\*Content Truncated\*\*[\s\S]*?\n---\n\n/);
     expect(notice).not.toBeNull();
 
-    // toLocaleString() without an explicit locale groups digits with "." on a
-    // German host and with "," on an English one, so the parser has to accept
-    // both. Reading only [\d,] would silently parse "19.108" as "108".
-    const reported = result.content.match(/([\d.,]+) characters \(\d+%\)/)![1];
-    const omitted = Number(reported.replace(/[.,]/g, ""));
+    // Prose uses locale-independent integers; metadata is the client contract.
+    const reported = result.content.match(/(\d+) of (\d+) characters/)!;
+    const omitted = Number(reported[1]);
+    expect(Number(reported[2])).toBe(content.length);
     const kept = result.truncatedLength - notice![0].length;
 
     expect(omitted).toBe(result.originalLength - kept);
