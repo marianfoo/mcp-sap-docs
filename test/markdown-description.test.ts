@@ -35,6 +35,11 @@ describe('Markdown description fallback', () => {
       .toBe('Use Controller<View>, `<div>` and <https://example.com>.');
   });
 
+  it('skips SAP stylesheet links before the description', () => {
+    expect(markdownDescription('<!-- loio123 -->\n<link rel="stylesheet" href="css/sap-icons.css"/>\n# Update\nThis release adds new controls.'))
+      .toBe('This release adds new controls.');
+  });
+
   it('skips badges and Markdown container markers', () => {
     expect(markdownDescription('[![build](badge.svg)](ci)\n::: tip\n{{ $frontmatter.synopsis }}\nMeaningful prose.'))
       .toBe('Meaningful prose.');

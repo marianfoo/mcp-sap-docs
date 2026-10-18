@@ -19,7 +19,7 @@ export function markdownDescription(content: string): string {
     }
     // Preserve code spans, autolinks and placeholders such as <subdomain>.
     // Only known HTML formatting tags are removed from prose.
-    const text = line.replace(/(`+).*?\1|<\/?(?:a|b|br|code|div|em|i|img|li|ol|p|span|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul)\b[^>]*>/gi,
+    const text = line.replace(/(`+).*?\1|<\/?(?:a|b|br|code|div|em|i|img|li|link|meta|ol|p|pre|span|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul)\b[^>]*>/gi,
       token => token.startsWith('`') ? token : '').trim();
     // Skip headings, image-only lines, tables, link definitions and separators.
     if (!text || /^(?:#|!\[|\||\[[^\]]+\]:|\[\[toc\]\]|[-*_]{3,}\s*$|=+\s*$)/i.test(text)) continue;
