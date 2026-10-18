@@ -1,0 +1,460 @@
+{
+  "baseCommit": "a05ce68903296bbe503aed058373597282b48436",
+  "corpusRelease": "0.3.60",
+  "corpusSha256": "5b41a4d7571a20a09aa1d854bf3b422b6cb24c3769388eb89241587bcd576193",
+  "entries": 60607,
+  "sourceCount": 55,
+  "options": {
+    "includeOnline": false,
+    "k": 30,
+    "embeddingWeight": 0
+  },
+  "baseline": {
+    "hitAt10": 49,
+    "hitAt30": 51,
+    "mrr": 0.5866062279105757
+  },
+  "candidate": {
+    "hitAt10": 51,
+    "hitAt30": 53,
+    "mrr": 0.6008344312692139
+  },
+  "pairedMrrDelta95CI": {
+    "method": "10000 paired bootstrap resamples; Python seed 20261018",
+    "interval": [
+      -0.020672564150825024,
+      0.046713511930903236
+    ]
+  },
+  "rows": [
+    {
+      "id": "source-expansion-1",
+      "query": "Cloud Connector principal propagation",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-2",
+      "query": "SAP Cloud SDK Python destination service",
+      "baselineRank": 3,
+      "candidateRank": 3
+    },
+    {
+      "id": "source-expansion-3",
+      "query": "SAP Cloud SDK for AI Python document grounding",
+      "baselineRank": 3,
+      "candidateRank": 2
+    },
+    {
+      "id": "source-expansion-4",
+      "query": "OData UI LineItem annotation",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-5",
+      "query": "Common.ValueList",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-6",
+      "query": "UI.SelectionFields",
+      "baselineRank": 1,
+      "candidateRank": 2
+    },
+    {
+      "id": "source-expansion-7",
+      "query": "SAP Job Scheduling Service authentication",
+      "baselineRank": 1,
+      "candidateRank": 3
+    },
+    {
+      "id": "source-expansion-8",
+      "query": "SAP Cloud Logging ingest observability data",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-9",
+      "query": "SAP Cloud Identity Services provisioning",
+      "baselineRank": 9,
+      "candidateRank": 5
+    },
+    {
+      "id": "source-expansion-10",
+      "query": "SAP Cloud Identity Services system integration single sign on",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-11",
+      "query": "Integration Suite CSRF token handling",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-12",
+      "query": "Event Mesh queue subscriptions",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-13",
+      "query": "Business Application Studio dev spaces",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "source-expansion-14",
+      "query": "SAP Continuous Integration and Delivery pipeline",
+      "baselineRank": 3,
+      "candidateRank": 3
+    },
+    {
+      "id": "source-expansion-15",
+      "query": "Cloud Transport Management transport nodes",
+      "baselineRank": 2,
+      "candidateRank": 2
+    },
+    {
+      "id": "tutorial-ai-consumption",
+      "query": "SAP AI Core orchestration V2 consumption tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-ai-grounding",
+      "query": "SAP AI Core orchestration V2 grounding tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-prompt-registry",
+      "query": "SAP AI Core prompt registry tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-batch",
+      "query": "SAP AI Core batch inference tutorial",
+      "baselineRank": 2,
+      "candidateRank": 2
+    },
+    {
+      "id": "tutorial-sqlscript",
+      "query": "SAP HANA Cloud SQLScript stored procedure tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-debugging",
+      "query": "SAP HANA Cloud SQLScript debugging tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-cap-auth",
+      "query": "SAP HANA Cloud CAP add authentication tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-cap-mta",
+      "query": "SAP HANA Cloud CAP deploy MTA tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-mcp-gateway",
+      "query": "SAP Integration Suite MCP Gateway tutorial",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "tutorial-transport",
+      "query": "Cloud Transport Management Integration Suite test transport tutorial",
+      "baselineRank": 2,
+      "candidateRank": 2
+    },
+    {
+      "id": "abap-regex-pcre",
+      "query": "FIND PCRE regex with unicode character property class",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-gzip",
+      "query": "compress binary data with CL_ABAP_GZIP",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-string-templates",
+      "query": "string template formatting options in ABAP",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-authority-check",
+      "query": "perform an authority check in ABAP",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-for-all-entries",
+      "query": "SELECT FOR ALL ENTRIES performance",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-loop-group-by",
+      "query": "loop at internal table group by",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-secondary-key",
+      "query": "secondary internal table key sorted hashed",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-unit-test",
+      "query": "ABAP unit test class for testing methods",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "cds-define-view",
+      "query": "define CDS view entity with select from",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "cds-value-help-annotation",
+      "query": "value help annotation for a CDS field",
+      "baselineRank": 3,
+      "candidateRank": 2
+    },
+    {
+      "id": "rap-determination",
+      "query": "RAP determination on save in behavior definition",
+      "baselineRank": 3,
+      "candidateRank": 3
+    },
+    {
+      "id": "rap-eml-modify",
+      "query": "modify entity with EML in RAP",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "ui5-two-way-binding",
+      "query": "JSONModel two way data binding in UI5",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "ui5-growing-table",
+      "query": "growing table scroll in sap.m.Table",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "ui5-fiori-elements-lineitem",
+      "query": "fiori elements list report line item annotation",
+      "baselineRank": 4,
+      "candidateRank": 4
+    },
+    {
+      "id": "wdi5-locator",
+      "query": "wdi5 locator to click a button",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "cap-associations",
+      "query": "define entity associations in CAP",
+      "baselineRank": 2,
+      "candidateRank": 1
+    },
+    {
+      "id": "cap-expose-projection",
+      "query": "expose entities as a projection in a CAP service",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "btp-destination",
+      "query": "BTP destination service for connectivity",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-gzip-lexical",
+      "query": "reduce the size of a byte string in memory before storing it",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "abap-authority-check-lexical",
+      "query": "check whether the logged-in user is allowed to perform this action",
+      "baselineRank": 7,
+      "candidateRank": 4
+    },
+    {
+      "id": "abap-for-all-entries-lexical",
+      "query": "read database rows for every key stored in an internal table",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "best-exceptions-vs-returncodes",
+      "query": "what is the recommended way to signal a failure from an ABAP method",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "best-composition-vs-inheritance",
+      "query": "is it better to extend a class or wrap it when reusing behavior in ABAP",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "best-new-vs-create-object",
+      "query": "recommended way to instantiate a class in modern ABAP",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "best-package-architecture",
+      "query": "how should I organize packages for a maintainable SAP application",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "cov-read-table-vs-loop",
+      "query": "fastest way to find one record in an internal table without looping over it",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-line-exists",
+      "query": "how to check whether a row exists in a table without reading it into a variable",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-insert-vs-append",
+      "query": "recommended statement to add rows to a sorted or hashed internal table",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-avoid-default-key",
+      "query": "why you should not rely on the standard table key when looking up rows",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-inline-declarations",
+      "query": "should I declare variables up front or inline where they are first used",
+      "baselineRank": 11,
+      "candidateRank": 2
+    },
+    {
+      "id": "cov-oo-vs-procedural",
+      "query": "is it better to write new business logic in classes or in reports and function modules",
+      "baselineRank": null,
+      "candidateRank": 3
+    },
+    {
+      "id": "cov-loop-where-vs-if",
+      "query": "cleaner way to skip rows in a loop instead of wrapping the body in an if",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-cap-event-handlers",
+      "query": "where do I put custom logic that runs when a CAP service request comes in",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "cov-cap-view-parameters",
+      "query": "how to define a CAP view that accepts input parameters",
+      "baselineRank": 6,
+      "candidateRank": 2
+    },
+    {
+      "id": "para-read-table",
+      "query": "get a single entry out of an internal table using its key value",
+      "baselineRank": null,
+      "candidateRank": 22
+    },
+    {
+      "id": "para-sort-itab",
+      "query": "arrange the rows of an internal table into a particular order",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "para-collect",
+      "query": "accumulate numeric totals into a table summed up per key",
+      "baselineRank": 21,
+      "candidateRank": null
+    },
+    {
+      "id": "para-delete-duplicates",
+      "query": "remove repeated adjacent rows from an internal table",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "para-try-catch",
+      "query": "handle a runtime error gracefully so the program does not dump",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "para-rtti",
+      "query": "inspect the type of a data object while the program is running",
+      "baselineRank": null,
+      "candidateRank": null
+    },
+    {
+      "id": "para-asjson",
+      "query": "turn an ABAP structure into a JSON string",
+      "baselineRank": null,
+      "candidateRank": 22
+    },
+    {
+      "id": "abap-raise-exception-class",
+      "query": "RAISE EXCEPTION TYPE class based exception",
+      "baselineRank": 1,
+      "candidateRank": 1
+    },
+    {
+      "id": "abap-convert-date",
+      "query": "CONVERT DATE time stamp into time zone",
+      "baselineRank": 1,
+      "candidateRank": 1
+    }
+  ],
+  "localLatency": {
+    "method": "Three passes over 69 queries, k=30 then k=10; timing quantiles from passes two and three. Same frozen corpus. Local results vary with load and cache state, not a production guarantee.",
+    "baseline": {
+      "p50Ms": 14.595500000001266,
+      "p95Ms": 37.05533299999934,
+      "p50At10Ms": 24.485458000000108,
+      "p95At10Ms": 97.07679199999984
+    },
+    "candidate": {
+      "p50Ms": 10.986750000000029,
+      "p95Ms": 35.27516699999978,
+      "p50At10Ms": 10.814749999999549,
+      "p95At10Ms": 34.73920799999996
+    }
+  }
+}
