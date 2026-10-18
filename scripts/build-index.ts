@@ -105,8 +105,8 @@ const SOURCES: SourceConfig[] = [
     repoName: "ui5-tooling",
     absDir: join("sources", "ui5-tooling", "docs"),
     id: "/ui5-tooling",
-    name: "UI5 Tooling ",
-    description: "UI5 Tooling documentation",
+    name: "UI5 CLI",
+    description: "UI5 CLI v4 documentation (formerly UI5 Tooling)",
     filePattern: "**/*.md",
     type: "markdown" as const
   },

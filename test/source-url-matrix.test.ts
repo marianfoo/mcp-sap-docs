@@ -601,6 +601,18 @@ const sourceUrlCases: UrlCase[] = [
   // UI5 Tooling
   {
     libraryId: '/ui5-tooling',
+    relFile: 'pages/extensibility/CustomServerMiddleware.md',
+    content: '# Custom UI5 Server Middleware',
+    expectedUrl: 'https://ui5.github.io/cli/v4/pages/extensibility/CustomServerMiddleware/#custom-ui5-server-middleware'
+  },
+  {
+    libraryId: '/ui5-tooling',
+    relFile: 'index.md',
+    content: '# UI5 CLI',
+    expectedUrl: 'https://ui5.github.io/cli/v4/#ui5-cli'
+  },
+  {
+    libraryId: '/ui5-tooling',
     relFile: 'pages/Builder.md',
     content: '# UI5 Builder',
     expectedUrl: 'https://ui5.github.io/cli/v4/pages/Builder/#ui5-builder'

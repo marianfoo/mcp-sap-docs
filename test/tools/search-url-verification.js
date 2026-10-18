@@ -178,6 +178,26 @@ export default [
     )
   },
   {
+    name: 'UI5 CLI v4 middleware guide is searchable and fetchable',
+    validate: async ({ docsSearch }) => {
+      const id = '/ui5-tooling/pages/extensibility/CustomServerMiddleware';
+      const text = await docsSearch('custom UI5 server middleware', {
+        includeOnline: false, sources: ['ui5-tooling'], k: 10
+      });
+      if (!text.includes(id) || !text.includes('https://ui5.github.io/cli/v4/pages/extensibility/CustomServerMiddleware/')) {
+        return { passed: false, message: 'The stable middleware guide or its v4 URL is missing from search.' };
+      }
+      const { fetchLibraryDocumentation } = await import('../../dist/src/lib/localDocs.js');
+      const page = await fetchLibraryDocumentation(id);
+      const section = await fetchLibraryDocumentation(`${id}#custom-middleware-implementation`);
+      return {
+        passed: Boolean(page?.text.includes('server-middleware') && page.text.includes('customMiddleware')
+          && section?.text.includes('middlewareUtil')),
+        message: 'Fetch must return the middleware configuration and implementation, including section IDs.'
+      };
+    }
+  },
+  {
     name: 'sap.fe.test API generated source appears with pinned Open UX URL',
     validate: ({ docsSearch }) => validateVisibleSearchResult({
       docsSearch,

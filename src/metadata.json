@@ -244,7 +244,7 @@
       "lang": "en",
       "boost": 0.0,
       "tags": ["tooling", "build", "cli"],
-      "description": "UI5 Tooling documentation",
+      "description": "UI5 CLI v4 documentation (formerly UI5 Tooling)",
       "libraryId": "/ui5-tooling",
       "sourcePath": "ui5-tooling/docs",
       "baseUrl": "https://ui5.github.io/cli/v4",
