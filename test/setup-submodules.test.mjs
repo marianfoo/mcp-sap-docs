@@ -149,6 +149,38 @@ test('SKIP_NESTED_SUBMODULES leaves the selected source current without initiali
   } finally { f.close(); }
 });
 
+for (const existingCheckout of [false, true]) {
+  test(`UI5 CLI v4 guides survive ${existingCheckout ? 'migration from main and repeated' : 'fresh'} setup`, () => {
+    const f = fixture();
+    try {
+      const guide = 'docs/pages/extensibility/CustomServerMiddleware.md';
+      f.write(f.source, 'docs/Guidelines.md', '# Contributor guidelines\n');
+      f.commit(f.source, 'Main has no user guide at the indexed path');
+      f.git(f.source, 'checkout', '-b', 'v4');
+      f.write(f.source, guide, '# Custom UI5 Server Middleware\nserver.customMiddleware\n');
+      const stableTip = f.commit(f.source, 'Stable v4 user documentation');
+      f.write(f.root, 'config/variants/sap-docs.json', JSON.stringify({
+        submodulePaths: ['sources/ui5-tooling'], tools: { ui5LibDiff: false }, server: {},
+      }));
+      const configure = branch => f.write(f.root, '.gitmodules',
+        `[submodule "sources/ui5-tooling"]\n path = sources/ui5-tooling\n url = ${pathToFileURL(f.source).href}\n branch = ${branch}\n`);
+      const checkout = path.join(f.root, 'sources/ui5-tooling');
+      if (existingCheckout) {
+        configure('main');
+        f.setup({ SKIP_NESTED_SUBMODULES: '1' });
+        assert.ok(!existsSync(path.join(checkout, guide)), 'reproduce the missing guide on main');
+      }
+      configure('v4');
+      for (let run = 0; run < 2; run++) {
+        f.setup({ SKIP_NESTED_SUBMODULES: '1' });
+        assert.equal(f.git(checkout, 'rev-parse', 'HEAD'), stableTip);
+        assert.match(readFileSync(path.join(checkout, guide), 'utf8'), /server.customMiddleware/);
+        assert.ok(!existsSync(path.join(checkout, 'unneeded/large-source.txt')));
+      }
+    } finally { f.close(); }
+  });
+}
+
 test('the ABAP variant only initializes its selected source and nested repositories', () => {
   const f = fixture();
   try {
