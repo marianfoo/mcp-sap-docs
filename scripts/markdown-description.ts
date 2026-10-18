@@ -17,9 +17,13 @@ export function markdownDescription(content: string): string {
       fence = marker[1];
       continue;
     }
-    const text = line.replace(/<\/?[a-z][^>]*>/gi, '').trim();
+    // Preserve code spans, autolinks and placeholders such as <subdomain>.
+    // Only known HTML formatting tags are removed from prose.
+    const text = line.replace(/(`+).*?\1|<\/?(?:a|b|br|code|div|em|i|img|li|ol|p|span|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul)\b[^>]*>/gi,
+      token => token.startsWith('`') ? token : '').trim();
     // Skip headings, image-only lines, tables, link definitions and separators.
     if (!text || /^(?:#|!\[|\||\[[^\]]+\]:|\[\[toc\]\]|[-*_]{3,}\s*$|=+\s*$)/i.test(text)) continue;
+    if (/^(?:\[!\[|:::|\{\{)/.test(text)) continue;
     if (/^\*\*(?:Related Information|On this page:)\*\*$/i.test(text)) continue;
     if (/^[-*+]\s+\[[^\]]+\]\([^)]*\)\s*$/.test(text)) continue;
     return text.slice(0, 400).trim();

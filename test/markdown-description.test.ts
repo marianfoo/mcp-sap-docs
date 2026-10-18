@@ -28,6 +28,18 @@ describe('Markdown description fallback', () => {
     expect(markdownDescription('Use values < 10 and > 0.')).toBe('Use values < 10 and > 0.');
   });
 
+  it('preserves placeholders, generic types, autolinks and inline code', () => {
+    expect(markdownDescription('Replace <subdomain> in <b>the URL</b> with your subaccount.'))
+      .toBe('Replace <subdomain> in the URL with your subaccount.');
+    expect(markdownDescription('Use Controller<View>, `<div>` and <https://example.com>.'))
+      .toBe('Use Controller<View>, `<div>` and <https://example.com>.');
+  });
+
+  it('skips badges and Markdown container markers', () => {
+    expect(markdownDescription('[![build](badge.svg)](ci)\n::: tip\n{{ $frontmatter.synopsis }}\nMeaningful prose.'))
+      .toBe('Meaningful prose.');
+  });
+
   it('preserves Markdown prose, handles CRLF, and bounds the fallback', () => {
     expect(markdownDescription('# Page\r\n\r\nUse **CAP** and [CDS](cds.md).')).toBe('Use **CAP** and [CDS](cds.md).');
     expect(markdownDescription('A'.repeat(500))).toHaveLength(400);
