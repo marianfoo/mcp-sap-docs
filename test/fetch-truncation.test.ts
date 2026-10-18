@@ -49,17 +49,31 @@ describe("fetch truncation contract", () => {
       expect(document.metadata.truncation.originalLength).toBeGreaterThan(10_000);
       expect(document.metadata.truncation.omittedCharacters).toBeGreaterThan(9_000);
     } else {
-      expect(document.text).toContain("<p>Short post</p>");
+      // The community body is converted before it is framed: the raw <p> is gone,
+      // its text is not.
+      expect(document.text).toContain("Short post");
+      expect(document.text).not.toContain("<p>");
       expect(document.metadata).not.toHaveProperty("truncation");
     }
     expect(document.url).toBe("https://community.sap.com/t5/test/ba-p/123");
+  });
+
+  it("converts the community body before framing and truncating", async () => {
+    CONFIG.MAX_CONTENT_LENGTH = 10_000;
+    communityFixture("<H1>Section</H1><UL><LI>a<UL><LI>b</LI></UL></LI></UL>");
+    const result = await serverHandler("tools/call")({ method: "tools/call", params: { name: "fetch", arguments: { id: "community-123" } } });
+    const text = result.structuredContent.text;
+    expect(text).toContain("## Section");              // shifted below the post title
+    expect(text).toContain("- a\n  - b");              // nesting kept
+    expect(text.match(/^# /gm) ?? []).toHaveLength(1); // only the frame's title
+    expect(text).not.toContain("<H1>");
   });
 
   it("keeps resource reads as strings after the internal fetch return type changes", async () => {
     communityFixture("<p>Short post</p>");
     const result = await serverHandler("resources/read")({ method: "resources/read", params: { uri: "abap-docs://doc/community-123" } });
     expect(typeof result.contents[0].text).toBe("string");
-    expect(result.contents[0].text).toContain("<p>Short post</p>");
+    expect(result.contents[0].text).toContain("Short post");
   });
 
   it("keeps the Community citation even when a tiny limit removes the header", async () => {
