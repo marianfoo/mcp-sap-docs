@@ -132,7 +132,7 @@ expected paths are retained for older snapshots. No query was removed, and no
 broad source-wide match was added.
 
 Against the original expected paths, the released corpus scored MRR 0.5770 and
-hit@10 69.57%. With the verified current paths included, it scores MRR 0.5866 and
+hit@10 69.57%. With the three added paths included, it scores MRR 0.5866 and
 hit@10 71.01%, retaining all earlier top-10 hits under the amended labels. This
 changes what counts as relevant for two queries; it is not a like-for-like
 search-engine improvement. The earlier local snapshot scored

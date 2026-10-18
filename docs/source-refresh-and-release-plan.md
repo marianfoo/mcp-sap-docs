@@ -23,8 +23,9 @@ shared lock after 30 minutes. It failed before stopping the old ABAP service.
 2. Keep the shared deployment lock. Allow 60 minutes to wait and a further 60
    minutes for the build in both deployment workflows, including the maintained
    ABAP overlay.
-3. Maintain exact current CAP/UI5 expected paths in the retrieval evaluation.
-   Retain all old expectations, queries and misses; report label corrections
+3. Maintain the current CAP path and two reviewed UI5 relevance judgments in
+   the retrieval evaluation.
+   Retain all old expectations, queries and misses; report label changes
    separately from ranking changes.
 
 ## Validation
