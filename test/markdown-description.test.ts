@@ -40,6 +40,22 @@ describe('Markdown description fallback', () => {
       .toBe('This release adds new controls.');
   });
 
+  it('preserves inline script/style examples and skips HTML code blocks', () => {
+    expect(markdownDescription('# Bootstrap\nThe bootstrap `<script>` tag loads UI5.\n```html\n<script src="x"></script>\n```'))
+      .toBe('The bootstrap `<script>` tag loads UI5.');
+    expect(markdownDescription('Use `<style>` for CSS.\n<style>body { color: red }</style>'))
+      .toBe('Use `<style>` for CSS.');
+    expect(markdownDescription('<pre><code>const example = true;</code></pre>\nThe service connects applications.'))
+      .toBe('The service connects applications.');
+  });
+
+  it('keeps word boundaries at block tags without splitting inline formatting', () => {
+    expect(markdownDescription('<p>First</p><p>second<br>third</p>')).toBe('First second third');
+    expect(markdownDescription('<td>Name</td><td>Value</td>')).toBe('Name Value');
+    expect(markdownDescription('re<b>use</b> the <em>same</em> service.')).toBe('reuse the same service.');
+    expect(markdownDescription('Use  `<div>  text</div>`  as an example.')).toBe('Use `<div>  text</div>` as an example.');
+  });
+
   it('skips badges and Markdown container markers', () => {
     expect(markdownDescription('[![build](badge.svg)](ci)\n::: tip\n{{ $frontmatter.synopsis }}\nMeaningful prose.'))
       .toBe('Meaningful prose.');

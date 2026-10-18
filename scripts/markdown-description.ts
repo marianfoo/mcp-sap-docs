@@ -3,7 +3,7 @@ export function markdownDescription(content: string): string {
   let fence: string | undefined;
   const visible = content
     .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+    .replace(/^[ \t]*<(script|style|pre)\b[^>]*>[\s\S]*?<\/\1\s*>/gim, '');
   for (const rawLine of visible.split(/\r?\n/)) {
     const line = rawLine.replace(/^\s*>\s?/, '');
     const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
@@ -20,7 +20,8 @@ export function markdownDescription(content: string): string {
     // Preserve code spans, autolinks and placeholders such as <subdomain>.
     // Only known HTML formatting tags are removed from prose.
     const text = line.replace(/(`+).*?\1|<\/?(?:a|b|br|code|div|em|i|img|li|link|meta|ol|p|pre|span|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul)\b[^>]*>/gi,
-      token => token.startsWith('`') ? token : '').trim();
+      token => token.startsWith('`') ? token : /^<\/?(?:br|div|li|p|td|th|tr)\b/i.test(token) ? ' ' : '')
+      .replace(/(`+).*?\1|\s+/g, token => token.startsWith('`') ? token : ' ').trim();
     // Skip headings, image-only lines, tables, link definitions and separators.
     if (!text || /^(?:#|!\[|\||\[[^\]]+\]:|\[\[toc\]\]|[-*_]{3,}\s*$|=+\s*$)/i.test(text)) continue;
     if (/^(?:\[!\[|:::|\{\{)/.test(text)) continue;
