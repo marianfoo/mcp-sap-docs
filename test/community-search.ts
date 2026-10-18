@@ -127,7 +127,7 @@ async function testBatchRetrieval(options: TestOptions = defaultOptions): Promis
     for (const postId of testPostIds) {
       if (results[postId]) {
         console.log(`✅ Post ${postId}:`);
-        const content = results[postId];
+        const content = results[postId].content;
         const lines = content.split('\n');
         console.log(`   Title: ${lines[0].replace('# ', '')}`);
         
@@ -164,7 +164,7 @@ async function testSingleRetrieval(options: TestOptions = defaultOptions): Promi
   
   try {
     console.log(`Testing single retrieval for post: ${testPostId}`);
-    const content = await getCommunityPostById(testPostId, options.userAgent);
+    const content = (await getCommunityPostById(testPostId, options.userAgent))?.content;
     
     if (content) {
       console.log('✅ Successfully retrieved single post:');
@@ -286,7 +286,7 @@ async function testConvenienceFunction(options: TestOptions = defaultOptions): P
     console.log('search.forEach((result, index) => {');
     console.log('  console.log(`${index + 1}. ${result.title}`);');
     console.log('  if (posts[result.postId]) {');
-    console.log('    console.log(posts[result.postId]); // Full formatted content');
+    console.log('    console.log(posts[result.postId].content); // Full formatted content');
     console.log('  }');
     console.log('});');
     
@@ -307,7 +307,7 @@ async function testSpecificPost(options: TestOptions = defaultOptions): Promise<
     console.log(`Testing URL: ${testUrl}`);
     console.log(`Expected Post ID: 13961398`);
     
-    const content = await getCommunityPostByUrl(testUrl, options.userAgent);
+    const content = (await getCommunityPostByUrl(testUrl, options.userAgent))?.content;
     
     if (content) {
       console.log('✅ Successfully retrieved content:');
