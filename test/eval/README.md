@@ -119,7 +119,23 @@ keep the corpus fingerprint with benchmark results. A lexical/semantic mode
 mismatch warns against direct baseline comparison. Review cohorts and per-query
 changes whenever the corpus or query set grows.
 
-The accepted expansion baseline records all 69 queries, including every original
-query and all 18 existing misses. On this corpus, the tutorial cohort has MRR 0.9;
-one prior rank moved from 11 to 12, with no prior top-10 hit lost. See
-`docs/tutorial-ingestion-plan.md` for the scope and observed limitations.
+The accepted baseline records all 69 queries against the published v0.3.59 image
+(60,607 index entries, corpus SHA-256 recorded in `baseline.json`). Every original
+query and all 18 existing misses remain. The tutorial cohort has MRR 0.9.
+
+Two queries received three exact additional expected paths. The CAP association
+guide is now `guides/domain/index#associations`. The UI5 value-help pages
+`value-help-48e5fa7` and `value-help-fccb255` contain relevant `Common.ValueList`
+CDS examples, so they were accepted after fetching and reviewing their content.
+The UI5 additions are new relevance judgments, not verified renames. Older
+expected paths are retained for older snapshots. No query was removed, and no
+broad source-wide match was added.
+
+Against the original expected paths, the released corpus scored MRR 0.5770 and
+hit@10 69.57%. With the verified current paths included, it scores MRR 0.5866 and
+hit@10 71.01%, retaining all earlier top-10 hits under the amended labels. This
+changes what counts as relevant for two queries; it is not a like-for-like
+search-engine improvement. The earlier local snapshot scored
+MRR 0.5953 on 57,509 entries; source refreshes can change ranks independently of
+application code. See `docs/tutorial-ingestion-plan.md` for the implementation
+scope and observed limitations.

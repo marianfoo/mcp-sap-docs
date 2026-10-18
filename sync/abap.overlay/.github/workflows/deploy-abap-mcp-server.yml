@@ -57,8 +57,8 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: NEW_VERSION,GITHUB_TOKEN
-          # Submodule clones + full build (including embedding model download) can take 20-30 min
-          command_timeout: 45m
+          # Allow up to 60 min waiting for the shared lock and 60 min to build.
+          command_timeout: 120m
           script: |
             set -Eeuo pipefail
 
@@ -66,7 +66,7 @@ jobs:
             # server resources (git operations, pm2, etc.). Both the abap and sap-docs workflows
             # use the same lock file, so they queue behind each other too.
             exec 9>/tmp/mcp-sap-deploy.lock
-            flock -w 1800 9 || { echo "❌ Could not acquire deploy lock after 30 min"; exit 1; }
+            flock -w 3600 9 || { echo "❌ Could not acquire deploy lock after 60 min"; exit 1; }
             echo "==> Deploy lock acquired (PID $$)"
 
             echo "==> Database Health Pre-Check"

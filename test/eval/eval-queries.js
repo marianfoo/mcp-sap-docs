@@ -82,8 +82,13 @@ export default [
     id: "cds-value-help-annotation",
     category: "cds-annotation",
     query: "value help annotation for a CDS field",
-    golds: ["ABENCDS_F1_DEFINE_ANNOTATION_TYPE", "field-help", "valueHelp"],
-    note: "weak under v0.3.45 — top hits are dynpro value help; tracks relevance-ranking signal",
+    golds: [
+      "ABENCDS_F1_DEFINE_ANNOTATION_TYPE", "field-help", "valueHelp",
+      // Current UI5 value-help pages include the Common.ValueList CDS examples.
+      "/sapui5/06_SAP_Fiori_Elements/value-help-48e5fa7",
+      "/sapui5/06_SAP_Fiori_Elements/value-help-fccb255",
+    ],
+    note: "weak under v0.3.45 — top hits are dynpro value help. Two manually reviewed UI5 CDS examples were added as relevance judgments on 2026-10-18; original labels remain.",
   },
 
   // ── RAP ───────────────────────────────────────────────────────────────────
@@ -134,7 +139,11 @@ export default [
     id: "cap-associations",
     category: "cap",
     query: "define entity associations in CAP",
-    golds: ["/cap/guides/domain-modeling#associations", "/cap/cds/cdl"],
+    golds: [
+      "/cap/guides/domain-modeling#associations", "/cap/cds/cdl",
+      // Current location of the same domain-modeling association guidance.
+      "/cap/guides/domain/index#associations",
+    ],
   },
   {
     id: "cap-expose-projection",

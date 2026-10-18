@@ -1,7 +1,7 @@
 {
-  "gitCommit": "54e7dbf",
+  "gitCommit": "8b066e8",
   "variant": "sap-docs",
-  "corpusSha256": "dbfdb4e7afa17b9b651f8d347f003eab6df94cd4c3b0ccbd3464cea414838c4e",
+  "corpusSha256": "5b41a4d7571a20a09aa1d854bf3b422b6cb24c3769388eb89241587bcd576193",
   "embeddingWeight": 0,
   "searchOptions": {
     "includeOnline": false,
@@ -9,11 +9,11 @@
   },
   "agg": {
     "queries": 69,
-    "mrr": 0.5953301127214171,
+    "mrr": 0.5866062279105757,
     "hitAtK": {
-      "1": 0.5362318840579711,
+      "1": 0.5217391304347826,
       "3": 0.6521739130434783,
-      "5": 0.6811594202898551,
+      "5": 0.6666666666666666,
       "10": 0.7101449275362319
     },
     "misses": 18
@@ -60,11 +60,11 @@
       "golds": [
         "cloud-sdk-ai-python/examples/document-grounding"
       ],
-      "firstRelevantRank": 4,
-      "rr": 0.25,
+      "firstRelevantRank": 3,
+      "rr": 0.3333333333333333,
       "hit": {
         "1": 0,
-        "3": 0,
+        "3": 1,
         "5": 1,
         "10": 1
       },
@@ -102,7 +102,7 @@
         "5": 1,
         "10": 1
       },
-      "returned": 6
+      "returned": 15
     },
     {
       "id": "source-expansion-6",
@@ -119,7 +119,7 @@
         "5": 1,
         "10": 1
       },
-      "returned": 8
+      "returned": 9
     },
     {
       "id": "source-expansion-7",
@@ -162,8 +162,8 @@
       "golds": [
         "/btp-cloud-identity-services/"
       ],
-      "firstRelevantRank": 6,
-      "rr": 0.16666666666666666,
+      "firstRelevantRank": 9,
+      "rr": 0.1111111111111111,
       "hit": {
         "1": 0,
         "3": 0,
@@ -610,7 +610,9 @@
       "golds": [
         "ABENCDS_F1_DEFINE_ANNOTATION_TYPE",
         "field-help",
-        "valueHelp"
+        "valueHelp",
+        "/sapui5/06_SAP_Fiori_Elements/value-help-48e5fa7",
+        "/sapui5/06_SAP_Fiori_Elements/value-help-fccb255"
       ],
       "firstRelevantRank": 3,
       "rr": 0.3333333333333333,
@@ -702,11 +704,11 @@
         "06_SAP_Fiori_Elements",
         "LineItem"
       ],
-      "firstRelevantRank": 3,
-      "rr": 0.3333333333333333,
+      "firstRelevantRank": 4,
+      "rr": 0.25,
       "hit": {
         "1": 0,
-        "3": 1,
+        "3": 0,
         "5": 1,
         "10": 1
       },
@@ -736,12 +738,13 @@
       "query": "define entity associations in CAP",
       "golds": [
         "/cap/guides/domain-modeling#associations",
-        "/cap/cds/cdl"
+        "/cap/cds/cdl",
+        "/cap/guides/domain/index#associations"
       ],
-      "firstRelevantRank": 1,
-      "rr": 1,
+      "firstRelevantRank": 2,
+      "rr": 0.5,
       "hit": {
-        "1": 1,
+        "1": 0,
         "3": 1,
         "5": 1,
         "10": 1
@@ -810,8 +813,8 @@
         "ABAPAUTHORITY-CHECK",
         "ABENBC_AUTHORITY_CHECK"
       ],
-      "firstRelevantRank": 9,
-      "rr": 0.1111111111111111,
+      "firstRelevantRank": 7,
+      "rr": 0.14285714285714285,
       "hit": {
         "1": 0,
         "3": 0,
@@ -982,8 +985,8 @@
       "golds": [
         "prefer-inline-to-up-front-declarations"
       ],
-      "firstRelevantRank": 12,
-      "rr": 0.08333333333333333,
+      "firstRelevantRank": 11,
+      "rr": 0.09090909090909091,
       "hit": {
         "1": 0,
         "3": 0,
@@ -1050,12 +1053,12 @@
       "golds": [
         "cdl#views-with-parameters"
       ],
-      "firstRelevantRank": 4,
-      "rr": 0.25,
+      "firstRelevantRank": 6,
+      "rr": 0.16666666666666666,
       "hit": {
         "1": 0,
         "3": 0,
-        "5": 1,
+        "5": 0,
         "10": 1
       },
       "returned": 30
@@ -1101,8 +1104,8 @@
       "golds": [
         "ABAPCOLLECT"
       ],
-      "firstRelevantRank": 20,
-      "rr": 0.05,
+      "firstRelevantRank": 21,
+      "rr": 0.047619047619047616,
       "hit": {
         "1": 0,
         "3": 0,
