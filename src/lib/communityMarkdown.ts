@@ -13,7 +13,8 @@ function fencedCode(text: string, language = ""): string {
 function inlineCode(text: string): string {
   const body = text.replace(/\r\n?|\n/g, " ");
   const fence = "`".repeat((body.match(/`+/g) ?? []).reduce((length, run) => Math.max(length, run.length + 1), 1));
-  const padding = /^`|`$|^ .*\S.* $/.test(body) ? " " : "";
+  const padding = body.startsWith("`") || body.endsWith("`")
+    || (body.startsWith(" ") && body.endsWith(" ") && /\S/.test(body)) ? " " : "";
   return `${fence}${padding}${body}${padding}${fence}`;
 }
 

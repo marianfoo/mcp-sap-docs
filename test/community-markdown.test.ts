@@ -128,6 +128,13 @@ describe("Community Markdown", () => {
       .toBe("Use `a  b` and `` `x` ``");
   });
 
+  it("preserves edge spaces in short and long inline code", () => {
+    expect(convert("<code> a </code>")).toBe("`  a  `");
+    expect(convert("<code>a </code>")).toBe("`a `");
+    const body = " " + "x".repeat(20_000);
+    expect(convert(`<code>${body}</code>`)).toBe(`\`${body}\``);
+  });
+
   it("keeps code literal when the editor inserts links or formatting inside it", () => {
     expect(convert('<p><code><a href="https://example.com/profile">@Agent</a>.connect</code>and <code><b>API</b>_TASK</code></p>'))
       .toBe("`@Agent.connect`and `API_TASK`");
