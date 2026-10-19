@@ -46,6 +46,13 @@ describe("Community Markdown", () => {
     expect(md).toBe("![Useful caption](x.png)");
   });
 
+  it("keeps links and images in rich image captions", () => {
+    const md = convert('<p><img src="x.png" alt="Image"></p><p class="image_caption">See <a href="https://example.com">guide</a><img src="detail.png" alt="Detail"></p>');
+    expect(md).toContain("![Image](x.png)");
+    expect(md).toContain("[guide](https://example.com)");
+    expect(md).toContain("![Detail](detail.png)");
+  });
+
   it("preserves alt and title text for images with or without paragraph wrappers", () => {
     expect(convert('<p><img src="x.png" alt="Useful caption"></p>')).toBe("![Useful caption](x.png)");
     expect(convert('<img src="x.png" title="Title">')).toBe("![Title](x.png)");
@@ -86,6 +93,21 @@ describe("Community Markdown", () => {
     expect(md).not.toContain("```");
   });
 
+  it("includes nested table content only once", () => {
+    const md = convert('<table><tr><td>Outer<table><tr><td>Inner</td><td>Value</td></tr></table>After</td><td>Neighbor</td></tr></table>');
+    for (const word of ["Outer", "Inner", "Value", "After", "Neighbor"]) {
+      expect(md.match(new RegExp(word, "g"))).toHaveLength(1);
+    }
+  });
+
+  it("does not amplify small deeply nested tables into huge output", () => {
+    let html = "OnlyOnce";
+    for (let depth = 0; depth < 30; depth++) html = `<table><tr><td>${html}</td></tr></table>`;
+    const md = convert(html);
+    expect(md.match(/OnlyOnce/g)).toHaveLength(1);
+    expect(md.length).toBeLessThan(10_000);
+  });
+
   it.each([
     ['<pre class="language-sql"><code>SELECT 1;</code></pre>', '```sql\nSELECT 1;\n```'],
     ['<pre><code class="language-abap">DATA(x) = 1.</code></pre>', '```abap\nDATA(x) = 1.\n```'],
@@ -111,11 +133,9 @@ describe("Community Markdown", () => {
       .toBe("`@Agent.connect`and `API_TASK`");
   });
 
-  it("preserves plain multiline indented code without guessing a language", () => {
-    const code = '  "a": 1,\n  "b": 2,\n  "c": 3';
-    expect(convert(`<p>Config:</p><p>${code}</p>`)).toBe(`Config:\n\n\`\`\`\n${code}\n\`\`\``);
-    expect(convert("<ul><li>item\n  continuation\n  continuation\n  continuation</li></ul>"))
-      .not.toContain("```");
+  it("does not guess code from indented prose containing punctuation", () => {
+    const md = convert("<p>  Note: use a destination;\n  Then: check its settings;\n  Finally: test the connection.</p>");
+    expect(md).toBe("Note: use a destination; Then: check its settings; Finally: test the connection.");
   });
 
   it("handles invalid, uncommon and nested entities without throwing or double decoding", () => {

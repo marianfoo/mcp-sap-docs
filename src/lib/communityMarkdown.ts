@@ -17,18 +17,6 @@ function inlineCode(text: string): string {
   return `${fence}${padding}${body}${padding}${fence}`;
 }
 
-// Some editor exports put plain multiline code in a paragraph. Limit recovery
-// to paragraphs without child tags, with at least three indented code-like lines.
-// Do this before Turndown normalizes ordinary paragraph whitespace.
-function preserveIndentedCode(html: string): string {
-  return html.replace(/<p\b[^>]*>([^<]*)<\/p>/gi, (paragraph, body: string) => {
-    const lines = body.replace(/&nbsp;/g, " ").split(/\r?\n/).filter(line => line.trim());
-    if (lines.length < 3 || !lines.every(line => /^[ \t]+\S/.test(line))) return paragraph;
-    if (lines.filter(line => /[{}\[\];:=]|&quot;/.test(line)).length < Math.ceil(lines.length / 2)) return paragraph;
-    return `<pre>${body}</pre>`;
-  });
-}
-
 function codeText(node: HTMLElement): string {
   const copy = node.cloneNode(true) as HTMLElement;
   for (const br of Array.from(copy.querySelectorAll("br"))) {
@@ -36,24 +24,6 @@ function codeText(node: HTMLElement): string {
     br.replaceWith(copy.ownerDocument.createTextNode(followedByNewline ? "" : "\n"));
   }
   return copy.textContent ?? "";
-}
-
-function tableCellMarkdown(cell: HTMLTableCellElement, service: TurndownService): string {
-  const copy = cell.cloneNode(true) as HTMLElement;
-  // GFM cells cannot contain fenced blocks. Keep each code line as inline code
-  // separated by a break, preserving its spaces and literal markup.
-  for (const pre of Array.from(copy.querySelectorAll("pre"))) {
-    const lines = codeText(pre).replace(/\r\n?/g, "\n").replace(/^\n|\n$/g, "").split("\n");
-    const fragment = copy.ownerDocument.createDocumentFragment();
-    lines.forEach((line, index) => {
-      if (index) fragment.appendChild(copy.ownerDocument.createElement("br"));
-      const code = copy.ownerDocument.createElement("code");
-      code.textContent = line;
-      fragment.appendChild(code);
-    });
-    pre.replaceWith(fragment);
-  }
-  return service.turndown(copy.innerHTML).trim().replace(/ *\n+/g, "<br>").replace(/\|/g, "\\|");
 }
 
 /** Convert a Community HTML body, without changing the caller's Markdown frame. */
@@ -86,9 +56,17 @@ export function communityHtmlToMarkdown(html: string): string {
   service.addRule("communityCode", {
     filter: "pre",
     replacement: (_content, node) => {
+      const text = codeText(node);
+      // GFM table cells cannot contain fenced blocks. Preserve each line as
+      // inline code; the cell rule handles line breaks and pipe escaping.
+      if (node.closest("td,th")) {
+        const lines = text.replace(/\r\n?/g, "\n").replace(/^\n|\n$/g, "").split("\n")
+          .map(line => line ? inlineCode(line) : "").join("\n");
+        return `\n\n${lines}\n\n`;
+      }
       const classes = `${node.getAttribute("class") ?? ""} ${node.querySelector("code")?.getAttribute("class") ?? ""}`;
       const language = /\blanguage-([\w+-]+)/i.exec(classes)?.[1] ?? "";
-      return fencedCode(codeText(node), language);
+      return fencedCode(text, language);
     },
   });
   service.addRule("communityInlineCode", {
@@ -119,7 +97,8 @@ export function communityHtmlToMarkdown(html: string): string {
         container = container.parentElement;
       }
       const next = container.nextElementSibling;
-      const caption = next?.classList.contains("image_caption") ? next : null;
+      // Rich captions must remain normal Markdown so their links/images survive.
+      const caption = next?.classList.contains("image_caption") && !next.querySelector("a,img") ? next : null;
       if (caption) captions.add(caption);
       const alt = caption?.textContent?.trim() || node.getAttribute("alt")
         || node.getAttribute("image-alt") || node.getAttribute("title") || "";
@@ -132,22 +111,35 @@ export function communityHtmlToMarkdown(html: string): string {
     filter: node => captions.has(node), replacement: () => "",
   });
 
-  // Convert each cell through the same rules so links, images and lists survive.
+  // Turndown visits children first. Reuse that converted content instead of
+  // parsing cells again, which multiplies work and content for nested tables.
+  const tableContent = new WeakMap<Node, string>();
+  service.addRule("communityTableContent", {
+    filter: ["td", "th", "caption"],
+    replacement: (content, node) => {
+      tableContent.set(node, content.trim());
+      return content;
+    },
+  });
+
   // GFM needs a header: use the first row and pad short rows to the table width.
   service.addRule("communityTables", {
     filter: "table",
     replacement: (_content, node) => {
       const table = node as HTMLTableElement;
-      const rows = Array.from(table.rows).map(row => Array.from(row.cells).map(cell => tableCellMarkdown(cell, service)));
+      // Domino includes nested rows in table.rows; only use this table's rows.
+      const rows = Array.from(table.rows).filter(row => row.closest("table") === table)
+        .map(row => Array.from(row.cells).filter(cell => cell.parentElement === row).map(cell => (tableContent.get(cell) ?? "")
+          .replace(/ *\n+/g, "<br>").replace(/\|/g, "\\|")));
       if (!rows.length) return "";
       const width = rows.reduce((max, row) => Math.max(max, row.length), 0);
       const lines = rows.map(row => `| ${[...row, ...Array(width - row.length).fill("")].join(" | ")} |`);
       lines.splice(1, 0, `| ${Array(width).fill("---").join(" | ")} |`);
       const captionNode = Array.from(table.children).find(child => child.nodeName === "CAPTION");
-      const caption = captionNode ? service.turndown(captionNode.innerHTML) + "\n\n" : "";
+      const caption = captionNode ? (tableContent.get(captionNode) ?? "") + "\n\n" : "";
       return `\n\n${caption}${lines.join("\n")}\n\n`;
     },
   });
 
-  return service.turndown(preserveIndentedCode(html)).trim();
+  return service.turndown(html).trim();
 }

@@ -16,6 +16,10 @@ links, lists, images, tables and code without a separate client-side converter.
   tables. Use the HTML parser for attributes, entities and list structure.
 - Preserve code languages when declared, and choose fences that cannot be
   closed by backticks inside a sample. Do not guess a language for plain text.
+- Reuse the converted child content in table cells; do not parse it again.
+  Include only each table's own rows and cells to prevent nested duplication.
+- Keep linked or illustrated captions as normal Markdown. Honor HTML code
+  markup instead of guessing code from the indentation or punctuation of prose.
 
 The initial regex implementation lost table text and images, reordered nested
 list content, damaged code, and threw on an invalid numeric entity. Matching a
@@ -26,6 +30,7 @@ instance supports the needed rules without a service factory or shared profiles.
 
 - Regressions cover the reproduced failures, literal placeholders and code,
   malformed HTML, caption fallback, table cells, mixed nested lists, and batches.
+- Nested-table tests require each value once and bounded output for deep input.
 - Fetch tests verify conversion before framing/truncation, fallback snippets,
   structured output, resource reads and source citations.
 - An independent sample of 85 public posts includes 27 posts with code blocks
