@@ -4,6 +4,7 @@ import { CONFIG } from "../src/lib/config.js";
 import { truncateContent } from "../src/lib/truncate.js";
 import { getSapHelpDocument } from "../src/lib/sapHelp.js";
 import { getCommunityPostsByIds } from "../src/lib/communityBestMatch.js";
+import * as communityMarkdown from "../src/lib/communityMarkdown.js";
 import { BaseServerHandler } from "../src/lib/BaseServerHandler.js";
 
 vi.mock("../src/lib/sapHelp.js", () => ({
@@ -16,6 +17,7 @@ afterEach(() => {
   CONFIG.MAX_CONTENT_LENGTH = originalLimit;
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 function serverHandler(method: string) {
@@ -93,6 +95,26 @@ describe("fetch truncation contract", () => {
     const posts = await getCommunityPostsByIds(["123"]);
     expect(posts["123"].content).toContain("A **useful** summary.");
     expect(posts["123"].content).not.toContain("<p>");
+  });
+
+  it("keeps the original body and later posts if Markdown conversion fails", async () => {
+    CONFIG.MAX_CONTENT_LENGTH = 1_000;
+    vi.spyOn(communityMarkdown, "communityHtmlToMarkdown").mockImplementationOnce(() => {
+      throw new RangeError("Unsupported markup");
+    });
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ status: "success", data: { items: [
+      { id: "123", subject: "Fallback", body: `<p>Original content ${"x".repeat(2_000)}</p>` },
+      { id: "124", subject: "Next post", body: "<p>Still available</p>" },
+    ] } }))));
+    const posts = await getCommunityPostsByIds(["123", "124"]);
+    expect(posts["123"].content).toContain("Markdown conversion failed; original HTML is shown below.");
+    expect(posts["123"].content).toContain("<p>Original content ");
+    expect(posts["123"].content.length).toBeLessThanOrEqual(1_000);
+    expect(posts["123"].truncation?.omittedCharacters).toBeGreaterThan(1_000);
+    expect(posts["124"].content).toContain("Still available");
+    expect(posts["124"].content).not.toContain("<p>");
+    expect(warning).toHaveBeenCalledOnce();
   });
 
   it("uses converted length when deciding whether to truncate", async () => {

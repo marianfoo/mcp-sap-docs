@@ -20,6 +20,8 @@ links, lists, images, tables and code without a separate client-side converter.
   Include only each table's own rows and cells to prevent nested duplication.
 - Keep linked or illustrated captions as normal Markdown. Honor HTML code
   markup instead of guessing code from the indentation or punctuation of prose.
+- If conversion throws, retain that post's original HTML with a notice and
+  continue the batch. Apply the same framing and character limit to the fallback.
 
 The initial regex implementation lost table text and images, reordered nested
 list content, damaged code, and threw on an invalid numeric entity. Matching a

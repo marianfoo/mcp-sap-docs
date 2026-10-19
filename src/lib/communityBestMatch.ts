@@ -271,7 +271,15 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
       const postUrl = normalizeCommunityUrl(post.view_href, String(post.id || ""));
 
       // Convert only the HTML body, then frame and truncate the outgoing Markdown.
-      const body = communityHtmlToMarkdown(post.body || post.search_snippet || "");
+      const html = post.body || post.search_snippet || "";
+      let body: string;
+      try {
+        body = communityHtmlToMarkdown(html);
+      } catch (error) {
+        // One unsupported body must not discard this post or the rest of a batch.
+        console.warn(`[SAP Community] Markdown conversion failed for post ${post.id}; returning HTML.`, error);
+        body = `> Markdown conversion failed; original HTML is shown below.\n\n${html}`;
+      }
       
       const fullContent = `# ${post.subject}
 
