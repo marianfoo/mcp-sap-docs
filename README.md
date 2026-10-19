@@ -167,6 +167,12 @@ Ranking and filtering highlights:
 
 ## Fetch content limits
 
+Community post bodies are returned as Markdown, including code, links, images and
+tables. Clients that previously parsed raw Community HTML must consume Markdown.
+Document IDs, source URLs and response schemas are unchanged.
+If conversion fails, that post keeps its original HTML with a notice; other
+posts in the same batch are still returned.
+
 SAP Help and Community fetches default to 75,000 characters. Shortened results
 include `metadata.truncation` with exact loss counts. Self-hosted servers can set
 `MAX_CONTENT_LENGTH` before startup; see [content size limits](docs/CONTENT-SIZE-LIMITS.md).

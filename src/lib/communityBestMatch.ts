@@ -3,6 +3,7 @@
 // The previous HTML-scraping approach was blocked by AWS WAF bot detection.
 
 import { CONFIG } from "./config.js";
+import { communityHtmlToMarkdown } from "./communityMarkdown.js";
 import { truncateContent, type TruncationInfo } from "./truncate.js";
 
 /** A retrieved post together with what happened to it on the way out. */
@@ -268,6 +269,17 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
     for (const post of data.data.items) {
       const postDate = post.post_time ? new Date(post.post_time).toLocaleDateString() : 'Unknown';
       const postUrl = normalizeCommunityUrl(post.view_href, String(post.id || ""));
+
+      // Convert only the HTML body, then frame and truncate the outgoing Markdown.
+      const html = post.body || post.search_snippet || "";
+      let body: string;
+      try {
+        body = communityHtmlToMarkdown(html);
+      } catch (error) {
+        // One unsupported body must not discard this post or the rest of a batch.
+        console.warn(`[SAP Community] Markdown conversion failed for post ${post.id}; returning HTML.`, error);
+        body = `> Markdown conversion failed; original HTML is shown below.\n\n${html}`;
+      }
       
       const fullContent = `# ${post.subject}
 
@@ -277,7 +289,7 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
 
 ---
 
-${post.body || post.search_snippet}
+${body}
 
 ---
 
