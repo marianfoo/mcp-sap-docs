@@ -65,9 +65,9 @@ export function communityHtmlToMarkdown(html: string): string {
   });
   service.use([strikethrough, taskListItems]);
   service.remove(["script", "style", "noscript"]);
-  // Escaped placeholders such as &lt;tenant&gt; are text, not raw Markdown HTML.
+  // Keep literal HTML/entity examples from being interpreted again by Markdown.
   const escape = service.escape.bind(service);
-  service.escape = text => escape(text).replace(/</g, "\\<");
+  service.escape = text => escape(text).replace(/&(?=#?\w+;)/g, "\\&").replace(/</g, "\\<");
   service.addRule("nestedEmphasis", {
     filter: node => (/^(STRONG|B)$/.test(node.nodeName) && !!node.parentElement?.closest("strong,b"))
       || (/^(EM|I)$/.test(node.nodeName) && !!node.parentElement?.closest("em,i")),

@@ -16,6 +16,11 @@ describe("Community Markdown", () => {
       .toBe("Use \\<tenant> and \\<instance number>.");
   });
 
+  it("keeps literal entity examples from being decoded again by Markdown", () => {
+    expect(convert("<p>Use &amp;lt;tenant&amp;gt;, &amp;#x41; and &amp;copy; literally.</p>"))
+      .toBe("Use \\&lt;tenant\\&gt;, \\&#x41; and \\&copy; literally.");
+  });
+
   it("keeps ordinary paragraphs and blockquotes separate", () => {
     expect(convert("<p>First</p><p>Second</p><blockquote>Quoted</blockquote>"))
       .toBe("First\n\nSecond\n\n> Quoted");
@@ -115,7 +120,7 @@ describe("Community Markdown", () => {
 
   it("handles invalid, uncommon and nested entities without throwing or double decoding", () => {
     expect(convert("<p>&#1114112; &#xD800; &alpha; &amp;lt; &copy;</p>"))
-      .toBe("� � α &lt; ©");
+      .toBe("� � α \\&lt; ©");
   });
 
   it("drops script and style contents while keeping visible text", () => {
