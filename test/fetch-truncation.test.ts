@@ -64,7 +64,7 @@ describe("fetch truncation contract", () => {
     const result = await serverHandler("tools/call")({ method: "tools/call", params: { name: "fetch", arguments: { id: "community-123" } } });
     const text = result.structuredContent.text;
     expect(text).toContain("## Section");              // shifted below the post title
-    expect(text).toContain("- a\n  - b");              // nesting kept
+    expect(text).toMatch(/- +a\n {4}- +b/);           // valid nested list indentation
     expect(text.match(/^# /gm) ?? []).toHaveLength(1); // only the frame's title
     expect(text).not.toContain("<H1>");
   });
@@ -74,6 +74,34 @@ describe("fetch truncation contract", () => {
     const result = await serverHandler("resources/read")({ method: "resources/read", params: { uri: "abap-docs://doc/community-123" } });
     expect(typeof result.contents[0].text).toBe("string");
     expect(result.contents[0].text).toContain("Short post");
+  });
+
+  it("does not lose later posts when a body contains an invalid numeric entity", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ status: "success", data: { items: [
+      { id: "123", subject: "Malformed entity", body: "<p>Before &#1114112; after</p>" },
+      { id: "124", subject: "Next post", body: "<p>Still available</p>" },
+    ] } }))));
+    const posts = await getCommunityPostsByIds(["123", "124"]);
+    expect(posts["123"].content).toContain("Before � after");
+    expect(posts["124"].content).toContain("Still available");
+  });
+
+  it("converts fallback snippets too", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ status: "success", data: { items: [
+      { id: "123", subject: "Snippet", search_snippet: "<p>A <strong>useful</strong> summary.</p>" },
+    ] } }))));
+    const posts = await getCommunityPostsByIds(["123"]);
+    expect(posts["123"].content).toContain("A **useful** summary.");
+    expect(posts["123"].content).not.toContain("<p>");
+  });
+
+  it("uses converted length when deciding whether to truncate", async () => {
+    CONFIG.MAX_CONTENT_LENGTH = 1_000;
+    communityFixture(`<p data-editor="${"x".repeat(10_000)}">Short post</p>`);
+    const posts = await getCommunityPostsByIds(["123"]);
+    expect(posts["123"].content).toContain("Short post");
+    expect(posts["123"].content.length).toBeLessThan(1_000);
+    expect(posts["123"]).not.toHaveProperty("truncation");
   });
 
   it("keeps the Community citation even when a tiny limit removes the header", async () => {

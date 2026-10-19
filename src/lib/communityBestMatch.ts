@@ -270,15 +270,8 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
       const postDate = post.post_time ? new Date(post.post_time).toLocaleDateString() : 'Unknown';
       const postUrl = normalizeCommunityUrl(post.view_href, String(post.id || ""));
 
-      // Convert before framing and truncating. The order matters twice over:
-      // the frame must not run through the converter (Markdown in, Markdown out
-      // would collapse its line structure), and the truncation notice has to
-      // count the characters of the text that actually leaves the server.
-      // The converted body is trimmed so the frame's separator does not leave a
-      // run of blank lines behind.
-      const body = post.body
-        ? communityHtmlToMarkdown(post.body).trim()
-        : (post.search_snippet || "");
+      // Convert only the HTML body, then frame and truncate the outgoing Markdown.
+      const body = communityHtmlToMarkdown(post.body || post.search_snippet || "");
       
       const fullContent = `# ${post.subject}
 
