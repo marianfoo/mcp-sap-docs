@@ -2,6 +2,67 @@
 // Use a separate Turndown instance so these rules cannot affect SAP Help.
 import TurndownService from "turndown";
 import { strikethrough, taskListItems } from "turndown-plugin-gfm";
+import { createDocument } from "@mixmark-io/domino";
+
+function httpDestination(value: string): string {
+  const target = value.trim();
+  try {
+    const url = new URL(target);
+    return url.protocol === "https:" || url.protocol === "http:" ? target : "";
+  } catch {
+    return "";
+  }
+}
+
+function communityBody(html: string): HTMLElement {
+  // Use Turndown's own DOM implementation. Work on HTML, never on generated
+  // Markdown, where literal code and intentionally separate runs look alike.
+  const document = createDocument(`<x-community-body>${html}</x-community-body>`);
+  const root = document.querySelector("x-community-body") as HTMLElement;
+  const inCode = (node: Element) => !!node.closest("pre,code");
+  for (const anchor of Array.from(root.querySelectorAll("a[href]"))) {
+    if (!inCode(anchor)) anchor.setAttribute("href", anchor.getAttribute("href")!.trim());
+  }
+  for (const iframe of Array.from(root.querySelectorAll("iframe"))) {
+    if (inCode(iframe)) continue;
+    let target = httpDestination(iframe.getAttribute("src") ?? "");
+    if (target) {
+      const wrapper = new URL(target);
+      if (wrapper.hostname === "cdn.embedly.com" && wrapper.pathname === "/widgets/media.html") {
+        target = httpDestination(wrapper.searchParams.get("url") ?? "") || target;
+      }
+    }
+    if (!target) {
+      iframe.parentNode!.removeChild(iframe);
+      continue;
+    }
+    // Empty iframes (and otherwise empty wrappers) hit Turndown's blank rule
+    // before custom rules. A real anchor survives that rule and reuses its
+    // existing label, URL and table-cell escaping.
+    const link = document.createElement("a");
+    link.setAttribute("href", target);
+    link.textContent = iframe.getAttribute("title")?.replace(/\s+/g, " ").trim() || "Embedded content";
+    iframe.parentNode!.replaceChild(link, iframe);
+  }
+  const emphasis = (node: Node) => /^(I|EM)$/.test(node.nodeName) ? "em"
+    : /^(B|STRONG)$/.test(node.nodeName) ? "strong" : "";
+  for (const node of Array.from(root.querySelectorAll("i,em,b,strong"))) {
+    if (!node.parentNode || inCode(node)) continue;
+    while (node.nextSibling) {
+      let next: ChildNode | null = node.nextSibling;
+      const gap: Node[] = [];
+      while (next?.nodeType === 3 && /^[\s\u00a0]*$/.test(next.nodeValue ?? "")) {
+        gap.push(next);
+        next = next.nextSibling;
+      }
+      if (!next || emphasis(next) !== emphasis(node)) break;
+      for (const space of gap) node.appendChild(space);
+      while (next.firstChild) node.appendChild(next.firstChild);
+      next.parentNode!.removeChild(next);
+    }
+  }
+  return root;
+}
 
 function fencedCode(text: string, language = ""): string {
   const body = text.replace(/\r\n?/g, "\n").replace(/^\n|\n$/g, "");
@@ -142,5 +203,5 @@ export function communityHtmlToMarkdown(html: string): string {
     },
   });
 
-  return service.turndown(html).trim();
+  return service.turndown(communityBody(html)).trim();
 }

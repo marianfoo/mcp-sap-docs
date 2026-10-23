@@ -6,6 +6,73 @@ import { communityHtmlToMarkdown as convert } from "../src/lib/communityMarkdown
 // These examples pin information and valid Markdown structure, rather than the
 // whitespace choices of a particular converter or parity with a client script.
 describe("Community Markdown", () => {
+  it("preserves an empty iframe and its title through otherwise empty wrappers", () => {
+    const md = convert('<div><p><iframe src="https://www.youtube.com/embed/example" title="A [video]"></iframe></p></div>');
+    expect(md).toBe('[A \\[video\\]](https://www.youtube.com/embed/example)');
+  });
+
+  it("unwraps the original video URL from an Embedly iframe", () => {
+    const md = convert('<iframe src="https://cdn.embedly.com/widgets/media.html?display_name=YouTube&amp;url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DXp-ZY3sGdDI" title="Use Joule"></iframe>');
+    expect(md).toBe('[Use Joule](https://www.youtube.com/watch?v=Xp-ZY3sGdDI)');
+  });
+
+  it("preserves direct iframe destinations with single-quoted attributes and a fallback label", () => {
+    expect(convert("<iframe src=' https://example.com/a(b)?x=1&amp;y=2&nbsp; '></iframe>"))
+      .toBe('[Embedded content](https://example.com/a\\(b\\)?x=1&y=2)');
+  });
+
+  it("keeps iframe destinations safe and uses the wrapper if its original URL is unusable", () => {
+    const wrapper = 'https://cdn.embedly.com/widgets/media.html?url=javascript%3Aalert(1)';
+    expect(convert(`<iframe src="${wrapper}"></iframe>`))
+      .toContain('https://cdn.embedly.com/widgets/media.html?url=javascript%3Aalert\\(1\\)');
+    expect(convert('<iframe src="https://example.com/player?url=https%3A%2F%2Fother.example"></iframe>'))
+      .toContain('https://example.com/player?url=');
+    for (const src of ['javascript:alert(1)', 'data:text/html,test', 'not a URL', '']) {
+      expect(convert(`<iframe src="${src}"></iframe>`)).toBe('');
+    }
+  });
+
+  it("preserves iframes alongside prose and inside table cells", () => {
+    expect(convert('<p>Before</p><iframe src="https://example.com/video"></iframe><p>After</p>'))
+      .toMatch(/Before[\s\S]*\[Embedded content\]\(https:\/\/example.com\/video\)[\s\S]*After/);
+    expect(convert('<table><tr><td><iframe src="https://example.com/video"></iframe></td></tr></table>'))
+      .toContain('[Embedded content](https://example.com/video)');
+  });
+
+  it("joins adjacent italic runs from Community editor spans", () => {
+    expect(convert('<p><i><span>one final feature</span></i><i><span>&nbsp;in Datasphere</span></i></p>'))
+      .toBe('*one final feature\u00a0in Datasphere*');
+  });
+
+  it("joins equivalent emphasis runs while preserving whitespace and nested content", () => {
+    expect(convert('<p><em>a</em> <i>b</i><em> c</em></p>')).toBe('*a b c*');
+    expect(convert('<p><strong>a</strong>&nbsp;<b>b</b></p>')).toBe('**a\u00a0b**');
+    expect(convert('<p><i>a <b>bold</b></i><i> b</i></p>')).toBe('*a **bold** b*');
+  });
+
+  it("does not merge emphasis across mixed formatting, text, links or paragraphs", () => {
+    expect(convert('<p><i>a</i><b>b</b></p>')).toBe('*a***b**');
+    expect(convert('<p><i>a</i> and <i>b</i></p>')).toBe('*a* and *b*');
+    expect(convert('<p><i>a</i></p><p><i>b</i></p>')).toBe('*a*\n\n*b*');
+    expect(convert('<p><i>a</i><a href="/guide">guide</a><i>b</i></p>')).toBe('*a*[guide](/guide)*b*');
+  });
+
+  it("trims decoded surrounding whitespace from anchor destinations only", () => {
+    expect(convert('<a href=" https://example.com/help?x=1&amp;ai=true&nbsp; ">Help</a>'))
+      .toBe('[Help](https://example.com/help?x=1&ai=true)');
+    expect(convert("<a href='https://example.com/a%20b&nbsp;' title='A &quot;guide&quot;'>Help</a>"))
+      .toBe('[Help](https://example.com/a%20b "A \\"guide\\"")');
+    expect(convert('<a href="/a(b)">Relative</a><a href="#part">Section</a>'))
+      .toBe('[Relative](/a\\(b\\))[Section](#part)');
+  });
+
+  it("keeps literal HTML, emphasis markers and NBSP in code unchanged", () => {
+    const literal = '<i>a</i><i>\u00a0b</i> [link](https://example.com/\u00a0)';
+    const escaped = literal.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    expect(convert(`<pre>${escaped}</pre>`)).toBe('```\n' + literal + '\n```');
+    expect(convert(`<code>${escaped}</code>`)).toBe('`' + literal + '`');
+  });
+
   it("keeps headings below the framed post title", () => {
     expect(convert("<h3>First</h3><h4>Deeper</h4>")).toBe("### First\n\n#### Deeper");
     expect(convert("<h1>Section</h1><h2>Sub</h2>")).toBe("## Section\n\n### Sub");
