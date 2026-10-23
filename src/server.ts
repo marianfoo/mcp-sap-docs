@@ -1,3 +1,6 @@
+// Keep this first: dependencies may log during module initialization.
+import "./lib/stdioConsole.js";
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { logger } from "./lib/logger.js";
