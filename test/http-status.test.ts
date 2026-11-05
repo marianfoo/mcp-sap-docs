@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -22,8 +22,8 @@ afterEach(async () => {
 });
 
 async function startServer(variant: string, content: "abap" | "unrelated" | "empty" | "missing" | "invalid") {
-  fixture = mkdtempSync(path.join(tmpdir(), "mcp-http-status-"));
-  // Copy only the compiled runtime: no index.json or source corpus is available.
+  fixture = realpathSync(mkdtempSync(path.join(tmpdir(), "mcp-http-status-")));
+  // Copy the compiled runtime; tests create only the small artifacts they need.
   cpSync(path.join(project, "dist/src"), path.join(fixture, "dist/src"), { recursive: true });
   cpSync(path.join(project, "config"), path.join(fixture, "config"), { recursive: true });
   cpSync(path.join(project, "package.json"), path.join(fixture, "package.json"));
@@ -38,6 +38,7 @@ async function startServer(variant: string, content: "abap" | "unrelated" | "emp
     }
     db.close();
   }
+  if (content === "abap") writeFileSync(path.join(fixture, "dist/data/index.json"), "[]");
   // Background cache prefetches are irrelevant to this local readiness check.
   const preload = path.join(fixture, "offline.mjs");
   writeFileSync(preload, 'globalThis.fetch = async () => { throw new Error("Network disabled in status test"); };');
@@ -73,6 +74,11 @@ for (const variant of ["sap-docs", "abap"]) {
       expect(body.status).toBe("healthy");
       expect(body.documentation.status).toBe("available");
       expect(body.documentation.searchAvailable).toBe(true);
+      const artifacts = body.documentation.resources.artifacts;
+      expect(artifacts.ftsSqlite.path).toBe(path.join(fixture!, "dist/data/docs.sqlite"));
+      expect(artifacts.ftsSqlite.sizeBytes).toBeGreaterThan(0);
+      expect(artifacts.indexJson.path).toBe(path.join(fixture!, "dist/data/index.json"));
+      expect(artifacts.indexJson.sizeBytes).toBe(2);
       expect((await fetch(`${base}/healthz`)).status).toBe(200);
     });
 
@@ -85,6 +91,8 @@ for (const variant of ["sap-docs", "abap"]) {
         expect(body.status).toBe("unhealthy");
         expect(body.documentation.status).toBe(["empty", "unrelated"].includes(content) ? "no_results" : "error");
         expect(body.documentation.searchAvailable).toBe(false);
+        expect(body.documentation.resources.artifacts.indexJson).toBe("missing");
+        if (content === "missing") expect(body.documentation.resources.artifacts.ftsSqlite).toBe("missing");
         // Readiness failure does not turn the process liveness check into a search.
         expect((await fetch(`${base}/healthz`)).status).toBe(200);
       });

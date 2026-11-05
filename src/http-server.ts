@@ -194,9 +194,8 @@ const server = createServer(async (req, res) => {
     }
 
     // index + FTS footprint
-    const dataRoot = join(__dirname, "../../data");
-    const indexJson = join(dataRoot, "index.json");
-    const ftsDb = join(dataRoot, "docs.sqlite");
+    const ftsDb = join(process.cwd(), CONFIG.DB_PATH);
+    const indexJson = join(dirname(ftsDb), "index.json");
     const indexStat = existsSync(indexJson) ? statSync(indexJson) : null;
     const ftsStat = existsSync(ftsDb) ? statSync(ftsDb) : null;
 
