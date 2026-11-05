@@ -46,8 +46,9 @@ describe("buildLiqlSearchUrl", () => {
     expect(liql(buildLiqlSearchUrl("RAP", 20, true, value as number))).not.toContain("kudos.sum(weight) >=");
   });
 
-  it("keeps valid integer values and normalizes numeric fractions", () => {
+  it("keeps integer values and preserves fractional minimum thresholds", () => {
     expect(liql(buildLiqlSearchUrl("RAP", 5, true, 3))).toContain("kudos.sum(weight) >= 3 LIMIT 5");
-    expect(liql(buildLiqlSearchUrl("RAP", 5.9, true, 3.9))).toContain("kudos.sum(weight) >= 3 LIMIT 5");
+    expect(liql(buildLiqlSearchUrl("RAP", 5.9, true, 3.9))).toContain("kudos.sum(weight) >= 4 LIMIT 5");
+    expect(liql(buildLiqlSearchUrl("RAP", 5, true, 0.5))).toContain("kudos.sum(weight) >= 1 LIMIT 5");
   });
 });

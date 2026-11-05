@@ -81,7 +81,8 @@ export function buildLiqlSearchUrl(query: string, limit = 20, subjectOnly = fals
   // LiQL escapes a quote by doubling it; a backslash is a plain character there.
   const escaped = query.replace(/'/g, "''");
   // Tool arguments are not type-checked at runtime: force integers before pasting them into the query.
-  const kudos = Math.trunc(Number(minKudos));
+  // Kudos are integers: round up to preserve the meaning of a fractional minimum.
+  const kudos = Math.ceil(Number(minKudos));
   const requestedLimit = Math.trunc(Number(limit));
   const max = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? requestedLimit : 20;
   const matchClause = subjectOnly
