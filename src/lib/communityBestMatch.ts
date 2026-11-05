@@ -103,6 +103,7 @@ async function executeLiqlSearch(url: string, userAgent?: string): Promise<any[]
       Accept: "application/json",
       "User-Agent": userAgent || "sap-docs-mcp/1.0 (LiQLSearch)",
     },
+    signal: AbortSignal.timeout(CONFIG.SAP_COMMUNITY_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -173,8 +174,13 @@ export async function searchCommunityBestMatch(
   console.log(`[SAP Community] LiQL broad (subject+body): query="${query}" minKudos=${minKudos}`);
   const broadSearch = executeLiqlSearch(broadUrl, userAgent);
 
-  const termResults = await Promise.all(termSearches);
-  const broadItems = await broadSearch;
+  // allSettled: one slow or failed search must not discard the others. Fail only if every search failed,
+  // so an outage is not mistaken for "no results".
+  const settled = await Promise.allSettled([broadSearch, ...termSearches]);
+  const failed = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+  if (failed.length === settled.length) throw failed[0].reason;
+  for (const r of failed) console.warn("[SAP Community] LiQL search failed, continuing with the rest:", r.reason);
+  const [broadItems, ...termResults] = settled.map(r => (r.status === "fulfilled" ? r.value : []));
 
   for (const items of termResults) allItems.push(...items);
   allItems.push(...broadItems);
@@ -256,7 +262,8 @@ export async function getCommunityPostsByIds(postIds: string[], userAgent?: stri
       headers: {
         'Accept': 'application/json',
         'User-Agent': userAgent || 'sap-docs-mcp/1.0 (BatchRetrieval)'
-      }
+      },
+      signal: AbortSignal.timeout(CONFIG.SAP_COMMUNITY_TIMEOUT_MS)
     });
 
     if (!response.ok) {

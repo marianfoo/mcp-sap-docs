@@ -9,6 +9,7 @@ import {
 } from "./types.js";
 import { truncateContent, type TruncationInfo, type TruncationResult } from "./truncate.js";
 import { htmlToMarkdown } from "./htmlToMarkdown.js";
+import { CONFIG } from "./config.js";
 
 const BASE = "https://help.sap.com";
 
@@ -157,6 +158,7 @@ async function fetchHelpResults(query: string, version: string, product = ""): P
   };
   const response = await fetch(`${BASE}/http.svc/elasticsearch?${toQuery(searchParams)}`, {
     headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-search", Referer: BASE },
+    signal: AbortSignal.timeout(CONFIG.SAP_HELP_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`SAP Help search failed: ${response.status} ${response.statusText}`);
@@ -414,6 +416,7 @@ async function resolveSapHelpContent(
       const searchUrl = `${BASE}/http.svc/elasticsearch?${toQuery(searchParams)}`;
       const searchResponse = await fetch(searchUrl, {
         headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-get", Referer: BASE },
+        signal: AbortSignal.timeout(CONFIG.SAP_HELP_TIMEOUT_MS),
       });
       if (!searchResponse.ok) return null;
       const searchData: SapHelpSearchResponse = await searchResponse.json();
@@ -478,6 +481,7 @@ This SAP Help search result does not expose a LOIO page id through the search AP
     const metadataUrl = `${BASE}/http.svc/deliverableMetadata?${toQuery(metadataParams)}`;
     const metadataResponse = await fetch(metadataUrl, {
       headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-metadata", Referer: BASE },
+      signal: AbortSignal.timeout(CONFIG.SAP_HELP_TIMEOUT_MS),
     });
     if (!metadataResponse.ok) return null;
 
@@ -491,6 +495,7 @@ This SAP Help search result does not expose a LOIO page id through the search AP
     const pageUrl = `${BASE}/http.svc/pagecontent?${toQuery(pageParams)}`;
     const pageResponse = await fetch(pageUrl, {
       headers: { Accept: "application/json", "User-Agent": "mcp-sap-docs/help-content", Referer: BASE },
+      signal: AbortSignal.timeout(CONFIG.SAP_HELP_TIMEOUT_MS),
     });
     if (!pageResponse.ok) return null;
 

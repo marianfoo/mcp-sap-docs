@@ -177,6 +177,12 @@ SAP Help and Community fetches default to 75,000 characters. Shortened results
 include `metadata.truncation` with exact loss counts. Self-hosted servers can set
 `MAX_CONTENT_LENGTH` before startup; see [content size limits](docs/CONTENT-SIZE-LIMITS.md).
 
+Each outbound SAP Help or Community HTTP request has a 10-second timeout, including
+reading its response body. Self-hosted servers can set `SAP_HELP_TIMEOUT_MS` and
+`SAP_COMMUNITY_TIMEOUT_MS` before startup. Values must be whole milliseconds from
+1 to 2,147,483,647; invalid values use the default. A tool call that retrieves a
+document in several requests can take longer than one request timeout.
+
 ## Hybrid Search
 
 Offline search defaults to BM25 keyword ranking. Optional semantic ranking uses
