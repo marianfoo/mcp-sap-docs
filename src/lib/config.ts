@@ -11,6 +11,13 @@ const configuredMaxContentLength = Number(process.env.MAX_CONTENT_LENGTH);
 const maxContentLength = Number.isSafeInteger(configuredMaxContentLength) && configuredMaxContentLength > 0
   ? configuredMaxContentLength : DEFAULT_MAX_CONTENT_LENGTH;
 
+// Node timers overflow above this range; invalid settings use the 10-second default.
+function requestTimeoutMs(value: string | undefined): number {
+  const milliseconds = Number(value);
+  return Number.isInteger(milliseconds) && milliseconds > 0 && milliseconds <= 2_147_483_647
+    ? milliseconds : 10_000;
+}
+
 // Central configuration for search system
 export const CONFIG = {
   // Default number of results to return (50 is optimal for comprehensive coverage)
@@ -72,8 +79,8 @@ export const CONFIG = {
 
   // Per-request timeout in milliseconds (default: 10 seconds). A stalled upstream
   // aborts the request instead of hanging the tool call.
-  SAP_HELP_TIMEOUT_MS: Number(process.env.SAP_HELP_TIMEOUT_MS || 10000),
-  SAP_COMMUNITY_TIMEOUT_MS: Number(process.env.SAP_COMMUNITY_TIMEOUT_MS || 10000),
+  SAP_HELP_TIMEOUT_MS: requestTimeoutMs(process.env.SAP_HELP_TIMEOUT_MS),
+  SAP_COMMUNITY_TIMEOUT_MS: requestTimeoutMs(process.env.SAP_COMMUNITY_TIMEOUT_MS),
 
   // ---------------------------------------------------------------------------
   // Hybrid Search (BM25 + Embeddings) Configuration
