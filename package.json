@@ -20,7 +20,7 @@
     "test": "npm run test:url-generation && npm run test:discovery-center && npm run test:integration",
     "test:stdio": "npm run build:tsc && npx vitest run test/stdio-transport.test.ts",
     "test:sparse-checkout": "npm run build:tsc && npx vitest run test/sparse-checkout.test.ts",
-    "test:url-generation": "npm run build:tsc && npx vitest run test/stdio-transport.test.ts test/truncate.test.ts test/config-max-content-length.test.ts test/fetch-sap-help.test.ts test/fetch-truncation.test.ts test/sap-help-truncation.test.ts test/search-lexical.test.ts test/comprehensive-url-generation.test.ts test/source-url-matrix.test.ts test/odata-vocabulary-terms.test.ts test/markdown-description.test.ts test/tutorials.test.ts test/source-url-preference.test.ts test/openux-materializer.test.ts test/search-response-schema.test.ts test/search-score-fusion.test.ts test/embedding-coverage.test.ts test/embedding-config.test.ts test/embedding-build-validation.test.ts test/embeddings.test.ts test/prompts.test.ts test/software-heroes-afm.test.ts test/ui5-version-diff.test.ts test/sap-help-id.test.ts test/http-status.test.ts test/abap-sync.test.ts test/community-markdown.test.ts",
+    "test:url-generation": "npm run build:tsc && npx vitest run test/stdio-transport.test.ts test/truncate.test.ts test/config-max-content-length.test.ts test/fetch-sap-help.test.ts test/fetch-truncation.test.ts test/sap-help-truncation.test.ts test/search-lexical.test.ts test/comprehensive-url-generation.test.ts test/source-url-matrix.test.ts test/odata-vocabulary-terms.test.ts test/markdown-description.test.ts test/tutorials.test.ts test/source-url-preference.test.ts test/openux-materializer.test.ts test/search-response-schema.test.ts test/search-score-fusion.test.ts test/embedding-coverage.test.ts test/embedding-config.test.ts test/embedding-build-validation.test.ts test/embeddings.test.ts test/prompts.test.ts test/software-heroes-afm.test.ts test/ui5-version-diff.test.ts test/sap-help-id.test.ts test/http-status.test.ts test/abap-sync.test.ts test/community-markdown.test.ts test/outbound-timeouts.test.ts",
     "test:url-generation:debug": "npm run build:tsc && DEBUG_TESTS=true npx vitest run test/comprehensive-url-generation.test.ts",
     "test:mcp-urls": "npm run build:tsc && npx vitest run test/mcp-search-url-verification.test.ts",
     "test:integration": "npm run build && node test/tools/run-tests.js",
@@ -50,7 +50,7 @@
     "test:fallback-ladder": "npm run build:tsc && npx vitest run test/help-fallback-ladder.test.ts",
     "test:citations": "npm run build:tsc && npx vitest run test/citations-sap-help.test.ts",
     "test:html-to-md": "npm run build:tsc && npx vitest run test/html-to-md.test.ts",
-    "test:community-markdown": "npm run build:tsc && npx vitest run test/community-markdown.test.ts"
+    "test:community-markdown": "npm run build:tsc && npx vitest run test/community-markdown.test.ts test/outbound-timeouts.test.ts"
   },
   "ts-node": {
     "esm": true
