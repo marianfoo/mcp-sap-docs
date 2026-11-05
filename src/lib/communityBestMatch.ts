@@ -82,11 +82,12 @@ export function buildLiqlSearchUrl(query: string, limit = 20, subjectOnly = fals
   const escaped = query.replace(/'/g, "''");
   // Tool arguments are not type-checked at runtime: force integers before pasting them into the query.
   const kudos = Math.trunc(Number(minKudos));
-  const max = Math.trunc(Number(limit)) || 20;
+  const requestedLimit = Math.trunc(Number(limit));
+  const max = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? requestedLimit : 20;
   const matchClause = subjectOnly
     ? `subject MATCHES '${escaped}'`
     : `(subject MATCHES '${escaped}' OR body MATCHES '${escaped}')`;
-  const kudosClause = kudos > 0 ? ` AND kudos.sum(weight) >= ${kudos}` : "";
+  const kudosClause = Number.isSafeInteger(kudos) && kudos > 0 ? ` AND kudos.sum(weight) >= ${kudos}` : "";
   const liql = [
     "SELECT id, subject, search_snippet, post_time, view_href, kudos.sum(weight)",
     "FROM messages",
