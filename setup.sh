@@ -7,7 +7,7 @@ printf '🚀 Setting up SAP Documentation MCP Server...\n'
 
 # Install dependencies
 printf '📦 Installing dependencies...\n'
-npm install
+ONNXRUNTIME_NODE_INSTALL_CUDA="${ONNXRUNTIME_NODE_INSTALL_CUDA:-skip}" npm install
 
 # Rebuild the native addon against the *current* Node ABI. `npm install` keeps a
 # cached better-sqlite3 build, so a server Node upgrade (e.g. 22→24) leaves a

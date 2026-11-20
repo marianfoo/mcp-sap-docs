@@ -3,6 +3,8 @@
 
 # ============ Build Stage ============
 FROM node:22-slim AS builder
+# CPU inference uses the binaries bundled with onnxruntime-node.
+ARG ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 ARG MCP_VARIANT=sap-docs
 ENV MCP_VARIANT=${MCP_VARIANT}
 
@@ -129,6 +131,8 @@ RUN find sources -name .git -type d -prune -exec rm -rf {} + && \
 
 # ============ Production Stage ============
 FROM node:22-slim AS production
+# CPU inference uses the binaries bundled with onnxruntime-node.
+ARG ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 ARG MCP_VARIANT=sap-docs
 ENV MCP_VARIANT=${MCP_VARIANT}
 LABEL org.opencontainers.image.source="https://github.com/marianfoo/mcp-sap-docs"
