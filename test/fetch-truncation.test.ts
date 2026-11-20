@@ -20,9 +20,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function serverHandler(method: string) {
+function serverHandler(method: string, handler = BaseServerHandler) {
   const server = new Server({ name: "Truncation test", version: "1" }, { capabilities: { tools: {}, resources: {} } });
-  BaseServerHandler.configureServer(server);
+  handler.configureServer(server);
   return (server as any)._requestHandlers.get(method);
 }
 
@@ -154,4 +154,60 @@ describe("fetch truncation contract", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ status: "success", data: { items: [] } }))));
     expect(await getCommunityPostsByIds(["123"])).toEqual({});
   });
+});
+
+describe('offline Markdown section boundaries', () => {
+  it('keeps nested headings and code examples through the next peer heading', async () => {
+    const { markdownSection } = await import('../src/lib/markdownSection.js');
+    const source = ['# Guide', '## Sending Emails', 'intro', '~~~txt', '## Sample heading', '~~~', '### Example', 'details', '## Next', 'other'].join('\r\n');
+    expect(markdownSection(source, 'sending-emails')).toBe('## Sending Emails\nintro\n~~~txt\n## Sample heading\n~~~\n### Example\ndetails');
+    expect(markdownSection(source, 'next')).toBe('## Next\nother');
+    expect(markdownSection(source, 'missing')).toBeUndefined();
+    expect(markdownSection('## E-Mail\none\n## E Mail\ntwo', 'e-mail')).toBeUndefined();
+  });
+});
+
+it('fetches an indexed section and budgets a whole offline file through MCP', async () => {
+  vi.resetModules();
+  const { BaseServerHandler: offlineHandler } = await import('../src/lib/BaseServerHandler.js');
+  const { CONFIG: offlineConfig } = await import('../src/lib/config.js');
+  const previousLimit = offlineConfig.MAX_CONTENT_LENGTH;
+  const fs = (await import('node:fs/promises')).default;
+  const originalRead = fs.readFile.bind(fs);
+  const base = '/abap-cheat-sheets/guide';
+  const section = base + '#sending-emails';
+  const source = '# Guide\n' + 'x'.repeat(3000) + '\n## Sending Emails\nExample text\n### Details\nBody\n## Other\nUnrelated';
+  const doc = { id: base, title: 'Guide', relFile: 'guide.md', description: '', snippetCount: 0 };
+  const library = { id: '/abap-cheat-sheets', docs: [doc, { ...doc, id: section, title: 'Mail delivery' }] };
+  const spy = vi.spyOn(fs, 'readFile').mockImplementation(async (file, opts) => {
+    if (String(file).replaceAll('\\', '/').endsWith('/dist/data/index.json')) return JSON.stringify({ [library.id]: library });
+    if (String(file).replaceAll('\\', '/').endsWith('/guide.md')) return source;
+    return originalRead(file, opts);
+  });
+  try {
+    offlineConfig.MAX_CONTENT_LENGTH = 1000;
+    const fetch = (id: string) => serverHandler('tools/call', offlineHandler)({ method: 'tools/call', params: { name: 'fetch', arguments: { id } } });
+    for (const id of [section, base+'#details']) {
+      const { structuredContent: result } = await fetch(id);
+      expect(result.text).toContain('### Details\nBody');
+      expect(result.text).not.toContain('Unrelated');
+      expect(result.metadata.truncation).toBeUndefined();
+    }
+    const { fetchLibraryDocumentation } = await import('../src/lib/localDocs.js');
+    const keyword = await fetchLibraryDocumentation(library.id, 'mail delivery');
+    expect(keyword?.text).toContain('Example text');
+    expect(keyword?.text).not.toContain('# Guide');
+    expect((await fetchLibraryDocumentation(library.id, 'guide#sending-emails'))?.text).toContain('Example text');
+    expect((await fetch(base + '#absent')).structuredContent.metadata.truncation.originalLength).toBeGreaterThan(3000);
+    expect((await fetchLibraryDocumentation(library.id))?.truncation?.originalLength)
+      .toEqual((await fetchLibraryDocumentation(base))?.truncation?.originalLength);
+    expect((await fetch(base + '#')).structuredContent.text).toBe((await fetch(base)).structuredContent.text);
+    const { structuredContent: result } = await fetch(base);
+    expect(result.text.length).toBeLessThanOrEqual(1000);
+    expect(result.metadata.truncation.originalLength).toBeGreaterThan(3000);
+  } finally {
+    offlineConfig.MAX_CONTENT_LENGTH = previousLimit;
+    spy.mockRestore();
+    vi.resetModules();
+  }
 });

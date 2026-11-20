@@ -6,7 +6,8 @@ import { fileURLToPath } from "url";
 import { SearchResponse, SearchResult } from "./types.js";
 import { getFTSCandidateIds, getFTSStats } from "./searchDb.js";
 import { searchCommunityBestMatch, getCommunityPostByUrl, getCommunityPostById, BestMatchHit, type CommunityPostContent } from "./communityBestMatch.js";
-import type { TruncationInfo } from "./truncate.js";
+import { markdownSection } from "./markdownSection.js";
+import { truncateContent, type TruncationInfo } from "./truncate.js";
 
 
 import { 
@@ -1451,287 +1452,62 @@ export async function fetchLibraryDocumentation(
   }
 
   const index = await loadIndex();
-  
-  // Check if this is a specific document ID
-  const allDocs: Array<{lib: any, doc: any}> = [];
-  for (const lib of Object.values(index)) {
-    for (const doc of lib.docs) {
-      allDocs.push({ lib, doc });
-      // Try exact match first (for section documents with fragments)
-      if (doc.id === libraryIdOrDocId) {
-        const sourcePath = getSourcePath(lib.id);
-        if (!sourcePath) {
-          throw new Error(`Unknown library ID: ${lib.id}`);
-        }
-        
-        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-        const content = await fs.readFile(abs, "utf8");
-        
-        // For JavaScript API files, format the content for better readability
-        if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
-        }
-        // For sample files, format them appropriately
-        else if (lib.id === '/openui5-samples') {
-          return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
-        }
-        // For documented libraries, add URL context
-        else if (getDocUrlConfig(lib.id)) {
-          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
-          const libName = lib.id.replace('/', '').toUpperCase();
-          
-          return { text: `**Source:** ${libName} Documentation
-**URL:** ${documentationUrl || 'Documentation URL not available'}
-**File:** ${doc.relFile}
-
----
-
-${content}
-
----
-
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
-        } else {
-          return { text: content };
-        }
-      }
-    }
-  }
-  
-  // If no exact match found and the ID contains a fragment, try stripping the fragment
-  // This handles cases where fragments are used for navigation but don't exist as separate documents
-  if (libraryIdOrDocId.includes('#')) {
-    const baseId = libraryIdOrDocId.split('#')[0];
-    
-    // Try to find a document with the base ID (without fragment)
+  const [baseId, fragment] = libraryIdOrDocId.split('#');
+  for (const id of new Set([libraryIdOrDocId, baseId])) {
     for (const lib of Object.values(index)) {
-      for (const doc of lib.docs) {
-        if (doc.id === baseId) {
-          const sourcePath = getSourcePath(lib.id);
-          if (!sourcePath) {
-            throw new Error(`Unknown library ID: ${lib.id}`);
-          }
-          
-          const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-          const content = await fs.readFile(abs, "utf8");
-          
-          // For JavaScript API files, format the content for better readability
-          if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-            return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
-          }
-          // For sample files, format them appropriately
-          else if (lib.id === '/openui5-samples') {
-            return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
-          }
-          // For documented libraries, add URL context
-          else if (getDocUrlConfig(lib.id)) {
-            const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
-            const libName = lib.id.replace('/', '').toUpperCase();
-            
-            return { text: `**Source:** ${libName} Documentation
-**URL:** ${documentationUrl || 'Documentation URL not available'}
-**File:** ${doc.relFile}
-
----
-
-${content}
-
----
-
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
-          } else {
-            return { text: content };
-          }
-        }
-      }
-    }
-    
-    // Try library-level lookup with base ID
-    const baseLib = index[baseId];
-    if (baseLib) {
-      const term = topic.toLowerCase();
-      const targets = term
-        ? baseLib.docs.filter(
-            (d) =>
-              d.title.toLowerCase().includes(term) ||
-              d.description.toLowerCase().includes(term)
-          )
-        : baseLib.docs;
-
-      if (!targets.length) return { text: `No topic "${topic}" found inside ${baseId}.` };
-
-      const parts: string[] = [];
-      for (const doc of targets) {
-        const sourcePath = getSourcePath(baseLib.id);
-        if (!sourcePath) {
-          throw new Error(`Unknown library ID: ${baseLib.id}`);
-        }
-        
-        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-        const content = await fs.readFile(abs, "utf8");
-        
-        // For JavaScript API files, format the content for better readability
-        if (doc.relFile && doc.relFile.endsWith('.js') && baseLib.id === '/openui5-api') {
-          const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
-          parts.push(formattedContent);
-        }
-        // For sample files, format them appropriately
-        else if (baseLib.id === '/openui5-samples') {
-          const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
-          parts.push(formattedContent);
-        }
-        // For documented libraries, add URL context
-        else if (getDocUrlConfig(baseLib.id)) {
-          const documentationUrl = generateDocumentationUrl(baseLib.id, doc.relFile, content);
-          const libName = baseLib.id.replace('/', '').toUpperCase();
-          
-          const formattedContent = `**Source:** ${libName} Documentation
-**URL:** ${documentationUrl || 'Documentation URL not available'}
-**File:** ${doc.relFile}
-
----
-
-${content}
-
----
-
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
-          parts.push(formattedContent);
-        } else {
-          parts.push(content);
-        }
-      }
-      return { text: parts.join("\n\n---\n\n") };
+      const doc = lib.docs.find(entry => entry.id === id);
+      if (doc) return budgetOffline(await readOfflineDoc(lib, doc, fragment ? [fragment] : []));
     }
   }
-  
-  // If not a specific document ID, treat as library ID with optional topic
-  const lib = index[libraryIdOrDocId];
+
+  const lib = index[baseId];
   if (!lib) return null;
-
-  // If topic is provided, first try to construct the full document ID
   if (topic) {
-    const fullDocId = `${libraryIdOrDocId}/${topic}`;
-    
-    // Try to find exact document match first
-    for (const doc of lib.docs) {
-      if (doc.id === fullDocId) {
-        const sourcePath = getSourcePath(lib.id);
-        if (!sourcePath) {
-          throw new Error(`Unknown library ID: ${lib.id}`);
-        }
-        
-        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-        const content = await fs.readFile(abs, "utf8");
-        
-        // Format the content appropriately based on library type
-        if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          return { text: formatJSDocContent(content, doc.relFile, doc.title || '') };
-        } else if (lib.id === '/openui5-samples') {
-          return { text: formatSampleContent(content, doc.relFile, doc.title || '') };
-        } else if (getDocUrlConfig(lib.id)) {
-          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
-          const libName = lib.id.replace('/', '').toUpperCase();
-          
-          return { text: `**Source:** ${libName} Documentation
-**URL:** ${documentationUrl || 'Documentation URL not available'}
-**File:** ${doc.relFile}
-
----
-
-${content}
-
----
-
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*` };
-        } else {
-          return { text: content };
-        }
-      }
-    }
-    
-    // If exact match not found, fall back to topic keyword search
-    const term = topic.toLowerCase();
-    const targets = lib.docs.filter(
-      (d) =>
-        d.title.toLowerCase().includes(term) ||
-        d.description.toLowerCase().includes(term)
-    );
-    
-    if (targets.length > 0) {
-      // Process the filtered documents
-      const parts: string[] = [];
-      for (const doc of targets) {
-        const sourcePath = getSourcePath(lib.id);
-        if (!sourcePath) {
-          throw new Error(`Unknown library ID: ${lib.id}`);
-        }
-        
-        const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-        const content = await fs.readFile(abs, "utf8");
-        
-        if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-          const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
-          parts.push(formattedContent);
-        } else if (lib.id === '/openui5-samples') {
-          const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
-          parts.push(formattedContent);
-        } else if (getDocUrlConfig(lib.id)) {
-          const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
-          const libName = lib.id.replace('/', '').toUpperCase();
-          
-          const formattedContent = `**Source:** ${libName} Documentation
-**URL:** ${documentationUrl || 'Documentation URL not available'}
-**File:** ${doc.relFile}
-
----
-
-${content}
-
----
-
-*This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
-          parts.push(formattedContent);
-        } else {
-          parts.push(content);
-        }
-      }
-      return { text: parts.join("\n\n---\n\n") };
-    }
-    
-    return { text: `No topic "${topic}" found inside ${libraryIdOrDocId}.` };
+    const exact = lib.docs.find(doc => doc.id === `${baseId}/${topic}`);
+    if (exact) return budgetOffline(await readOfflineDoc(lib, exact, exact.id.split('#').slice(1)));
   }
-  
-  // No topic provided, return all library documents
-  const targets = lib.docs;
-  if (!targets.length) return { text: `No documents found inside ${libraryIdOrDocId}.` };
 
-  const parts: string[] = [];
+  const term = topic.toLowerCase();
+  const targets = lib.docs.filter(doc => !term || doc.title.toLowerCase().includes(term)
+    || doc.description.toLowerCase().includes(term));
+  if (!targets.length) return { text: topic
+    ? `No topic "${topic}" found inside ${baseId}.` : `No documents found inside ${baseId}.` };
+
+  const groups = new Map<string, typeof targets>();
   for (const doc of targets) {
-    const sourcePath = getSourcePath(lib.id);
-    if (!sourcePath) {
-      throw new Error(`Unknown library ID: ${lib.id}`);
-    }
-    
-    const abs = path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile);
-    const content = await fs.readFile(abs, "utf8");
-    
-    // For JavaScript API files, format the content for better readability
-    if (doc.relFile && doc.relFile.endsWith('.js') && lib.id === '/openui5-api') {
-      const formattedContent = formatJSDocContent(content, doc.relFile, doc.title || '');
-      parts.push(formattedContent);
-    }
-    // For sample files, format them appropriately
-    else if (lib.id === '/openui5-samples') {
-      const formattedContent = formatSampleContent(content, doc.relFile, doc.title || '');
-      parts.push(formattedContent);
-    }
-    // For documented libraries, add URL context
-    else if (getDocUrlConfig(lib.id)) {
-      const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, content);
-      const libName = lib.id.replace('/', '').toUpperCase();
-      
-      const formattedContent = `**Source:** ${libName} Documentation
+    const group = groups.get(doc.relFile);
+    if (group) group.push(doc);
+    else groups.set(doc.relFile, [doc]);
+  }
+  const parts: string[] = [];
+  for (const group of groups.values()) {
+    const fragments = term && group.every(doc => doc.id.includes('#'))
+      ? [...new Set(group.map(doc => doc.id.split('#')[1]))] : [];
+    parts.push(await readOfflineDoc(lib, group[0], fragments));
+  }
+  return budgetOffline(parts.join("\n\n---\n\n"));
+}
+
+function budgetOffline(text: string): FetchResult {
+  const { content, ...truncation } = truncateContent(text);
+  return truncation.wasTruncated ? { text: content, truncation } : { text: content };
+}
+
+async function readOfflineDoc(lib: LibraryBundle, doc: LibraryBundle['docs'][number], fragments: string[]): Promise<string> {
+  const sourcePath = getSourcePath(lib.id);
+  if (!sourcePath) throw new Error(`Unknown library ID: ${lib.id}`);
+  const raw = await fs.readFile(path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile), "utf8");
+  if (lib.id === '/openui5-api' && doc.relFile.endsWith('.js')) return formatJSDocContent(raw, doc.relFile, doc.title ?? '');
+  if (lib.id === '/openui5-samples') return formatSampleContent(raw, doc.relFile, doc.title ?? '');
+
+  const sections = /\.mdx?$/i.test(doc.relFile) ? fragments.map(fragment => markdownSection(raw, fragment)) : [];
+  // Unknown or ambiguous anchors retain their document context.
+  const content = sections.length && sections.every(section => section !== undefined)
+    ? sections.join("\n\n") : raw;
+  if (!getDocUrlConfig(lib.id)) return content;
+  const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, raw);
+  const libName = lib.id.replace('/', '').toUpperCase();
+  return `**Source:** ${libName} Documentation
 **URL:** ${documentationUrl || 'Documentation URL not available'}
 **File:** ${doc.relFile}
 
@@ -1742,12 +1518,6 @@ ${content}
 ---
 
 *This content is from the ${libName} documentation. Visit the URL above for the latest version and interactive examples.*`;
-      parts.push(formattedContent);
-    } else {
-      parts.push(content);
-    }
-  }
-  return { text: parts.join("\n\n---\n\n") };
 }
 
 // Resource support for MCP

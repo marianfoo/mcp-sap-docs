@@ -6,6 +6,7 @@ import matter from "gray-matter";
 import { getAllowedSources, getVariantName } from "../src/lib/variant.js";
 import { materializeOpenUxGeneratedSources } from "./materialize-openux-generated.js";
 import { materializeTutorials, TUTORIALS } from "./materialize-tutorials.js";
+import { headingFragment } from "../src/lib/markdownSection.js";
 import { extractVocabularyTerms } from "./odata-vocabulary-terms.js";
 import { markdownDescription } from "./markdown-description.js";
 
@@ -1057,7 +1058,7 @@ function extractMarkdownSections(content: string, lines: string[], src: any, rel
     const snippetCount = (section.content.match(/```/g)?.length || 0) / 2;
     
     // Create section entry
-    const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const sectionId = `${src.id}/${relFile.replace(/\.md$/, "")}#${headingFragment(section.title)}`;
     
     docs.push({
       id: sectionId,

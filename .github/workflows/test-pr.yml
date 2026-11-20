@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+# Hosted runners build and exercise embeddings on CPU.
+env:
+  ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+
 jobs:
   source-setup:
     name: Source setup (${{ matrix.os }})
