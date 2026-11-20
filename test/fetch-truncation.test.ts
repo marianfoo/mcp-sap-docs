@@ -155,3 +155,43 @@ describe("fetch truncation contract", () => {
     expect(await getCommunityPostsByIds(["123"])).toEqual({});
   });
 });
+
+describe('offline Markdown section boundaries', () => {
+  it('keeps nested headings and code examples through the next peer heading', async () => {
+    const { markdownSection } = await import('../src/lib/markdownSection.js');
+    const source = ['# Guide', '## Sending Emails', 'intro', '~~~txt', '## Sample heading', '~~~', '### Example', 'details', '## Next', 'other'].join('\r\n');
+    expect(markdownSection(source, 'sending-emails')).toBe('## Sending Emails\nintro\n~~~txt\n## Sample heading\n~~~\n### Example\ndetails');
+    expect(markdownSection(source, 'next')).toBe('## Next\nother');
+    expect(markdownSection(source, 'missing')).toBeUndefined();
+  });
+});
+
+it('fetches an indexed section and budgets a whole offline file through MCP', async () => {
+  const fs = (await import('node:fs/promises')).default;
+  const originalRead = fs.readFile.bind(fs);
+  const base = '/abap-cheat-sheets/guide';
+  const section = base + '#sending-emails';
+  const source = '# Guide\n' + 'x'.repeat(3000) + '\n## Sending Emails\nExample text\n### Details\nBody\n## Other\nUnrelated';
+  const doc = { id: base, title: 'Guide', relFile: 'guide.md', description: '', snippetCount: 0 };
+  const library = { id: '/abap-cheat-sheets', docs: [doc, { ...doc, id: section }] };
+  const spy = vi.spyOn(fs, 'readFile').mockImplementation(async (file, opts) => {
+    if (String(file).endsWith('/dist/data/index.json')) return JSON.stringify({ [library.id]: library });
+    if (String(file).endsWith('/guide.md')) return source;
+    return originalRead(file, opts);
+  });
+  try {
+    CONFIG.MAX_CONTENT_LENGTH = 1000;
+    const fetch = (id: string) => serverHandler('tools/call')({ method: 'tools/call', params: { name: 'fetch', arguments: { id } } });
+    for (const id of [section, base+'#details']) {
+      const { structuredContent: result } = await fetch(id);
+      expect(result.text).toContain('### Details\nBody');
+      expect(result.text).not.toContain('Unrelated');
+      expect(result.metadata.truncation).toBeUndefined();
+    }
+    const { structuredContent: result } = await fetch(base);
+    expect(result.text.length).toBeLessThanOrEqual(1000);
+    expect(result.metadata.truncation.originalLength).toBeGreaterThan(3000);
+  } finally {
+    spy.mockRestore();
+  }
+});
