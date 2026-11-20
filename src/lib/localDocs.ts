@@ -1453,10 +1453,11 @@ export async function fetchLibraryDocumentation(
 
   const index = await loadIndex();
   const [baseId, fragment] = libraryIdOrDocId.split('#');
-  for (const lib of Object.values(index)) {
-    const doc = lib.docs.find(d => d.id === libraryIdOrDocId)
-      ?? (fragment ? lib.docs.find(d => d.id === baseId) : undefined);
-    if (doc) return budgetOffline(await readOfflineDoc(lib, doc, fragment ? [fragment] : []));
+  for (const id of new Set([libraryIdOrDocId, baseId])) {
+    for (const lib of Object.values(index)) {
+      const doc = lib.docs.find(entry => entry.id === id);
+      if (doc) return budgetOffline(await readOfflineDoc(lib, doc, fragment ? [fragment] : []));
+    }
   }
 
   const lib = index[baseId];

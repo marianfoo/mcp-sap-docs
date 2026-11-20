@@ -20,9 +20,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function serverHandler(method: string) {
+function serverHandler(method: string, handler = BaseServerHandler) {
   const server = new Server({ name: "Truncation test", version: "1" }, { capabilities: { tools: {}, resources: {} } });
-  BaseServerHandler.configureServer(server);
+  handler.configureServer(server);
   return (server as any)._requestHandlers.get(method);
 }
 
@@ -168,6 +168,10 @@ describe('offline Markdown section boundaries', () => {
 });
 
 it('fetches an indexed section and budgets a whole offline file through MCP', async () => {
+  vi.resetModules();
+  const { BaseServerHandler: offlineHandler } = await import('../src/lib/BaseServerHandler.js');
+  const { CONFIG: offlineConfig } = await import('../src/lib/config.js');
+  const previousLimit = offlineConfig.MAX_CONTENT_LENGTH;
   const fs = (await import('node:fs/promises')).default;
   const originalRead = fs.readFile.bind(fs);
   const base = '/abap-cheat-sheets/guide';
@@ -181,8 +185,8 @@ it('fetches an indexed section and budgets a whole offline file through MCP', as
     return originalRead(file, opts);
   });
   try {
-    CONFIG.MAX_CONTENT_LENGTH = 1000;
-    const fetch = (id: string) => serverHandler('tools/call')({ method: 'tools/call', params: { name: 'fetch', arguments: { id } } });
+    offlineConfig.MAX_CONTENT_LENGTH = 1000;
+    const fetch = (id: string) => serverHandler('tools/call', offlineHandler)({ method: 'tools/call', params: { name: 'fetch', arguments: { id } } });
     for (const id of [section, base+'#details']) {
       const { structuredContent: result } = await fetch(id);
       expect(result.text).toContain('### Details\nBody');
@@ -197,10 +201,13 @@ it('fetches an indexed section and budgets a whole offline file through MCP', as
     expect((await fetch(base + '#absent')).structuredContent.metadata.truncation.originalLength).toBeGreaterThan(3000);
     expect((await fetchLibraryDocumentation(library.id))?.truncation?.originalLength)
       .toEqual((await fetchLibraryDocumentation(base))?.truncation?.originalLength);
+    expect((await fetch(base + '#')).structuredContent.text).toBe((await fetch(base)).structuredContent.text);
     const { structuredContent: result } = await fetch(base);
     expect(result.text.length).toBeLessThanOrEqual(1000);
     expect(result.metadata.truncation.originalLength).toBeGreaterThan(3000);
   } finally {
+    offlineConfig.MAX_CONTENT_LENGTH = previousLimit;
     spy.mockRestore();
+    vi.resetModules();
   }
 });
