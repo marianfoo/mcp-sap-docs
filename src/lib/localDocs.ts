@@ -1456,14 +1456,14 @@ export async function fetchLibraryDocumentation(
   for (const lib of Object.values(index)) {
     const doc = lib.docs.find(d => d.id === libraryIdOrDocId)
       ?? (fragment ? lib.docs.find(d => d.id === baseId) : undefined);
-    if (doc) return budgetOffline(await readOfflineDoc(lib, doc, fragment));
+    if (doc) return budgetOffline(await readOfflineDoc(lib, doc, fragment ? [fragment] : []));
   }
 
   const lib = index[baseId];
   if (!lib) return null;
   if (topic) {
     const exact = lib.docs.find(doc => doc.id === `${baseId}/${topic}`);
-    if (exact) return budgetOffline(await readOfflineDoc(lib, exact, exact.id.split('#')[1]));
+    if (exact) return budgetOffline(await readOfflineDoc(lib, exact, exact.id.split('#').slice(1)));
   }
 
   const term = topic.toLowerCase();
@@ -1472,14 +1472,17 @@ export async function fetchLibraryDocumentation(
   if (!targets.length) return { text: topic
     ? `No topic "${topic}" found inside ${baseId}.` : `No documents found inside ${baseId}.` };
 
-  // A library or keyword lookup returns matching files. Multiple indexed sections
-  // of one file should not cause the full file to be read and appended repeatedly.
-  const files = new Set<string>();
-  const parts: string[] = [];
+  const groups = new Map<string, typeof targets>();
   for (const doc of targets) {
-    if (files.has(doc.relFile)) continue;
-    files.add(doc.relFile);
-    parts.push(await readOfflineDoc(lib, doc));
+    const group = groups.get(doc.relFile);
+    if (group) group.push(doc);
+    else groups.set(doc.relFile, [doc]);
+  }
+  const parts: string[] = [];
+  for (const group of groups.values()) {
+    const fragments = term && group.every(doc => doc.id.includes('#'))
+      ? [...new Set(group.map(doc => doc.id.split('#')[1]))] : [];
+    parts.push(await readOfflineDoc(lib, group[0], fragments));
   }
   return budgetOffline(parts.join("\n\n---\n\n"));
 }
@@ -1489,16 +1492,17 @@ function budgetOffline(text: string): FetchResult {
   return truncation.wasTruncated ? { text: content, truncation } : { text: content };
 }
 
-async function readOfflineDoc(lib: LibraryBundle, doc: LibraryBundle['docs'][number], fragment?: string): Promise<string> {
+async function readOfflineDoc(lib: LibraryBundle, doc: LibraryBundle['docs'][number], fragments: string[]): Promise<string> {
   const sourcePath = getSourcePath(lib.id);
   if (!sourcePath) throw new Error(`Unknown library ID: ${lib.id}`);
   const raw = await fs.readFile(path.join(PROJECT_ROOT, "sources", sourcePath, doc.relFile), "utf8");
-  if (lib.id === '/openui5-api' && doc.relFile.endsWith('.js')) return formatJSDocContent(raw, doc.relFile, doc.title);
-  if (lib.id === '/openui5-samples') return formatSampleContent(raw, doc.relFile, doc.title);
+  if (lib.id === '/openui5-api' && doc.relFile.endsWith('.js')) return formatJSDocContent(raw, doc.relFile, doc.title ?? '');
+  if (lib.id === '/openui5-samples') return formatSampleContent(raw, doc.relFile, doc.title ?? '');
 
-  const section = fragment && /\.mdx?$/i.test(doc.relFile) ? markdownSection(raw, fragment) : undefined;
-  // Non-heading anchors (including vocabulary terms) retain their document context.
-  const content = section ?? raw;
+  const sections = /\.mdx?$/i.test(doc.relFile) ? fragments.map(fragment => markdownSection(raw, fragment)) : [];
+  // Unknown or ambiguous anchors retain their document context.
+  const content = sections.length && sections.every(section => section !== undefined)
+    ? sections.join("\n\n") : raw;
   if (!getDocUrlConfig(lib.id)) return content;
   const documentationUrl = generateDocumentationUrl(lib.id, doc.relFile, raw);
   const libName = lib.id.replace('/', '').toUpperCase();

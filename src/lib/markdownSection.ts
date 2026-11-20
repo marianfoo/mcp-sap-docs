@@ -7,8 +7,7 @@ export function headingFragment(title: string): string {
 /** Keep nested headings and fenced examples inside the requested section. */
 export function markdownSection(source: string, fragment: string): string | undefined {
   const lines = source.split(/\r?\n/);
-  let start = -1;
-  let level = 0;
+  const headings: Array<{ line: number; level: number; slug: string }> = [];
   let fence = '';
   for (const [i, line] of lines.entries()) {
     const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
@@ -16,17 +15,17 @@ export function markdownSection(source: string, fragment: string): string | unde
       if (marker && marker[1].startsWith(fence) && !marker[2].trim()) fence = '';
       continue;
     }
-    if (marker) {
+    if (marker && (marker[1][0] === '~' || !marker[2].includes('`'))) {
       fence = marker[1];
       continue;
     }
     const heading = /^ {0,3}(#{1,6})[ \t]+(.+)$/.exec(line);
     if (!heading) continue;
-    if (start >= 0 && heading[1].length <= level) return lines.slice(start, i).join('\n').trimEnd();
-    if (start < 0 && headingFragment(heading[2].trim()) === fragment) {
-      start = i;
-      level = heading[1].length;
-    }
+    headings.push({ line: i, level: heading[1].length, slug: headingFragment(heading[2].trim()) });
   }
-  if (start >= 0) return lines.slice(start).join('\n').trimEnd();
+  const matches = headings.filter(heading => heading.slug === fragment);
+  if (matches.length !== 1) return undefined;
+  const [match] = matches;
+  const end = headings.find(heading => heading.line > match.line && heading.level <= match.level);
+  return lines.slice(match.line, end?.line).join('\n').trimEnd();
 }

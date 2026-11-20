@@ -163,6 +163,7 @@ describe('offline Markdown section boundaries', () => {
     expect(markdownSection(source, 'sending-emails')).toBe('## Sending Emails\nintro\n~~~txt\n## Sample heading\n~~~\n### Example\ndetails');
     expect(markdownSection(source, 'next')).toBe('## Next\nother');
     expect(markdownSection(source, 'missing')).toBeUndefined();
+    expect(markdownSection('## E-Mail\none\n## E Mail\ntwo', 'e-mail')).toBeUndefined();
   });
 });
 
@@ -173,10 +174,10 @@ it('fetches an indexed section and budgets a whole offline file through MCP', as
   const section = base + '#sending-emails';
   const source = '# Guide\n' + 'x'.repeat(3000) + '\n## Sending Emails\nExample text\n### Details\nBody\n## Other\nUnrelated';
   const doc = { id: base, title: 'Guide', relFile: 'guide.md', description: '', snippetCount: 0 };
-  const library = { id: '/abap-cheat-sheets', docs: [doc, { ...doc, id: section }] };
+  const library = { id: '/abap-cheat-sheets', docs: [doc, { ...doc, id: section, title: 'Mail delivery' }] };
   const spy = vi.spyOn(fs, 'readFile').mockImplementation(async (file, opts) => {
-    if (String(file).endsWith('/dist/data/index.json')) return JSON.stringify({ [library.id]: library });
-    if (String(file).endsWith('/guide.md')) return source;
+    if (String(file).replaceAll('\\', '/').endsWith('/dist/data/index.json')) return JSON.stringify({ [library.id]: library });
+    if (String(file).replaceAll('\\', '/').endsWith('/guide.md')) return source;
     return originalRead(file, opts);
   });
   try {
@@ -188,6 +189,14 @@ it('fetches an indexed section and budgets a whole offline file through MCP', as
       expect(result.text).not.toContain('Unrelated');
       expect(result.metadata.truncation).toBeUndefined();
     }
+    const { fetchLibraryDocumentation } = await import('../src/lib/localDocs.js');
+    const keyword = await fetchLibraryDocumentation(library.id, 'mail delivery');
+    expect(keyword?.text).toContain('Example text');
+    expect(keyword?.text).not.toContain('# Guide');
+    expect((await fetchLibraryDocumentation(library.id, 'guide#sending-emails'))?.text).toContain('Example text');
+    expect((await fetch(base + '#absent')).structuredContent.metadata.truncation.originalLength).toBeGreaterThan(3000);
+    expect((await fetchLibraryDocumentation(library.id))?.truncation?.originalLength)
+      .toEqual((await fetchLibraryDocumentation(base))?.truncation?.originalLength);
     const { structuredContent: result } = await fetch(base);
     expect(result.text.length).toBeLessThanOrEqual(1000);
     expect(result.metadata.truncation.originalLength).toBeGreaterThan(3000);
